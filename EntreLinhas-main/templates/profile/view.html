@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Meu Perfil{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Meu Perfil Anônimo</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Aqui você pode ver e gerenciar seu perfil anônimo, seus desabafos e comentários.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <!-- Mensagens flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="mb-6 p-4 rounded-lg {% if category == 'error' %}bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200{% else %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Coluna do perfil -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-6">
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-6">
+          <div class="flex justify-between items-start mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Informações</h2>
+            <a href="{{ url_for('profile.editar_perfil') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-10 10a2 2 0 01-1.414.586H4a1 1 0 01-1-1v-1a2 2 0 01.586-1.414l10-10z" />
+              </svg>
+              Editar
+            </a>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Apelido</h3>
+              <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ profile.nickname }}</p>
+            </div>
+            
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Bio</h3>
+              <p class="text-gray-700 dark:text-gray-300">
+                {% if profile.bio %}
+                  {{ profile.bio }}
+                {% else %}
+                  <span class="text-gray-400 dark:text-gray-500 italic">Nenhuma bio definida</span>
+                {% endif %}
+              </p>
+            </div>
+            
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Criado em</h3>
+              <p class="text-gray-700 dark:text-gray-300">{{ profile.created_at }}</p>
+            </div>
+          </div>
+          
+          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="{{ url_for('profile.sair_perfil') }}" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414a1 1 0 00-.293-.707L11.414 2.414A1 1 0 0010.707 2H4a1 1 0 00-1 1zm9 2.414L15.586 9H12V5.414z" clip-rule="evenodd" />
+              </svg>
+              Sair do perfil
+            </a>
+          </div>
+        </section>
+        
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Navegação</h2>
+          <nav class="space-y-2">
+            <a href="{{ url_for('profile.ver_perfil') }}" class="block px-4 py-2 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 font-medium">
+              Visão Geral
+            </a>
+            <a href="{{ url_for('profile.posts_perfil') }}" class="block px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition duration-300">
+              Meus Desabafos
+            </a>
+            <a href="{{ url_for('profile.comentarios_perfil') }}" class="block px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition duration-300">
+              Meus Comentários
+            </a>
+          </nav>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Coluna do conteúdo -->
+    <div class="lg:col-span-2">
+      <!-- Resumo -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Desabafos</h3>
+          <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">{{ posts|length }}</p>
+          <a href="{{ url_for('profile.posts_perfil') }}" class="mt-4 inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
+            Ver todos
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </a>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Comentários</h3>
+          <p class="text-3xl font-bold text-primary-600 dark:text-primary-400">{{ comments|length }}</p>
+          <a href="{{ url_for('profile.comentarios_perfil') }}" class="mt-4 inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
+            Ver todos
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Desabafos recentes -->
+      <section class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Desabafos Recentes</h2>
+          <a href="{{ url_for('profile.posts_perfil') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">Ver todos</a>
+        </div>
+        
+        {% if posts %}
+          <div class="space-y-4">
+            {% for post in posts[:3] %}
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ post.mensagem|truncate(150) }}</p>
+                <div class="mt-2 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+                  <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
+                  <time datetime="{{ post.data_postagem }}">{{ post.data_postagem }}</time>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+            <p class="text-gray-500 dark:text-gray-400">Você ainda não fez nenhum desabafo.</p>
+            <a href="{{ url_for('posts.feed') }}" class="mt-2 inline-block text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
+              Criar um desabafo
+            </a>
+          </div>
+        {% endif %}
+      </section>
+      
+      <!-- Comentários recentes -->
+      <section>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Comentários Recentes</h2>
+          <a href="{{ url_for('profile.comentarios_perfil') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">Ver todos</a>
+        </div>
+        
+        {% if comments %}
+          <div class="space-y-4">
+            {% for comment in comments[:3] %}
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <div class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                  Em resposta a: <span class="text-gray-700 dark:text-gray-300">{{ comment.post_mensagem|truncate(50) }}</span>
+                </div>
+                <p class="text-gray-900 dark:text-gray-100">{{ comment.mensagem }}</p>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-right">
+                  {{ comment.data_comentario }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+            <p class="text-gray-500 dark:text-gray-400">Você ainda não fez nenhum comentário.</p>
+            <a href="{{ url_for('posts.feed') }}" class="mt-2 inline-block text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
+              Ver desabafos para comentar
+            </a>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

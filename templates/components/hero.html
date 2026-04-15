@@ -1,0 +1,14 @@
+<section class="page-hero {{ hero_class|default('') }}">
+  <div class="container mx-auto px-6 text-center relative z-10">
+    <p class="hero-kicker">{{ kicker|default('EntreLinhas') }}</p>
+    <h1 class="hero-title">{{ title }}</h1>
+    {% if description %}
+      <p class="hero-description">{{ description }}</p>
+    {% endif %}
+    {% if actions is defined and actions %}
+      <div class="hero-actions">
+        {{ actions|safe }}
+      </div>
+    {% endif %}
+  </div>
+</section>

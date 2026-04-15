@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Conta - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md mx-auto">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Criar Conta</h2>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Junte-se à nossa comunidade de apoio
+      </p>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
+      <form id="registroForm" method="POST" class="space-y-6">
+        <!-- Username -->
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nome de usuário
+          </label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required 
+            minlength="3"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Escolha um nome de usuário único"
+          >
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Mínimo 3 caracteres. Este será seu identificador único.
+          </p>
+        </div>
+
+        <!-- Nickname -->
+        <div>
+          <label for="nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Apelido
+          </label>
+          <input 
+            type="text" 
+            id="nickname" 
+            name="nickname" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Como você gostaria de ser chamado"
+          >
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Este nome aparecerá nos seus posts e comentários.
+          </p>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Senha
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required 
+            minlength="6"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Mínimo 6 caracteres"
+          >
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label for="confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Confirmar Senha
+          </label>
+          <input 
+            type="password" 
+            id="confirm_password" 
+            name="confirm_password" 
+            required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Digite a senha novamente"
+          >
+        </div>
+
+        <!-- Bio (opcional) -->
+        <div>
+          <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Bio (opcional)
+          </label>
+          <textarea 
+            id="bio" 
+            name="bio" 
+            rows="3"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Conte um pouco sobre você (opcional)"
+          ></textarea>
+        </div>
+
+        <!-- Email (opcional) -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            E-mail (opcional)
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="seu@email.com (opcional)"
+          >
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Opcional. Pode ser usado para recuperação de conta no futuro.
+          </p>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button 
+            type="submit" 
+            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300"
+          >
+            <span class="submit-text">Criar Conta</span>
+            <span class="loading-spinner hidden">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Criando...
+            </span>
+          </button>
+        </div>
+
+        <!-- Login Link -->
+        <div class="text-center">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Já tem uma conta? 
+            <a href="{{ url_for('auth.login') }}" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+              Faça login
+            </a>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('registroForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitButton = this.querySelector('button[type="submit"]');
+    const submitText = submitButton.querySelector('.submit-text');
+    const loadingSpinner = submitButton.querySelector('.loading-spinner');
+    
+    // Mostrar loading
+    submitText.classList.add('hidden');
+    loadingSpinner.classList.remove('hidden');
+    submitButton.disabled = true;
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    fetch('{{ url_for("auth.registro") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.message);
+            // Esconder loading
+            submitText.classList.remove('hidden');
+            loadingSpinner.classList.add('hidden');
+            submitButton.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao criar conta. Tente novamente.');
+        // Esconder loading
+        submitText.classList.remove('hidden');
+        loadingSpinner.classList.add('hidden');
+        submitButton.disabled = false;
+    });
+});
+
+// Validação de senha em tempo real
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (confirmPassword && password !== confirmPassword) {
+        this.setCustomValidity('Senhas não coincidem');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}
+

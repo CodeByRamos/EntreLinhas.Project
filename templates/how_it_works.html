@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Como Funciona{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Como Funciona</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Entenda como utilizar o Entre Linhas e aproveitar ao máximo este espaço de desabafos.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-12">
+  <div class="max-w-4xl mx-auto">
+    <!-- Seção: Passo a Passo -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold mb-10 text-center text-gray-800 dark:text-white">Passo a Passo</h2>
+      
+      <div class="space-y-12">
+        <!-- Passo 1 -->
+        <div class="flex flex-col md:flex-row items-center gap-8">
+          <div class="md:w-1/3">
+            <div class="relative">
+              <div class="w-24 h-24 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold mx-auto">
+                1
+              </div>
+              <div class="hidden md:block absolute h-full w-1 bg-primary-200 dark:bg-primary-800 top-full left-1/2 transform -translate-x-1/2 mt-4"></div>
+            </div>
+          </div>
+          <div class="md:w-2/3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Acesse a página de desabafos</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+              Na página inicial, clique no botão "Desabafar agora" ou acesse a opção "Desabafos" no menu de navegação.
+            </p>
+            <div class="flex justify-start">
+              <a href="{{ url_for('posts.feed') }}" class="text-primary-600 dark:text-primary-400 hover:underline font-medium flex items-center">
+                <span>Ir para a página de desabafos</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Passo 2 -->
+        <div class="flex flex-col md:flex-row items-center gap-8">
+          <div class="md:w-1/3">
+            <div class="relative">
+              <div class="w-24 h-24 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold mx-auto">
+                2
+              </div>
+              <div class="hidden md:block absolute h-full w-1 bg-primary-200 dark:bg-primary-800 top-full left-1/2 transform -translate-x-1/2 mt-4"></div>
+            </div>
+          </div>
+          <div class="md:w-2/3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Escreva seu desabafo</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+              No formulário de envio, escreva o que você está sentindo ou pensando. Não se preocupe, seu desabafo será completamente anônimo. Selecione uma categoria que melhor se relacione com o tema do seu desabafo.
+            </p>
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <p class="text-gray-500 dark:text-gray-400 text-sm">
+                <strong>Dica:</strong> Seja honesto com seus sentimentos, mas evite incluir informações que possam identificá-lo, como nomes completos, endereços ou detalhes muito específicos.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Passo 3 -->
+        <div class="flex flex-col md:flex-row items-center gap-8">
+          <div class="md:w-1/3">
+            <div class="relative">
+              <div class="w-24 h-24 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold mx-auto">
+                3
+              </div>
+              <div class="hidden md:block absolute h-full w-1 bg-primary-200 dark:bg-primary-800 top-full left-1/2 transform -translate-x-1/2 mt-4"></div>
+            </div>
+          </div>
+          <div class="md:w-2/3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Interaja com outros desabafos</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">
+              Leia os desabafos de outras pessoas e, se quiser, deixe comentários de apoio ou reações. Lembre-se de ser respeitoso e empático, pois todos estamos aqui para nos apoiar mutuamente.
+            </p>
+            <div class="flex space-x-2">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                🤝 Te entendo
+              </span>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                💪 Força!
+              </span>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                🫂 Abraço virtual
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Passo 4 -->
+        <div class="flex flex-col md:flex-row items-center gap-8">
+          <div class="md:w-1/3">
+            <div class="w-24 h-24 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold mx-auto">
+              4
+            </div>
+          </div>
+          <div class="md:w-2/3 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+            <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Volte sempre</h3>
+            <p class="text-gray-600 dark:text-gray-300">
+              O Entre Linhas está sempre disponível quando você precisar desabafar ou ajudar alguém com palavras de apoio. Volte sempre que sentir necessidade de compartilhar seus pensamentos ou oferecer suporte a outros.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção: Diretrizes da Comunidade -->
+    <section class="mb-16">
+      <div class="bg-gray-50 dark:bg-gray-800 p-8 rounded-xl shadow-md">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Diretrizes da Comunidade</h2>
+        <div class="space-y-4">
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-gray-600 dark:text-gray-300">
+              <strong>Respeito mútuo:</strong> Trate todos com respeito e empatia, mesmo quando discordar de alguma opinião.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-gray-600 dark:text-gray-300">
+              <strong>Sem julgamentos:</strong> Este é um espaço livre de julgamentos. Evite criticar ou diminuir as experiências dos outros.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-gray-600 dark:text-gray-300">
+              <strong>Privacidade:</strong> Respeite o anonimato de todos. Não tente identificar outros usuários ou compartilhe informações pessoais.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-gray-600 dark:text-gray-300">
+              <strong>Conteúdo apropriado:</strong> Evite linguagem ofensiva, discurso de ódio ou conteúdo que possa ser prejudicial a outros usuários.
+            </p>
+          </div>
+          <div class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary-600 dark:text-primary-400 mr-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <p class="text-gray-600 dark:text-gray-300">
+              <strong>Apoio, não aconselhamento:</strong> Ofereça apoio emocional, mas evite dar conselhos médicos ou psicológicos profissionais.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção: Perguntas Frequentes -->
+    <section>
+      <h2 class="text-3xl font-bold mb-8 text-center text-gray-800 dark:text-white">Perguntas Frequentes</h2>
+      
+      <div class="space-y-6">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Meus desabafos são realmente anônimos?</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Sim, todos os desabafos são completamente anônimos. Não coletamos informações pessoais como nome, e-mail ou endereço IP. Você pode se expressar livremente sem preocupações com sua identidade.
+          </p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Posso excluir meu desabafo depois de publicado?</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Atualmente, não oferecemos a opção de excluir desabafos, pois são publicados anonimamente e não temos como verificar a autoria. Por isso, recomendamos pensar bem antes de publicar e evitar incluir informações muito específicas.
+          </p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">O Entre Linhas substitui ajuda profissional?</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Não. O Entre Linhas é um espaço para desabafos e apoio emocional entre pares, mas não substitui o acompanhamento de profissionais de saúde mental. Se você está enfrentando problemas graves de saúde mental, recomendamos buscar ajuda profissional.
+          </p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+          <h3 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white">Como posso ajudar outros usuários?</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            Você pode ajudar outros usuários deixando comentários de apoio em seus desabafos ou utilizando as reações para demonstrar empatia. Lembre-se sempre de ser respeitoso, empático e não julgador em suas interações.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+

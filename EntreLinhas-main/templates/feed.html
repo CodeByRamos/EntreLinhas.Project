@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Desabafos{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Desabafos</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Um espaço seguro para compartilhar seus pensamentos e sentimentos de forma anônima.
+      Desabafe, comente e apoie outras pessoas que estão passando por momentos difíceis.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Coluna do formulário e filtros -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-6">
+        <section id="formulario-de-envio" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-6">
+          <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">Compartilhe seu desabafo</h2>
+          
+          <!-- Mensagem de erro -->
+          <div id="form-error" class="hidden mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-lg text-sm"></div>
+          
+          <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo anônimo">
+            <div>
+              <label for="conteudo" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Seu desabafo:</label>
+              <textarea
+                id="conteudo"
+                name="conteudo"
+                required
+                placeholder="Escreva o que quiser dizer..."
+                rows="6"
+                class="form-input w-full p-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y transition-colors duration-300"
+              ></textarea>
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <span>Mínimo: 10 caracteres</span>
+                <span>
+                  <span id="char-count">0</span>/<span id="max-chars">500</span> 
+                  (<span id="remaining-chars">500</span> restantes)
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label for="categoria" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria:</label>
+              <select
+                id="categoria"
+                name="categoria"
+                required
+                class="form-input w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none focus:outline-none focus:ring-2 focus:ring-primary-500 transition duration-300"
+                aria-label="Selecione a categoria do desabafo"
+              >
+                <option value="" disabled selected>Selecione uma categoria</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <button
+              id="submit-button"
+              type="submit"
+              class="btn-primary self-start bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-8 rounded-lg shadow hover:shadow-lg transition duration-300 flex items-center space-x-2"
+              title="Enviar desabafo anônimo"
+            >
+              <span>Desabafar</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+          </form>
+        </section>
+        
+        <!-- Filtro por categoria -->
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-6">
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Filtrar por categoria</h2>
+          <div class="space-y-2">
+            <a href="{{ url_for('posts.feed') }}" class="block px-4 py-2 rounded-lg {% if not categoria_atual %}bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 font-medium{% else %}hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} transition duration-300">
+              Todas as categorias
+            </a>
+            {% for categoria in categorias %}
+            <a href="{{ url_for('posts.feed', categoria=categoria.valor) }}" class="nav-link block px-4 py-2 rounded-lg {% if categoria_atual == categoria.valor %}bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 font-medium{% else %}hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300{% endif %} transition duration-300">
+              {{ categoria.nome }}
+            </a>
+            {% endfor %}
+          </div>
+        </section>
+        
+        <!-- Dicas para desabafar -->
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Dicas para desabafar</h2>
+          <ul class="space-y-3 text-gray-700 dark:text-gray-300">
+            <li class="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Seja honesto com seus sentimentos</span>
+            </li>
+            <li class="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Não inclua informações pessoais que possam identificá-lo</span>
+            </li>
+            <li class="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Respeite os outros usuários da plataforma</span>
+            </li>
+            <li class="flex items-start">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+              </svg>
+              <span>Escolha a categoria mais adequada para seu desabafo</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Coluna dos desabafos -->
+    <div class="lg:col-span-2">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">
+        {% if categoria_atual %}
+          Desabafos na categoria: {{ categoria_atual }}
+        {% else %}
+          Desabafos recentes
+        {% endif %}
+      </h2>
+      
+      {% if desabafos %}
+        <div class="space-y-6">
+          {% for post in desabafos %}
+            <article id="post-{{ post.id }}" class="post-card fade-in bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+              <!-- Conteúdo do desabafo -->
+              <div class="p-6 content-spacing">
+                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line text-lg leading-relaxed mb-4">{{ post.mensagem }}</p>
+                <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  <span class="badge-categoria">{{ '#' + post.categoria }}</span>
+                  <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    {{ post.data_postagem }}
+                  </time>
+                </div>
+              </div>
+              
+              <!-- Seção de reações -->
+              <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 px-6 py-3">
+                <div class="flex justify-between items-center">
+                  <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
+                    <!-- As reações serão carregadas via JavaScript -->
+                    <div class="flex items-center gap-2 reaction-buttons-container">
+                      <span class="text-sm text-gray-500 dark:text-gray-400">Carregando reações...</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Botão de report -->
+                  <button 
+                    class="report-button text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-sm flex items-center transition duration-300"
+                    data-post-id="{{ post.id }}"
+                    title="Reportar este desabafo"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
+                    </svg>
+                    Reportar
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Seção de comentários -->
+              <div class="border-t border-gray-200 dark:border-gray-700">
+                <div class="p-6 space-y-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Comentários</h3>
+                  
+                  <!-- Lista de comentários -->
+                  <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Carregando comentários...</p>
+                  </div>
+                  
+                  <!-- Formulário de comentário -->
+                  <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
+                    <div class="flex items-start space-x-3">
+                      <div class="flex-grow">
+                        <textarea 
+                          class="input-modern w-full resize-none text-sm"
+                          placeholder="Deixe um comentário anônimo..."
+                          rows="2"
+                          required
+                        ></textarea>
+                      </div>
+                      <button 
+                        type="submit" 
+                        class="btn-modern btn-primary text-sm flex-shrink-0"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        
+        <!-- Paginação -->
+        {% if total_pages > 1 %}
+        <div class="flex justify-center mt-8">
+          <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Paginação">
+            <!-- Botão Anterior -->
+            {% if page > 1 %}
+              <a href="{{ url_for('posts.feed', page=page-1) if not categoria_atual else url_for('posts.feed', categoria=categoria_atual, page=page-1) }}" class="pagination-btn relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            {% endif %}
+            
+            <!-- Números de página -->
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, start_page + 4]|min %}
+            {% set start_page = [1, end_page - 4]|max %}
+            
+            {% if start_page > 1 %}
+              <a href="{{ url_for('posts.feed', page=1) if not categoria_atual else url_for('posts.feed', categoria=categoria_atual, page=1) }}" class="pagination-btn relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                1
+              </a>
+              {% if start_page > 2 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ...
+                </span>
+              {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+              {% if p == page %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-primary-500 bg-primary-50 dark:bg-primary-900 text-sm font-medium text-primary-600 dark:text-primary-300">
+                  {{ p }}
+                </span>
+              {% else %}
+                <a href="{{ url_for('posts.feed', page=p) if not categoria_atual else url_for('posts.feed', categoria=categoria_atual, page=p) }}" class="pagination-btn relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  {{ p }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+              {% if end_page < total_pages - 1 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ...
+                </span>
+              {% endif %}
+              <a href="{{ url_for('posts.feed', page=total_pages) if not categoria_atual else url_for('posts.feed', categoria=categoria_atual, page=total_pages) }}" class="pagination-btn relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                {{ total_pages }}
+              </a>
+            {% endif %}
+            
+            <!-- Botão Próximo -->
+            {% if page < total_pages %}
+              <a href="{{ url_for('posts.feed', page=page+1) if not categoria_atual else url_for('posts.feed', categoria=categoria_atual, page=page+1) }}" class="pagination-btn relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <span class="sr-only">Próximo</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                <span class="sr-only">Próximo</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            {% endif %}
+          </nav>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 text-xl font-medium">
+            {% if categoria_atual %}
+              Nenhum desabafo encontrado na categoria "{{ categoria_atual }}".
+            {% else %}
+              Nenhum desabafo encontrado.
+            {% endif %}
+          </p>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">
+            Seja o primeiro a compartilhar seus pensamentos.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/post-form.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+<script src="{{ url_for('static', filename='js/karma.js') }}"></script>
+{% endblock %}
+

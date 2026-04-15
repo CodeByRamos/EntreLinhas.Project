@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Pesquisar{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Pesquisar Desabafos</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Encontre desabafos por palavras-chave ou categorias.
+    </p>
+    
+    <!-- Formulário de pesquisa -->
+    <div class="mt-8 max-w-2xl mx-auto">
+      <form action="{{ url_for('search.pesquisar') }}" method="get" class="flex flex-col md:flex-row gap-2">
+        <input 
+          type="text" 
+          name="q" 
+          value="{{ query }}" 
+          placeholder="Digite sua pesquisa..." 
+          class="flex-grow px-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-primary-300 text-gray-900"
+          required
+        >
+        <button 
+          type="submit" 
+          class="bg-white text-primary-700 hover:bg-gray-100 font-medium py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+          Pesquisar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <!-- Resultados da pesquisa -->
+  {% if error %}
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <div class="flex items-center">
+        <svg class="h-5 w-5 text-red-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <p class="text-red-800 dark:text-red-200 font-medium">{{ error }}</p>
+      </div>
+    </div>
+  {% endif %}
+  
+  {% if query %}
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+        {% if total_results > 0 %}
+          {{ total_results }} resultado{{ 's' if total_results != 1 else '' }} para "{{ query }}"
+        {% else %}
+          Nenhum resultado encontrado para "{{ query }}"
+        {% endif %}
+      </h2>
+    </div>
+    
+    {% if not desabafos and not error %}
+      <div class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">Nenhum desabafo encontrado</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Tente usar palavras-chave diferentes ou verifique a ortografia.
+        </p>
+        <div class="mt-6">
+          <a href="{{ url_for('posts.feed') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            Ver todos os desabafos
+          </a>
+        </div>
+      </div>
+    {% endif %}
+    
+    {% if desabafos %}
+      <div class="space-y-6">
+        {% for post in desabafos %}
+          <article id="post-{{ post.id }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+            <!-- Conteúdo do desabafo -->
+            <div class="p-6">
+              <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line text-lg leading-relaxed">{{ post.mensagem }}</p>
+              <div class="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 font-medium">
+                <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
+                <time datetime="{{ post.data_postagem }}">{{ post.data_postagem }}</time>
+              </div>
+            </div>
+            
+            <!-- Seção de reações -->
+            <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 px-6 py-3">
+              <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
+                <!-- As reações serão carregadas via JavaScript -->
+                <div class="flex items-center gap-2 reaction-buttons-container">
+                  <span class="text-sm text-gray-500 dark:text-gray-400">Carregando reações...</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Seção de comentários -->
+            <div class="border-t border-gray-200 dark:border-gray-700">
+              <div class="p-6 space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Comentários</h3>
+                
+                <!-- Lista de comentários -->
+                <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
+                  <p class="text-gray-500 dark:text-gray-400 text-sm">Carregando comentários...</p>
+                </div>
+                
+                <!-- Formulário de comentário -->
+                <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
+                  <div class="flex items-start space-x-3">
+                    <div class="flex-grow">
+                      <textarea 
+                        class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-sm"
+                        placeholder="Deixe um comentário anônimo..."
+                        rows="2"
+                        required
+                      ></textarea>
+                    </div>
+                    <button 
+                      type="submit" 
+                      class="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300 text-sm flex-shrink-0"
+                    >
+                      Enviar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+      
+      <!-- Paginação -->
+      {% if total_pages > 1 %}
+      <div class="flex justify-center mt-8">
+        <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Paginação">
+          <!-- Botão Anterior -->
+          {% if page > 1 %}
+            <a href="{{ url_for('search.pesquisar', q=query, page=page-1) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <span class="sr-only">Anterior</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          {% else %}
+            <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+              <span class="sr-only">Anterior</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+            </span>
+          {% endif %}
+          
+          <!-- Números de página -->
+          {% set start_page = [1, page - 2]|max %}
+          {% set end_page = [total_pages, start_page + 4]|min %}
+          {% set start_page = [1, end_page - 4]|max %}
+          
+          {% if start_page > 1 %}
+            <a href="{{ url_for('search.pesquisar', q=query, page=1) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              1
+            </a>
+            {% if start_page > 2 %}
+              <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                ...
+              </span>
+            {% endif %}
+          {% endif %}
+          
+          {% for p in range(start_page, end_page + 1) %}
+            {% if p == page %}
+              <span class="relative inline-flex items-center px-4 py-2 border border-primary-500 bg-primary-50 dark:bg-primary-900 text-sm font-medium text-primary-600 dark:text-primary-300">
+                {{ p }}
+              </span>
+            {% else %}
+              <a href="{{ url_for('search.pesquisar', q=query, page=p) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                {{ p }}
+              </a>
+            {% endif %}
+          {% endfor %}
+          
+          {% if end_page < total_pages %}
+            {% if end_page < total_pages - 1 %}
+              <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                ...
+              </span>
+            {% endif %}
+            <a href="{{ url_for('search.pesquisar', q=query, page=total_pages) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              {{ total_pages }}
+            </a>
+          {% endif %}
+          
+          <!-- Botão Próximo -->
+          {% if page < total_pages %}
+            <a href="{{ url_for('search.pesquisar', q=query, page=page+1) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <span class="sr-only">Próximo</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </a>
+          {% else %}
+            <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+              <span class="sr-only">Próximo</span>
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </span>
+          {% endif %}
+        </nav>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <p class="text-gray-500 dark:text-gray-400 text-xl font-medium">
+          Nenhum desabafo encontrado para "{{ query }}".
+        </p>
+        <p class="text-gray-500 dark:text-gray-400 mt-2">
+          Tente usar palavras-chave diferentes ou categorias específicas.
+        </p>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <p class="text-gray-500 dark:text-gray-400 text-xl font-medium">
+        Digite algo para pesquisar
+      </p>
+      <p class="text-gray-500 dark:text-gray-400 mt-2">
+        Você pode pesquisar por palavras-chave ou categorias.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+{% endblock %}
+

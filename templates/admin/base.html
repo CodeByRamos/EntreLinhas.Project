@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Entre Linhas — Painel Administrativo{% endblock %}</title>
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  
+  <!-- CSS Personalizado -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}" />
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100 font-sans flex flex-col">
+
+  <!-- Navegação -->
+  <nav class="bg-white dark:bg-gray-800 shadow-md py-4">
+    <div class="container mx-auto px-6 flex flex-col md:flex-row md:justify-between md:items-center">
+      <div class="flex justify-between items-center">
+        <a href="{{ url_for('admin.dashboard') }}" class="text-2xl font-bold text-gray-800 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition duration-300">
+          Entre Linhas <span class="text-primary-600 dark:text-primary-400">Admin</span>
+        </a>
+      </div>
+      
+      {% if session.get('admin_logged_in') %}
+      <div class="md:flex flex-col md:flex-row md:items-center md:mx-6 mt-4 md:mt-0">
+        <a href="{{ url_for('admin.dashboard') }}" class="my-1 md:my-0 md:mx-4 text-sm text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition duration-300">Dashboard</a>
+        <a href="{{ url_for('admin.posts') }}" class="my-1 md:my-0 md:mx-4 text-sm text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition duration-300">Desabafos</a>
+        <a href="{{ url_for('admin.comments') }}" class="my-1 md:my-0 md:mx-4 text-sm text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-400 transition duration-300">Comentários</a>
+        <a href="{{ url_for('admin.logout') }}" class="my-1 md:my-0 md:mx-4 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition duration-300">Sair</a>
+      </div>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Mensagens Flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mx-auto px-6 mt-4">
+        {% for category, message in messages %}
+          {% set alert_class = 'bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-300' if category == 'success' else 'bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-300' %}
+          <div class="mb-4 p-4 {{ alert_class }} rounded-lg shadow text-center font-semibold transition-all duration-500" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-grow container mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="bg-white dark:bg-gray-800 py-4 mt-auto">
+    <div class="container mx-auto px-6">
+      <div class="flex justify-between items-center">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          &copy; 2025 Entre Linhas. Painel Administrativo.
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          <a href="{{ url_for('main.home') }}" class="hover:text-primary-600 dark:hover:text-primary-400 transition duration-300">Voltar ao site</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+

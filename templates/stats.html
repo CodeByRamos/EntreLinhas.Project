@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Estatísticas{% endblock %}
+
+{% block content %}
+{% set title = 'Estatísticas da Comunidade' %}
+{% set description = 'Transparência da atividade da plataforma, sem identificação pessoal.' %}
+{% include 'components/hero.html' %}
+
+<div class="container mx-auto px-6 py-10">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="glass-panel text-center p-6">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">Total de Desabafos</p>
+      <p class="text-4xl font-bold text-primary-300 mt-2">{{ post_stats.total_posts }}</p>
+    </div>
+    <div class="glass-panel text-center p-6">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">Total de Comentários</p>
+      <p class="text-4xl font-bold text-primary-300 mt-2">{{ comment_stats.total_comments }}</p>
+    </div>
+    <div class="glass-panel text-center p-6">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">Total de Reações</p>
+      <p class="text-4xl font-bold text-primary-300 mt-2">{{ reaction_stats.total_reactions }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="glass-panel p-6">
+      <h2 class="text-xl font-semibold mb-4">Desabafos por Categoria</h2>
+      <div class="space-y-2">
+        {% for category in post_stats.posts_by_category %}
+        <div class="flex items-center justify-between border-b border-slate-700/70 py-2">
+          <span class="capitalize text-slate-300">{{ category.categoria }}</span>
+          <span class="font-semibold text-primary-300">{{ category.count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="glass-panel p-6">
+      <h2 class="text-xl font-semibold mb-4">Atividade por Dia da Semana</h2>
+      <div class="space-y-2">
+        {% for weekday in post_stats.posts_by_weekday %}
+        <div class="flex items-center justify-between border-b border-slate-700/70 py-2">
+          <span class="text-slate-300">{{ weekday.dia_semana }}</span>
+          <span class="font-semibold text-primary-300">{{ weekday.count }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

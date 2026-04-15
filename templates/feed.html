@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% from 'components/post_card.html' import render_post %}
+
+{% block title %}Entre Linhas — Desabafos{% endblock %}
+
+{% block content %}
+{% set title = 'Desabafos da Comunidade' %}
+{% set description = 'Escreva, respire e compartilhe. Um mural anônimo com acolhimento, empatia e presença.' %}
+{% include 'components/hero.html' %}
+
+<div class="container mx-auto px-6 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-1">
+      <div class="sticky top-24 space-y-6">
+        <section id="formulario-de-envio" class="glass-panel p-6">
+          <h2 class="text-2xl font-bold mb-6">Compartilhe seu desabafo</h2>
+          <div id="form-error" class="hidden mb-4 p-3 bg-red-500/15 border border-red-400/30 text-red-200 rounded-lg text-sm"></div>
+
+          <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo anônimo">
+            <div>
+              <label for="conteudo" class="block font-medium text-slate-300 mb-2">Seu desabafo:</label>
+              <textarea id="conteudo" name="conteudo" required placeholder="Escreva o que quiser dizer..." rows="6" class="form-input w-full p-4 resize-y"></textarea>
+              <div class="flex justify-between text-xs text-slate-400 mt-1">
+                <span>Mínimo: 10 caracteres</span>
+                <span><span id="char-count">0</span>/<span id="max-chars">500</span> (<span id="remaining-chars">500</span> restantes)</span>
+              </div>
+            </div>
+
+            <div>
+              <label for="categoria" class="block font-medium text-slate-300 mb-2">Categoria:</label>
+              <select id="categoria" name="categoria" required class="form-input w-full p-3" aria-label="Selecione a categoria do desabafo">
+                <option value="" disabled selected>Selecione uma categoria</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <button id="submit-button" type="submit" class="btn-modern btn-primary self-start" title="Enviar desabafo anônimo">
+              <span>Desabafar</span>
+            </button>
+          </form>
+        </section>
+
+        <section class="glass-panel p-6">
+          <h2 class="text-xl font-bold mb-4">Filtrar por categoria</h2>
+          <div class="space-y-2">
+            <a href="{{ url_for('posts.feed') }}" class="block px-4 py-2 rounded-lg {% if not categoria_atual %}bg-primary-900/80 text-primary-100 font-medium{% else %}hover:bg-slate-800 text-slate-300{% endif %}">Todas as categorias</a>
+            {% for categoria in categorias %}
+            <a href="{{ url_for('posts.feed', categoria=categoria.valor) }}" class="block px-4 py-2 rounded-lg {% if categoria_atual == categoria.valor %}bg-primary-900/80 text-primary-100 font-medium{% else %}hover:bg-slate-800 text-slate-300{% endif %}">{{ categoria.nome }}</a>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2">
+      <h2 class="text-2xl font-bold mb-6">
+        {% if categoria_atual %}Desabafos na categoria: {{ categoria_atual }}{% else %}Desabafos recentes{% endif %}
+      </h2>
+
+      {% if desabafos %}
+        <div class="space-y-6">
+          {% for post in desabafos %}
+            {{ render_post(post, True) }}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="glass-panel p-8 text-center">
+          <p class="text-slate-300 text-xl font-medium">Nenhum desabafo encontrado.</p>
+          <p class="text-slate-400 mt-2">Seja a primeira voz entre as linhas.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/post-form.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+<script src="{{ url_for('static', filename='js/karma.js') }}"></script>
+{% endblock %}

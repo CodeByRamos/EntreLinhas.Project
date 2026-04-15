@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Criar Perfil Anônimo{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Criar Perfil Anônimo</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Crie um perfil anônimo para acompanhar seus desabafos e comentários.
+      Seu perfil é completamente anônimo e não requer e-mail ou senha.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <div class="max-w-2xl mx-auto">
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="mb-6 p-4 rounded-lg {% if category == 'error' %}bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200{% else %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">Informações do Perfil</h2>
+      
+      <form method="POST" action="{{ url_for('profile.criar_perfil') }}" class="space-y-6">
+        <div>
+          <label for="nickname" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Apelido:</label>
+          <input
+            type="text"
+            id="nickname"
+            name="nickname"
+            required
+            minlength="3"
+            maxlength="30"
+            placeholder="Seu apelido anônimo"
+            class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Este apelido será visível apenas para você. Mínimo de 3 caracteres.
+          </p>
+        </div>
+        
+        <div>
+          <label for="bio" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Bio (opcional):</label>
+          <textarea
+            id="bio"
+            name="bio"
+            rows="4"
+            placeholder="Conte um pouco sobre você..."
+            maxlength="200"
+            class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+          ></textarea>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Máximo de 200 caracteres.
+          </p>
+        </div>
+        
+        <div class="pt-4">
+          <button
+            type="submit"
+            class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg shadow hover:shadow-lg transition duration-300"
+          >
+            Criar Perfil Anônimo
+          </button>
+        </div>
+      </form>
+      
+      <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Importante:</h3>
+        <ul class="space-y-2 text-gray-700 dark:text-gray-300 text-sm">
+          <li class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>Seu perfil é armazenado apenas no seu navegador atual.</span>
+          </li>
+          <li class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>Se limpar os cookies ou usar outro navegador, você perderá acesso ao perfil.</span>
+          </li>
+          <li class="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary-500 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <span>Não use informações pessoais que possam identificá-lo.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

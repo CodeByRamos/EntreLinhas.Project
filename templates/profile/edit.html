@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Editar Perfil{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Editar Perfil</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Atualize as informações do seu perfil anônimo.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <div class="max-w-2xl mx-auto">
+    <!-- Mensagens flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="mb-6 p-4 rounded-lg {% if category == 'error' %}bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200{% else %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Editar Informações</h2>
+        <a href="{{ url_for('profile.ver_perfil') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+          </svg>
+          Voltar ao perfil
+        </a>
+      </div>
+      
+      <form method="POST" action="{{ url_for('profile.editar_perfil') }}" class="space-y-6">
+        <div>
+          <label for="nickname" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Apelido:</label>
+          <input
+            type="text"
+            id="nickname"
+            name="nickname"
+            required
+            minlength="3"
+            maxlength="30"
+            value="{{ profile.nickname }}"
+            class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Este apelido será visível apenas para você. Mínimo de 3 caracteres.
+          </p>
+        </div>
+        
+        <div>
+          <label for="bio" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">Bio (opcional):</label>
+          <textarea
+            id="bio"
+            name="bio"
+            rows="4"
+            placeholder="Conte um pouco sobre você..."
+            maxlength="200"
+            class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y"
+          >{{ profile.bio }}</textarea>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Máximo de 200 caracteres.
+          </p>
+        </div>
+        
+        <div class="pt-4">
+          <button
+            type="submit"
+            class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg shadow hover:shadow-lg transition duration-300"
+          >
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

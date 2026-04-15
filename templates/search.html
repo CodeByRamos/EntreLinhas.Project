@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% from 'components/post_card.html' import render_post %}
+
+{% block title %}Entre Linhas — Pesquisar{% endblock %}
+
+{% block content %}
+{% set title = 'Pesquisar desabafos' %}
+{% set description = 'Busque por sentimentos, temas ou palavras. Aqui cada linha importa.' %}
+{% include 'components/hero.html' %}
+
+<div class="container mx-auto px-6 py-10">
+  <section class="glass-panel p-5 md:p-6 mb-8 max-w-3xl mx-auto">
+    <form action="{{ url_for('search.pesquisar') }}" method="get" class="flex flex-col md:flex-row gap-3">
+      <input type="text" name="q" value="{{ query }}" placeholder="Digite sua pesquisa..." class="input-modern flex-grow px-4 py-3" required>
+      <button type="submit" class="btn-modern btn-primary">Pesquisar</button>
+    </form>
+  </section>
+
+  {% if error %}
+    <div class="mb-6 p-4 bg-red-500/15 border border-red-400/30 rounded-lg text-red-200">{{ error }}</div>
+  {% endif %}
+
+  {% if query %}
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">
+        {% if total_results > 0 %}
+          {{ total_results }} resultado{{ 's' if total_results != 1 else '' }} para "{{ query }}"
+        {% else %}
+          Nenhum resultado encontrado para "{{ query }}"
+        {% endif %}
+      </h2>
+    </div>
+
+    {% if desabafos %}
+      <div class="space-y-6">
+        {% for post in desabafos %}
+          {{ render_post(post) }}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="glass-panel p-8 text-center">
+        <p class="text-slate-300 text-xl font-medium">Nenhum desabafo encontrado.</p>
+        <p class="text-slate-400 mt-2">Tente outras palavras-chave.</p>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="glass-panel p-8 text-center">
+      <p class="text-slate-300 text-xl font-medium">Digite algo para pesquisar</p>
+      <p class="text-slate-400 mt-2">Você pode pesquisar por palavras-chave ou categorias.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+{% endblock %}

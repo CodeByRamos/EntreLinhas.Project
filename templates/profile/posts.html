@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Entre Linhas — Meus Desabafos{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-primary-600 to-primary-800 text-white py-12">
+  <div class="container mx-auto px-6 text-center">
+    <h1 class="text-4xl font-bold mb-4">Meus Desabafos</h1>
+    <p class="text-xl opacity-90 max-w-2xl mx-auto">
+      Veja todos os desabafos que você compartilhou na plataforma.
+    </p>
+  </div>
+</div>
+
+<div class="container mx-auto px-6 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Coluna da navegação -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-6">
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg mb-6">
+          <div class="flex items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ profile.nickname }}</h2>
+          </div>
+          
+          <div class="space-y-2">
+            <div>
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Bio</h3>
+              <p class="text-gray-700 dark:text-gray-300">
+                {% if profile.bio %}
+                  {{ profile.bio }}
+                {% else %}
+                  <span class="text-gray-400 dark:text-gray-500 italic">Nenhuma bio definida</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <a href="{{ url_for('profile.editar_perfil') }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-10 10a2 2 0 01-1.414.586H4a1 1 0 01-1-1v-1a2 2 0 01.586-1.414l10-10z" />
+              </svg>
+              Editar perfil
+            </a>
+          </div>
+        </section>
+        
+        <section class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Navegação</h2>
+          <nav class="space-y-2">
+            <a href="{{ url_for('profile.ver_perfil') }}" class="block px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition duration-300">
+              Visão Geral
+            </a>
+            <a href="{{ url_for('profile.posts_perfil') }}" class="block px-4 py-2 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 font-medium">
+              Meus Desabafos
+            </a>
+            <a href="{{ url_for('profile.comentarios_perfil') }}" class="block px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition duration-300">
+              Meus Comentários
+            </a>
+          </nav>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Coluna dos desabafos -->
+    <div class="lg:col-span-3">
+      <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200">
+        Todos os Meus Desabafos
+      </h2>
+      
+      {% if posts %}
+        <div class="space-y-6">
+          {% for post in posts %}
+            <article class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg">
+              <!-- Conteúdo do desabafo -->
+              <div class="p-6">
+                <p class="text-gray-900 dark:text-gray-100 whitespace-pre-line text-lg leading-relaxed">{{ post.mensagem }}</p>
+                <div class="mt-4 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
+                  <time datetime="{{ post.data_postagem }}">{{ post.data_postagem }}</time>
+                </div>
+              </div>
+              
+              <!-- Ações -->
+              <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 px-6 py-3">
+                <div class="flex justify-end">
+                  <a href="{{ url_for('posts.feed') }}#post-{{ post.id }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Ver no feed
+                  </a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        
+        <!-- Paginação -->
+        {% if total_pages > 1 %}
+        <div class="flex justify-center mt-8">
+          <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Paginação">
+            <!-- Botão Anterior -->
+            {% if page > 1 %}
+              <a href="{{ url_for('profile.posts_perfil', page=page-1) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            {% endif %}
+            
+            <!-- Números de página -->
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, start_page + 4]|min %}
+            {% set start_page = [1, end_page - 4]|max %}
+            
+            {% if start_page > 1 %}
+              <a href="{{ url_for('profile.posts_perfil', page=1) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                1
+              </a>
+              {% if start_page > 2 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ...
+                </span>
+              {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+              {% if p == page %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-primary-500 bg-primary-50 dark:bg-primary-900 text-sm font-medium text-primary-600 dark:text-primary-300">
+                  {{ p }}
+                </span>
+              {% else %}
+                <a href="{{ url_for('profile.posts_perfil', page=p) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  {{ p }}
+                </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+              {% if end_page < total_pages - 1 %}
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ...
+                </span>
+              {% endif %}
+              <a href="{{ url_for('profile.posts_perfil', page=total_pages) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                {{ total_pages }}
+              </a>
+            {% endif %}
+            
+            <!-- Botão Próximo -->
+            {% if page < total_pages %}
+              <a href="{{ url_for('profile.posts_perfil', page=page+1) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <span class="sr-only">Próximo</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-sm font-medium text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                <span class="sr-only">Próximo</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            {% endif %}
+          </nav>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400 text-xl font-medium">
+            Você ainda não fez nenhum desabafo.
+          </p>
+          <p class="text-gray-500 dark:text-gray-400 mt-2">
+            Compartilhe seus pensamentos e sentimentos de forma anônima.
+          </p>
+          <a href="{{ url_for('posts.feed') }}" class="mt-4 inline-block px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-300">
+            Criar um desabafo
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
