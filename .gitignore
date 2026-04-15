@@ -1,0 +1,15 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local tooling cache
+.pytest_cache/
+.mypy_cache/
+
+# SQLite temp files
+*.db-journal
