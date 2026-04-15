@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Perfil - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-2xl">
+  <div class="glass-panel p-8">
+    <h1 class="text-2xl font-bold mb-6">Editar perfil</h1>
+    <form method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm mb-2" for="nickname">Apelido</label>
+        <input id="nickname" name="nickname" class="input-modern w-full" value="{{ user.nickname }}" required />
+      </div>
+      <div>
+        <label class="block text-sm mb-2" for="bio">Bio</label>
+        <textarea id="bio" name="bio" rows="4" class="input-modern w-full">{{ user.bio or '' }}</textarea>
+      </div>
+      <div>
+        <label class="block text-sm mb-2" for="email">E-mail</label>
+        <input id="email" type="email" name="email" class="input-modern w-full" value="{{ user.email or '' }}" />
+      </div>
+      <button type="submit" class="btn-modern btn-primary">Salvar alterações</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

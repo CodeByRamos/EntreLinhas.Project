@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Alterar Senha - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-md">
+  <div class="glass-panel p-8">
+    <h1 class="text-2xl font-bold mb-6">Alterar senha</h1>
+    <form method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm mb-2" for="old_password">Senha atual</label>
+        <input id="old_password" name="old_password" type="password" class="input-modern w-full" required />
+      </div>
+      <div>
+        <label class="block text-sm mb-2" for="new_password">Nova senha</label>
+        <input id="new_password" name="new_password" type="password" minlength="6" class="input-modern w-full" required />
+      </div>
+      <div>
+        <label class="block text-sm mb-2" for="confirm_password">Confirmar nova senha</label>
+        <input id="confirm_password" name="confirm_password" type="password" minlength="6" class="input-modern w-full" required />
+      </div>
+      <button type="submit" class="btn-modern btn-primary w-full">Atualizar senha</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

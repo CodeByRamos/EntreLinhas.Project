@@ -1,20 +1,24 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 import database as db
 import functools
 
 # Criação do Blueprint para as rotas administrativas
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
-# Configurações de autenticação simples
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "senha_segura_123"  # Em produção, usar hash e armazenar em variável de ambiente
-
 # Decorator para verificar se o usuário está autenticado como admin
 def admin_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if not session.get('admin_logged_in'):
+        admin_user_id = session.get('admin_user_id')
+        if not session.get('admin_logged_in') or not admin_user_id:
             flash('Acesso restrito. Faça login como administrador.', 'error')
+            return redirect(url_for('admin.login'))
+        admin_user = db.get_user_by_id(admin_user_id)
+        if not admin_user or not admin_user['is_admin']:
+            session.pop('admin_logged_in', None)
+            session.pop('admin_user_id', None)
+            session.pop('admin_username', None)
+            flash('Sua sessão administrativa expirou. Faça login novamente.', 'error')
             return redirect(url_for('admin.login'))
         return view(**kwargs)
     return wrapped_view
@@ -22,16 +26,22 @@ def admin_required(view):
 @admin.route('/login', methods=['GET', 'POST'])
 def login():
     """Rota para login administrativo."""
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin.dashboard'))
+
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
         
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        admin_user = db.authenticate_admin(username, password)
+        if admin_user:
             session['admin_logged_in'] = True
+            session['admin_user_id'] = admin_user['id']
+            session['admin_username'] = admin_user['username']
             flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('admin.dashboard'))
         else:
-            flash('Credenciais inválidas. Tente novamente.', 'error')
+            flash('Credenciais inválidas ou sem permissão administrativa.', 'error')
     
     return render_template('admin/login.html')
 
@@ -39,6 +49,8 @@ def login():
 def logout():
     """Rota para logout administrativo."""
     session.pop('admin_logged_in', None)
+    session.pop('admin_user_id', None)
+    session.pop('admin_username', None)
     flash('Logout realizado com sucesso!', 'success')
     return redirect(url_for('admin.login'))
 
@@ -187,4 +199,3 @@ def remove_comment_report(report_id):
             
     except Exception as e:
         return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
-

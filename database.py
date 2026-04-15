@@ -6,6 +6,19 @@ import secrets
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
 
+
+def _get_table_columns(conn, table_name):
+    """Retorna o conjunto de colunas existentes em uma tabela."""
+    rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {row["name"] for row in rows}
+
+
+def _ensure_column(conn, table_name, column_name, definition):
+    """Garante a existência de uma coluna, aplicando migração simples quando necessário."""
+    columns = _get_table_columns(conn, table_name)
+    if column_name not in columns:
+        conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+
 def get_db_connection():
     """Estabelece e retorna uma conexão com o banco de dados."""
     conn = sqlite3.connect(DB_PATH)
@@ -24,7 +37,9 @@ def init_db():
             mensagem TEXT NOT NULL,
             data_postagem TEXT NOT NULL,
             categoria TEXT NOT NULL,
-            visivel INTEGER DEFAULT 1
+            visivel INTEGER DEFAULT 1,
+            user_id INTEGER,
+            profile_id INTEGER
         )
     ''')
     
@@ -33,9 +48,11 @@ def init_db():
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER NOT NULL,
-            comment_text TEXT NOT NULL,
+            mensagem TEXT NOT NULL,
             data_comentario TEXT NOT NULL,
             visivel INTEGER DEFAULT 1,
+            user_id INTEGER,
+            profile_id INTEGER,
             FOREIGN KEY (post_id) REFERENCES posts (id)
         )
     ''')
@@ -46,7 +63,9 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER NOT NULL,
             reaction_type TEXT NOT NULL,
-            data_reacao TEXT NOT NULL,
+            user_id TEXT,
+            profile_id INTEGER,
+            data_reacao TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (post_id) REFERENCES posts (id)
         )
     ''')
@@ -73,6 +92,74 @@ def init_db():
             FOREIGN KEY (comment_id) REFERENCES comments (id)
         )
     """)
+
+    # Tabela de usuários (contas permanentes)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            nickname TEXT NOT NULL,
+            bio TEXT,
+            email TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP,
+            is_active BOOLEAN DEFAULT 1,
+            is_admin BOOLEAN DEFAULT 0
+        )
+    ''')
+
+    # Tabela de perfis anônimos
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nickname TEXT NOT NULL,
+            bio TEXT,
+            token TEXT NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Tabela de reports de posts
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            user_id INTEGER,
+            profile_id INTEGER,
+            FOREIGN KEY (post_id) REFERENCES posts (id),
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    # Tabela de karma de comentários
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS comment_karma (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            comment_id INTEGER NOT NULL,
+            user_id INTEGER,
+            profile_id INTEGER,
+            karma_type TEXT NOT NULL CHECK (karma_type IN ('up', 'down')),
+            data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (comment_id) REFERENCES comments (id),
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            UNIQUE(comment_id, user_id),
+            UNIQUE(comment_id, profile_id)
+        )
+    ''')
+
+    # Migrações leves para bancos antigos
+    _ensure_column(conn, "posts", "user_id", "INTEGER")
+    _ensure_column(conn, "posts", "profile_id", "INTEGER")
+    _ensure_column(conn, "comments", "mensagem", "TEXT")
+    _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
+    _ensure_column(conn, "comments", "user_id", "INTEGER")
+    _ensure_column(conn, "comments", "profile_id", "INTEGER")
+    _ensure_column(conn, "reactions", "user_id", "TEXT")
+    _ensure_column(conn, "reactions", "profile_id", "INTEGER")
+    _ensure_column(conn, "reactions", "data_reacao", "TEXT DEFAULT CURRENT_TIMESTAMP")
+    _ensure_column(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
     
     conn.commit()
     conn.close()
@@ -186,16 +273,16 @@ def get_comments(post_id, include_hidden=False):
     
     if include_hidden:
         comments = conn.execute('''
-            SELECT id, post_id, mensagem, data_comentario 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
             WHERE post_id = ? 
             ORDER BY id ASC
         ''', (post_id,)).fetchall()
     else:
         comments = conn.execute('''
-            SELECT id, post_id, mensagem, data_comentario 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
-            WHERE post_id = ? 
+            WHERE post_id = ? AND visivel = 1
             ORDER BY id ASC
         ''', (post_id,)).fetchall()
     
@@ -206,7 +293,7 @@ def get_hidden_comments(post_id):
     """Retorna os comentários ocultos de um post específico."""
     conn = get_db_connection()
     comments = conn.execute('''
-        SELECT id, post_id, comment_text, data_comentario, visivel 
+        SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
         FROM comments 
         WHERE post_id = ? AND visivel = 0 
         ORDER BY id ASC
@@ -220,13 +307,13 @@ def get_all_comments(include_hidden=False):
     
     if include_hidden:
         comments = conn.execute('''
-            SELECT id, post_id, comment_text, data_comentario, visivel 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
             ORDER BY id DESC
         ''').fetchall()
     else:
         comments = conn.execute('''
-            SELECT id, post_id, comment_text, data_comentario, visivel 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
             WHERE visivel = 1 
             ORDER BY id DESC
@@ -239,7 +326,7 @@ def get_all_hidden_comments():
     """Retorna todos os comentários ocultos."""
     conn = get_db_connection()
     comments = conn.execute('''
-        SELECT id, post_id, comment_text, data_comentario, visivel 
+        SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
         FROM comments 
         WHERE visivel = 0 
         ORDER BY id DESC
@@ -253,15 +340,15 @@ def get_comment_by_id(comment_id, include_hidden=False):
     
     if include_hidden:
         comment = conn.execute('''
-            SELECT id, post_id, mensagem, data_comentario 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
             WHERE id = ?
         ''', (comment_id,)).fetchone()
     else:
         comment = conn.execute('''
-            SELECT id, post_id, mensagem, data_comentario 
+            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
             FROM comments 
-            WHERE id = ?
+            WHERE id = ? AND visivel = 1
         ''', (comment_id,)).fetchone()
     
     conn.close()
@@ -946,7 +1033,7 @@ def authenticate_user(username, password):
     password_hash = hashlib.sha256(password.encode()).hexdigest()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, is_active
+        SELECT id, username, nickname, bio, email, created_at, is_active, is_admin
         FROM users 
         WHERE username = ? AND password_hash = ? AND is_active = 1
     ''', (username, password_hash)).fetchone()
@@ -966,7 +1053,7 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, last_login, is_active
+        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin
         FROM users 
         WHERE id = ? AND is_active = 1
     ''', (user_id,)).fetchone()
@@ -979,7 +1066,7 @@ def get_user_by_username(username):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, last_login, is_active
+        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin
         FROM users 
         WHERE username = ? AND is_active = 1
     ''', (username,)).fetchone()
@@ -1073,6 +1160,67 @@ def deactivate_user(user_id):
     except Exception as e:
         conn.close()
         return False, f"Erro ao desativar usuário: {str(e)}"
+
+
+def authenticate_admin(username, password):
+    """Autentica usuário com permissão administrativa."""
+    user = authenticate_user(username, password)
+    if not user:
+        return None
+    if not user["is_admin"]:
+        return None
+    return user
+
+
+def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
+    """
+    Cria ou promove um usuário para administrador.
+    Retorna (success, message).
+    """
+    import hashlib
+
+    conn = get_db_connection()
+
+    existing = conn.execute(
+        "SELECT id FROM users WHERE username = ?",
+        (username,),
+    ).fetchone()
+
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+
+    try:
+        if existing:
+            conn.execute(
+                """
+                UPDATE users
+                SET password_hash = ?,
+                    nickname = COALESCE(?, nickname),
+                    bio = COALESCE(?, bio),
+                    email = COALESCE(?, email),
+                    is_active = 1,
+                    is_admin = 1
+                WHERE id = ?
+                """,
+                (password_hash, nickname, bio, email, existing["id"]),
+            )
+            conn.commit()
+            return True, f"Usuário '{username}' promovido/atualizado como admin."
+
+        final_nickname = nickname or username
+        conn.execute(
+            """
+            INSERT INTO users (username, password_hash, nickname, bio, email, created_at, is_active, is_admin)
+            VALUES (?, ?, ?, ?, ?, datetime('now'), 1, 1)
+            """,
+            (username, password_hash, final_nickname, bio, email),
+        )
+        conn.commit()
+        return True, f"Usuário admin '{username}' criado com sucesso."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Erro ao configurar admin: {str(e)}"
+    finally:
+        conn.close()
 
 def get_user_stats(user_id):
     """Retorna estatísticas do usuário."""
@@ -1300,4 +1448,3 @@ def remove_comment_report(report_id):
         return False
     finally:
         conn.close()
-

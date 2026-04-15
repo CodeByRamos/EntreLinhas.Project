@@ -47,7 +47,7 @@ function reportPost(postId, buttonElement) {
             
             // Se o post foi ocultado (5+ reports), remover do feed
             if (data.report_count >= 5) {
-                const postElement = buttonElement.closest('.post-container');
+                const postElement = buttonElement.closest('article.post-card');
                 if (postElement) {
                     postElement.style.transition = 'opacity 0.5s ease';
                     postElement.style.opacity = '0';
@@ -186,4 +186,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-

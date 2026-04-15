@@ -78,6 +78,16 @@
   </nav>
 
   <main class="flex-grow">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mx-auto px-6 pt-6 space-y-3">
+          {% for category, message in messages %}
+            {% set alert_class = 'bg-emerald-500/20 border-emerald-300/40 text-emerald-100' if category == 'success' else 'bg-rose-500/20 border-rose-300/40 text-rose-100' %}
+            <div class="rounded-lg border px-4 py-3 text-sm {{ alert_class }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 

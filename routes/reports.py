@@ -4,6 +4,14 @@ import database as db
 # Criação do Blueprint para as rotas de reports
 reports = Blueprint('reports', __name__)
 
+
+def _admin_session_valid():
+    """Valida se a sessão atual pertence a um admin ativo."""
+    if not session.get('admin_logged_in') or not session.get('admin_user_id'):
+        return False
+    admin_user = db.get_user_by_id(session['admin_user_id'])
+    return bool(admin_user and admin_user['is_admin'])
+
 @reports.route('/api/report', methods=['POST'])
 def reportar_post():
     """Rota para reportar um post."""
@@ -88,6 +96,9 @@ def obter_contagem_reports(post_id):
 def listar_reports():
     """Rota para listar todos os reports (admin)."""
     try:
+        if not _admin_session_valid():
+            return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
+
         page = request.args.get('page', 1, type=int)
         per_page = 20
         offset = (page - 1) * per_page
@@ -106,6 +117,9 @@ def listar_reports():
 def obter_reports_post(post_id):
     """Rota para obter todos os reports de um post específico (admin)."""
     try:
+        if not _admin_session_valid():
+            return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
+
         reports_list = db.get_reports_by_post(post_id)
         
         return jsonify({
@@ -142,4 +156,3 @@ def reportar_comentario(comment_id):
     except Exception as e:
         print(f"Erro ao reportar comentário {comment_id}: {e}")
         return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
-
