@@ -14,22 +14,41 @@
 
     <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
       <form id="registroForm" method="POST" class="space-y-6">
+        <input type="hidden" name="next" value="{{ next_url or '' }}">
+        <!-- E-mail -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            E-mail
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            autocomplete="email"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="seu@email.com"
+          >
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Obrigatório. Usado para entrar na plataforma.
+          </p>
+        </div>
+
         <!-- Username -->
         <div>
           <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Nome de usuário
+            Nome de usuário (opcional)
           </label>
           <input 
             type="text" 
             id="username" 
             name="username" 
-            required 
             minlength="3"
             class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Escolha um nome de usuário único"
           >
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Mínimo 3 caracteres. Este será seu identificador único.
+            Opcional. Se não preencher, geraremos automaticamente a partir do e-mail.
           </p>
         </div>
 
@@ -42,12 +61,11 @@
             type="text" 
             id="nickname" 
             name="nickname" 
-            required 
             class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Como você gostaria de ser chamado"
           >
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Este nome aparecerá nos seus posts e comentários.
+            Opcional. Este nome aparecerá nos seus posts e comentários.
           </p>
         </div>
 
@@ -94,23 +112,6 @@
             class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Conte um pouco sobre você (opcional)"
           ></textarea>
-        </div>
-
-        <!-- Email (opcional) -->
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            E-mail (opcional)
-          </label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="seu@email.com (opcional)"
-          >
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Opcional. Pode ser usado para recuperação de conta no futuro.
-          </p>
         </div>
 
         <!-- Submit Button -->
@@ -204,4 +205,3 @@ document.getElementById('confirm_password').addEventListener('input', function()
 });
 </script>
 {% endblock %}
-

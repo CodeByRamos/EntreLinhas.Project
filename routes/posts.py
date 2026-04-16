@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
 from datetime import datetime
 import database as db
 
@@ -54,16 +54,38 @@ def filtrar_categoria(categoria):
 def enviar():
     """Rota para enviar um novo desabafo."""
     if request.method == 'POST':
+        if 'user_id' not in session:
+            flash('Faça login ou crie uma conta para publicar um desabafo.', 'error')
+            return redirect(url_for('auth.login', next=url_for('posts.feed')))
+
         conteudo = request.form.get('conteudo')
         categoria = request.form.get('categoria')
+        visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
         
         if not conteudo or not categoria:
             flash('Por favor, preencha todos os campos.')
             return redirect(url_for('posts.feed'))
+
+        if visibility_mode not in ('anonymous', 'profile'):
+            flash('Visibilidade inválida para o post.', 'error')
+            return redirect(url_for('posts.feed'))
+
+        # Cria o post no banco de dados (user_id vem apenas da sessão)
+        try:
+            db.create_post(
+                mensagem=conteudo,
+                categoria=categoria,
+                user_id=session['user_id'],
+                visibility_mode=visibility_mode,
+            )
+        except ValueError as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('posts.feed'))
+        except Exception:
+            flash('Não foi possível publicar seu desabafo. Tente novamente.', 'error')
+            return redirect(url_for('posts.feed'))
         
-        # Cria o post no banco de dados
-        post_id = db.create_post(conteudo, categoria)
-        
+        flash('Desabafo publicado com sucesso!', 'success')
         return redirect(url_for('posts.feed'))
     
     return redirect(url_for('posts.feed'))
@@ -73,4 +95,3 @@ def get_categorias():
     """Rota para obter as categorias disponíveis (API)."""
     categorias = db.get_categories()
     return jsonify(categorias)
-

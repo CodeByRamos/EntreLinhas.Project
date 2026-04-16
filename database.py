@@ -195,6 +195,7 @@ def init_db():
     # Migrações leves para bancos antigos
     _ensure_column(conn, "posts", "user_id", "INTEGER")
     _ensure_column(conn, "posts", "profile_id", "INTEGER")
+    _ensure_column(conn, "posts", "visibility_mode", "TEXT DEFAULT 'anonymous'")
     _ensure_column(conn, "comments", "mensagem", "TEXT")
     _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
     _ensure_column(conn, "comments", "user_id", "INTEGER")
@@ -226,19 +227,27 @@ def get_posts(limit=10, offset=0, include_hidden=False):
     
     if include_hidden:
         posts = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            ORDER BY id DESC 
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            ORDER BY p.id DESC
             LIMIT ? OFFSET ?
         ''', (limit, offset)).fetchall()
     else:
         posts = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            WHERE visivel = 1 
-            ORDER BY id DESC 
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.visivel = 1 
+            ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
-        ''', (limit, offset)).fetchall()
+            ''', (limit, offset)).fetchall()
     
     conn.close()
     return posts
@@ -247,10 +256,14 @@ def get_hidden_posts(limit=50):
     """Retorna os posts ocultos mais recentes."""
     conn = get_db_connection()
     posts = conn.execute('''
-        SELECT id, mensagem, categoria, data_postagem, visivel 
-        FROM posts 
-        WHERE visivel = 0 
-        ORDER BY id DESC 
+        SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode,
+               u.username as author_username,
+               u.nickname as author_nickname
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.visivel = 0 
+        ORDER BY p.id DESC
         LIMIT ?
     ''', (limit,)).fetchall()
     conn.close()
@@ -262,30 +275,50 @@ def get_post(post_id, include_hidden=False):
     
     if include_hidden:
         post = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            WHERE id = ?
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id = ?
         ''', (post_id,)).fetchone()
     else:
         post = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            WHERE id = ? AND visivel = 1
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id = ? AND p.visivel = 1
         ''', (post_id,)).fetchone()
     
     conn.close()
     return post
 
-def create_post(mensagem, categoria):
-    """Cria um novo post."""
+def create_post(mensagem, categoria, user_id, visibility_mode='anonymous'):
+    """Cria um novo post com autoria obrigatória."""
     conn = get_db_connection()
     data_postagem = datetime.now().strftime("%d/%m/%Y %H:%M")
     
+    if visibility_mode not in ('anonymous', 'profile', 'alias'):
+        conn.close()
+        raise ValueError("Modo de visibilidade inválido.")
+
+    user = conn.execute(
+        "SELECT id FROM users WHERE id = ? AND is_active = 1",
+        (user_id,),
+    ).fetchone()
+    if not user:
+        conn.close()
+        raise ValueError("Usuário inválido para criação do post.")
+    
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO posts (mensagem, categoria, data_postagem)
-        VALUES (?, ?, ?)
-    ''', (mensagem, categoria, data_postagem))
+        INSERT INTO posts (mensagem, categoria, data_postagem, user_id, visibility_mode)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (mensagem, categoria, data_postagem, user_id, visibility_mode))
     
     post_id = cursor.lastrowid
     conn.commit()
@@ -529,18 +562,26 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
     
     if include_hidden:
         posts = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            WHERE categoria = ?
-            ORDER BY id DESC 
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.categoria = ?
+            ORDER BY p.id DESC
             LIMIT ? OFFSET ?
         ''', (categoria, limit, offset)).fetchall()
     else:
         posts = conn.execute('''
-            SELECT id, mensagem, categoria, data_postagem, visivel 
-            FROM posts 
-            WHERE categoria = ? AND visivel = 1 
-            ORDER BY id DESC 
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.categoria = ? AND p.visivel = 1 
+            ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
         ''', (categoria, limit, offset)).fetchall()
     

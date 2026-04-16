@@ -66,9 +66,17 @@
         <a href="{{ url_for('posts.feed') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Desabafos</a>
         <a href="{{ url_for('search.pesquisar') }}" class="nav-link-modern my-1 md:mx-3 text-sm md:hidden">Pesquisar</a>
         <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Estatísticas</a>
-        <a href="{{ url_for('profile.ver_perfil') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Meu Perfil</a>
         <a href="{{ url_for('main.about') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Sobre</a>
         <a href="{{ url_for('main.how_it_works') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Como Funciona</a>
+        {% if session.get('user_id') %}
+          <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Perfil</a>
+          <form method="post" action="{{ url_for('auth.logout') }}" class="my-1 md:mx-3">
+            <button type="submit" class="nav-link-modern text-sm">Sair</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Entrar</a>
+          <a href="{{ url_for('auth.registro') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Cadastrar</a>
+        {% endif %}
 
         <button id="theme-toggle" class="hidden md:block md:ml-4 p-2 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 transition duration-300" aria-label="Alternar tema">
           <span id="theme-toggle-icon" class="block w-5 h-5"></span>
@@ -99,7 +107,7 @@
           <a href="{{ url_for('main.home') }}" class="nav-link-modern">Início</a>
           <a href="{{ url_for('posts.feed') }}" class="nav-link-modern">Desabafos</a>
           <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern">Estatísticas</a>
-          <a href="{{ url_for('profile.ver_perfil') }}" class="nav-link-modern">Meu Perfil</a>
+          <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern">Perfil</a>
           <a href="{{ url_for('main.about') }}" class="nav-link-modern">Sobre</a>
         </div>
       </div>

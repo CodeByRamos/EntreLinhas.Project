@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, session
 import database as db
 from routes.main import main
 from routes.posts import posts
@@ -11,6 +11,7 @@ from routes.profile import profile
 from routes.reports import reports
 from routes.karma import karma
 from routes.auth import auth
+from services.auth_service import get_current_user
 from datetime import datetime
 from datetime import timedelta
 import os
@@ -54,7 +55,10 @@ def create_app():
     # Contexto global para templates
     @app.context_processor
     def inject_now():
-        return {'now': datetime.now()}
+        return {
+            'now': datetime.now(),
+            'current_user': get_current_user(session)
+        }
     
     return app
 

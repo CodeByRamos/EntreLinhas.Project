@@ -1,15 +1,38 @@
+from urllib.parse import urljoin, urlparse
 from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
 import database as db
-from services.auth_service import register_user, authenticate_user as authenticate_user_service, get_current_user
+from services.auth_service import (
+    register_user,
+    authenticate_user as authenticate_user_service,
+    get_current_user,
+    is_valid_email,
+)
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
+
+
+def _is_safe_redirect_url(target):
+    """Valida redirecionamentos para evitar open redirect."""
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
+
+
+def _safe_redirect_target(default_endpoint="posts.feed"):
+    """Retorna destino de redirecionamento seguro baseado em next."""
+    next_url = request.args.get("next") or request.form.get("next")
+    if next_url and _is_safe_redirect_url(next_url):
+        return next_url
+    return url_for(default_endpoint)
 
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
     """Página e lógica de registro de usuário."""
     if request.method == 'GET':
-        return render_template('auth/registro.html')
+        return render_template('auth/registro.html', next_url=request.args.get('next', ''))
     
     try:
         data = request.get_json() if request.is_json else request.form
@@ -19,36 +42,43 @@ def registro():
         confirm_password = data.get('confirm_password', '')
         nickname = data.get('nickname', '').strip()
         bio = data.get('bio', '').strip() or None
-        email = data.get('email', '').strip() or None
+        email = data.get('email', '').strip()
         
         # Validações
-        if not username or not password or not nickname:
-            message = "Username, senha e apelido são obrigatórios."
+        if not email or not password:
+            message = "E-mail e senha são obrigatórios."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/registro.html')
-        
-        if len(username) < 3:
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
+
+        if username and len(username) < 3:
             message = "Username deve ter pelo menos 3 caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/registro.html')
-        
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
+
+        if not is_valid_email(email):
+            message = "Informe um e-mail válido."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
+
         if len(password) < 6:
             message = "Senha deve ter pelo menos 6 caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/registro.html')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
         if password != confirm_password:
             message = "Senhas não coincidem."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/registro.html')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
         # Criar usuário
         success, payload = register_user(username, password, nickname, bio, email)
@@ -59,46 +89,55 @@ def registro():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']
+            session.permanent = True
             
             message = "Conta criada com sucesso!"
+            redirect_target = _safe_redirect_target()
             if request.is_json:
-                return jsonify({'success': True, 'message': message, 'redirect': url_for('main.feed')})
+                return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
             flash(message, 'success')
-            return redirect(url_for('main.feed'))
+            return redirect(redirect_target)
         else:
             if request.is_json:
                 return jsonify({'success': False, 'message': payload['message']}), 400
             flash(payload['message'], 'error')
-            return render_template('auth/registro.html')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
         message = "Erro interno do servidor."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
-        return render_template('auth/registro.html')
+        return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     """Página e lógica de login de usuário."""
     if request.method == 'GET':
-        return render_template('auth/login.html')
+        return render_template('auth/login.html', next_url=request.args.get('next', ''))
     
     try:
         data = request.get_json() if request.is_json else request.form
         
-        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
         password = data.get('password', '')
-        
-        if not username or not password:
-            message = "Username ou e-mail e senha são obrigatórios."
+
+        if not email or not password:
+            message = "E-mail e senha são obrigatórios."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/login.html')
-        
+            return render_template('auth/login.html', next_url=request.form.get('next', ''))
+
+        if not is_valid_email(email):
+            message = "Informe um e-mail válido."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/login.html', next_url=request.form.get('next', ''))
+
         # Autenticar usuário
-        success, payload = authenticate_user_service(username, password)
+        success, payload = authenticate_user_service(email, password)
         
         if success:
             user = payload['user']
@@ -106,32 +145,34 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']
-            
+            session.permanent = True
+
             message = f"Bem-vindo de volta, {user['nickname']}!"
+            redirect_target = _safe_redirect_target()
             if request.is_json:
-                return jsonify({'success': True, 'message': message, 'redirect': url_for('main.feed')})
+                return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
             flash(message, 'success')
-            return redirect(url_for('main.feed'))
+            return redirect(redirect_target)
         else:
             message = payload['message']
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 401
             flash(message, 'error')
-            return render_template('auth/login.html')
+            return render_template('auth/login.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
         message = "Erro interno do servidor."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
-        return render_template('auth/login.html')
+        return render_template('auth/login.html', next_url=request.form.get('next', ''))
 
-@auth.route('/logout')
+@auth.route('/logout', methods=['POST'])
 def logout():
     """Logout do usuário."""
     session.clear()
     flash("Logout realizado com sucesso!", 'success')
-    return redirect(url_for('main.home'))
+    return redirect(_safe_redirect_target(default_endpoint='main.home'))
 
 @auth.route('/perfil')
 def perfil():

@@ -1,6 +1,29 @@
 """Serviços de autenticação para uso incremental no backend."""
 
+import re
 import database as db
+
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def is_valid_email(email):
+    """Valida formato básico de e-mail."""
+    return bool(email and EMAIL_REGEX.match(email))
+
+
+def generate_username_from_email(email):
+    """
+    Gera username único a partir do e-mail quando o usuário não informar um.
+    Mantém compatibilidade com banco atual que exige username único.
+    """
+    local_part = (email.split("@", 1)[0] if email else "").strip().lower()
+    base = re.sub(r"[^a-z0-9_]+", "_", local_part).strip("_") or "usuario"
+    candidate = base[:30]
+    suffix = 0
+    while db.get_user_by_username(candidate):
+        suffix += 1
+        candidate = f"{base[:24]}_{suffix}"
+    return candidate
 
 
 def register_user(username, password, nickname, bio=None, email=None):
@@ -12,14 +35,29 @@ def register_user(username, password, nickname, bio=None, email=None):
     nickname = (nickname or '').strip()
     email = (email or '').strip() or None
 
-    if not username or not password or not nickname:
-        return False, {'message': 'Username, senha e apelido são obrigatórios.'}
+    if not email or not password:
+        return False, {'message': 'E-mail e senha são obrigatórios.'}
 
-    if len(username) < 3:
+    if not is_valid_email(email):
+        return False, {'message': 'Informe um e-mail válido.'}
+
+    if username and len(username) < 3:
         return False, {'message': 'Username deve ter pelo menos 3 caracteres.'}
 
     if len(password) < 6:
         return False, {'message': 'Senha deve ter pelo menos 6 caracteres.'}
+
+    if db.get_user_by_email(email):
+        return False, {'message': 'E-mail já está em uso.'}
+
+    if username and db.get_user_by_username(username):
+        return False, {'message': 'Nome de usuário já existe.'}
+
+    if not username:
+        username = generate_username_from_email(email)
+
+    if not nickname:
+        nickname = username
 
     success, result = db.create_user(
         username=username,
@@ -35,15 +73,18 @@ def register_user(username, password, nickname, bio=None, email=None):
     return True, {'message': 'Conta criada com sucesso!', 'user': user}
 
 
-def authenticate_user(login, password):
-    """Autentica via username ou e-mail + senha."""
-    login = (login or '').strip()
-    if not login or not password:
-        return False, {'message': 'Credenciais obrigatórias.'}
+def authenticate_user(email, password):
+    """Autentica via e-mail + senha."""
+    email = (email or '').strip()
+    if not email or not password:
+        return False, {'message': 'E-mail e senha são obrigatórios.'}
 
-    user = db.authenticate_user(login, password)
+    if not is_valid_email(email):
+        return False, {'message': 'Informe um e-mail válido.'}
+
+    user = db.authenticate_user(email, password)
     if not user:
-        return False, {'message': 'Username/e-mail ou senha incorretos.'}
+        return False, {'message': 'E-mail ou senha incorretos.'}
 
     return True, {'message': 'Autenticação realizada.', 'user': user}
 
