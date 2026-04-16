@@ -278,7 +278,7 @@ def get_post(post_id, include_hidden=False):
             SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                                      u.nickname as author_nickname
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.id = ?
@@ -296,6 +296,94 @@ def get_post(post_id, include_hidden=False):
     
     conn.close()
     return post
+
+def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True):
+    """Retorna posts de um usuário com paginação."""
+    conn = get_db_connection()
+
+    if include_hidden:
+        posts = conn.execute(
+            '''
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.user_id = ?
+            ORDER BY p.id DESC
+            LIMIT ? OFFSET ?
+            ''',
+            (user_id, limit, offset),
+        ).fetchall()
+    else:
+        posts = conn.execute(
+            '''
+            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode,
+                   u.username as author_username,
+                   u.nickname as author_nickname
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.user_id = ? AND p.visivel = 1
+            ORDER BY p.id DESC
+            LIMIT ? OFFSET ?
+            ''',
+            (user_id, limit, offset),
+        ).fetchall()
+
+    conn.close()
+    return posts
+
+def get_post_count_by_user(user_id, include_hidden=True):
+    """Retorna a quantidade de posts de um usuário."""
+    conn = get_db_connection()
+    if include_hidden:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM posts WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()[0]
+    else:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM posts WHERE user_id = ? AND visivel = 1",
+            (user_id,),
+        ).fetchone()[0]
+    conn.close()
+    return count
+
+def update_post(post_id, mensagem, categoria, visibility_mode):
+    """Atualiza os dados de um post."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''
+        UPDATE posts
+        SET mensagem = ?, categoria = ?, visibility_mode = ?
+        WHERE id = ?
+        ''',
+        (mensagem, categoria, visibility_mode, post_id),
+    )
+    conn.commit()
+    success = cursor.rowcount > 0
+    conn.close()
+    return success
+
+def delete_post(post_id):
+    """Remove um post e seus dados relacionados."""
+    conn = get_db_connection()
+    try:
+        conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
+        conn.execute("DELETE FROM reactions WHERE post_id = ?", (post_id,))
+        conn.execute("DELETE FROM reaction_counts WHERE post_id = ?", (post_id,))
+        conn.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
+        cursor = conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
 
 def create_post(mensagem, categoria, user_id, visibility_mode='anonymous'):
     """Cria um novo post com autoria obrigatória."""
@@ -470,7 +558,7 @@ def update_comment_visibility(comment_id, visibility):
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE comments
-        SET visivel = ?
+                SET visivel = ?
         WHERE id = ?
     ''', (visibility, comment_id))
     conn.commit()
@@ -748,8 +836,6 @@ def get_reaction_stats():
         'reactions_by_type': reactions_by_type,
         'most_reacted_posts': most_reacted_posts
     }
-
-
 def search_posts(query, limit=10, offset=0):
     """Pesquisa posts com base em uma consulta de texto."""
     conn = get_db_connection()
@@ -1030,7 +1116,7 @@ def get_comment_karma_score(comment_id):
 def get_user_comment_karma(comment_id, profile_id):
     """Retorna o karma que um usuário deu para um comentário."""
     conn = get_db_connection()
-    
+        
     karma = conn.execute('''
         SELECT karma_type FROM comment_karma 
         WHERE comment_id = ? AND profile_id = ?
@@ -1310,7 +1396,7 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
     Retorna (success, message).
     """
     conn = get_db_connection()
-
+    
     existing = conn.execute(
         "SELECT id FROM users WHERE username = ?",
         (username,),

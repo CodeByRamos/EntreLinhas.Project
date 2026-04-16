@@ -5,6 +5,19 @@ import database as db
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
 
+def _require_login_for_posts():
+    if 'user_id' not in session:
+        flash('Faça login para continuar.', 'error')
+        return redirect(url_for('auth.login', next=request.path))
+    return None
+
+def _can_manage_post(post, current_user):
+    if not post or not current_user:
+        return False
+    if post['user_id'] == current_user['id']:
+        return True
+    return bool(current_user['is_admin'] or current_user['role'] == 'admin')
+
 @posts.route('/feed')
 def feed():
     """Rota para a página de feed de desabafos."""
@@ -89,6 +102,97 @@ def enviar():
         return redirect(url_for('posts.feed'))
     
     return redirect(url_for('posts.feed'))
+
+@posts.route('/meus-posts', methods=['GET'])
+def meus_posts():
+    """Área privada com posts do usuário autenticado."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+
+    current_user = db.get_user_by_id(session['user_id'])
+    if not current_user:
+        session.clear()
+        flash("Usuário não encontrado.", 'error')
+        return redirect(url_for('auth.login'))
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 8
+    offset = (page - 1) * per_page
+
+    posts_list = db.get_posts_by_user(current_user['id'], limit=per_page, offset=offset, include_hidden=True)
+    total_posts = db.get_post_count_by_user(current_user['id'], include_hidden=True)
+    total_pages = max(1, (total_posts + per_page - 1) // per_page)
+
+    return render_template(
+        'posts/meus_posts.html',
+        meus_posts=posts_list,
+        page=page,
+        total_pages=total_pages,
+    )
+
+@posts.route('/posts/<int:post_id>/editar', methods=['GET', 'POST'])
+def editar_post(post_id):
+    """Permite editar somente post próprio (ou admin)."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+
+    current_user = db.get_user_by_id(session['user_id'])
+    post = db.get_post(post_id, include_hidden=True)
+
+    if not _can_manage_post(post, current_user):
+        flash('Você não tem permissão para editar este post.', 'error')
+        return redirect(url_for('posts.meus_posts'))
+
+    if request.method == 'GET':
+        return render_template(
+            'posts/editar.html',
+            post=post,
+            categorias=current_app.config['CATEGORIAS'],
+        )
+
+    conteudo = request.form.get('conteudo', '').strip()
+    categoria = request.form.get('categoria', '').strip()
+    visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
+
+    if not conteudo or not categoria:
+        flash('Preencha conteúdo e categoria para editar o desabafo.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+
+    if visibility_mode not in ('anonymous', 'profile'):
+        flash('Visibilidade inválida para o post.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+
+    updated = db.update_post(post_id, conteudo, categoria, visibility_mode)
+    if not updated:
+        flash('Não foi possível atualizar o post.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+
+    flash('Post atualizado com sucesso!', 'success')
+    return redirect(url_for('posts.meus_posts'))
+
+@posts.route('/posts/<int:post_id>/excluir', methods=['POST'])
+def excluir_post(post_id):
+    """Permite excluir somente post próprio (ou admin)."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+
+    current_user = db.get_user_by_id(session['user_id'])
+    post = db.get_post(post_id, include_hidden=True)
+
+    if not _can_manage_post(post, current_user):
+        flash('Você não tem permissão para excluir este post.', 'error')
+        return redirect(url_for('posts.meus_posts'))
+
+    deleted = db.delete_post(post_id)
+    if not deleted:
+        flash('Não foi possível excluir o post.', 'error')
+        return redirect(url_for('posts.meus_posts'))
+
+    flash('Post excluído com sucesso.', 'success')
+    return redirect(url_for('posts.meus_posts'))
 
 @posts.route('/categorias')
 def get_categorias():

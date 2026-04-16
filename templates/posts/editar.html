@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Post - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-3xl">
+  <div class="glass-panel p-8 space-y-6">
+    <div class="flex items-center justify-between gap-4">
+      <h1 class="text-2xl font-bold">Editar post</h1>
+      <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Voltar</a>
+    </div>
+
+    <form method="post" action="{{ url_for('posts.editar_post', post_id=post.id) }}" class="space-y-5">
+      <div>
+        <label for="conteudo" class="block font-medium text-slate-300 mb-2">Conteúdo</label>
+        <textarea id="conteudo" name="conteudo" rows="8" required class="form-input w-full p-4 resize-y">{{ post.mensagem }}</textarea>
+      </div>
+
+      <div>
+        <label for="categoria" class="block font-medium text-slate-300 mb-2">Categoria</label>
+        <select id="categoria" name="categoria" required class="form-input w-full p-3">
+          {% for categoria in categorias %}
+          <option value="{{ categoria.valor }}" {% if post.categoria == categoria.valor %}selected{% endif %}>{{ categoria.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="visibility_mode" class="block font-medium text-slate-300 mb-2">Visibilidade</label>
+        <select id="visibility_mode" name="visibility_mode" class="form-input w-full p-3">
+          <option value="anonymous" {% if post.visibility_mode != 'profile' %}selected{% endif %}>Anônimo</option>
+          <option value="profile" {% if post.visibility_mode == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-modern btn-primary">Salvar alterações</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@
 
     <div class="flex flex-wrap gap-3">
       <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>
+      <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Meus posts</a>
       <a class="btn-modern btn-ghost" href="{{ url_for('auth.alterar_senha') }}">Alterar senha</a>
       <form method="post" action="{{ url_for('auth.logout') }}">
         <button type="submit" class="btn-modern btn-ghost">Sair</button>

@@ -9,7 +9,7 @@ def criar_perfil():
     flash('Perfis temporários foram desativados. Entre com sua conta.', 'error')
     return redirect(url_for('auth.login', next=url_for('auth.perfil')))
 
-@profile.route('/perfil', methods=['GET'])
+@profile.route('/perfil-legado', methods=['GET'])
 def ver_perfil():
     """Redireciona o perfil antigo para perfil autenticado."""
     if 'user_id' not in session:
