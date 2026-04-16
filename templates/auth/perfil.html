@@ -3,18 +3,30 @@
 {% block title %}Meu Perfil - Entre Linhas{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-12 max-w-3xl">
-  <div class="glass-panel p-8 space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold">{{ user.nickname }}</h1>
-      <p class="text-slate-400">@{{ user.username }}</p>
-      {% if user.bio %}<p class="mt-3 text-slate-300">{{ user.bio }}</p>{% endif %}
+<div class="container mx-auto px-6 py-12 max-w-4xl">
+  <div class="glass-panel p-8 space-y-8">
+    <div class="flex flex-col md:flex-row md:items-center gap-6">
+      <div class="avatar-shell">
+        {% if user.avatar_url %}
+          <img src="{{ user.avatar_url }}" alt="Avatar de {{ user.display_name or user.nickname }}" class="avatar-image" />
+        {% else %}
+          <div class="avatar-placeholder">{{ (user.display_name or user.nickname or user.username)[0]|upper }}</div>
+        {% endif %}
+      </div>
+
+      <div class="space-y-2">
+        <h1 class="text-3xl font-semibold">{{ user.display_name or user.nickname }}</h1>
+        <p class="text-slate-400">@{{ user.username }}</p>
+        {% if user.bio %}<p class="text-slate-300 max-w-2xl leading-relaxed">{{ user.bio }}</p>{% endif %}
+        <p class="text-xs text-slate-400">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</p>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
       <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.post_count }}</p><p class="text-slate-400 text-sm">Posts</p></div>
       <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.comment_count }}</p><p class="text-slate-400 text-sm">Comentários</p></div>
       <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.total_karma }}</p><p class="text-slate-400 text-sm">Karma</p></div>
+      <div class="glass-panel p-4"><p class="text-base font-semibold">{{ 'Sempre anônimo' if user.default_visibility_mode == 'anonymous' else 'Sempre com perfil' }}</p><p class="text-slate-400 text-sm">Preferência</p></div>
     </div>
 
     <div class="flex flex-wrap gap-3">

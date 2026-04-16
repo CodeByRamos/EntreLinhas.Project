@@ -205,8 +205,27 @@ def init_db():
     _ensure_column(conn, "reactions", "data_reacao", "TEXT DEFAULT CURRENT_TIMESTAMP")
     _ensure_column(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
     _ensure_column(conn, "users", "role", "TEXT NOT NULL DEFAULT 'user'")
+    _ensure_column(conn, "users", "display_name", "TEXT")
+    _ensure_column(conn, "users", "avatar_url", "TEXT")
+    _ensure_column(conn, "users", "default_visibility_mode", "TEXT DEFAULT 'anonymous'")
     if "updated_at" not in _get_table_columns(conn, "users"):
         conn.execute("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP")
+        conn.execute(
+        """
+        UPDATE users
+        SET display_name = COALESCE(NULLIF(TRIM(display_name), ''), nickname, username)
+        WHERE display_name IS NULL OR TRIM(display_name) = ''
+        """
+    )
+    conn.execute(
+        """
+        UPDATE users
+        SET default_visibility_mode = CASE
+            WHEN default_visibility_mode IN ('anonymous', 'profile') THEN default_visibility_mode
+            ELSE 'anonymous'
+        END
+        """
+    )
     conn.execute(
         """
         UPDATE users
@@ -297,57 +316,57 @@ def get_post(post_id, include_hidden=False):
     conn.close()
     return post
 
-def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True):
+def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibility_mode=None):
     """Retorna posts de um usuário com paginação."""
     conn = get_db_connection()
+    filters = ["p.user_id = ?"]
+    params = [user_id]
 
-    if include_hidden:
-        posts = conn.execute(
-            '''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
-                   u.username as author_username,
-                   u.nickname as author_nickname
-            FROM posts p
-            LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.user_id = ?
-            ORDER BY p.id DESC
-            LIMIT ? OFFSET ?
-            ''',
-            (user_id, limit, offset),
-        ).fetchall()
-    else:
-        posts = conn.execute(
-            '''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
-                   u.username as author_username,
-                   u.nickname as author_nickname
-            FROM posts p
-            LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.user_id = ? AND p.visivel = 1
-            ORDER BY p.id DESC
-            LIMIT ? OFFSET ?
-            ''',
-            (user_id, limit, offset),
-        ).fetchall()
+    if not include_hidden:
+        filters.append("p.visivel = 1")
+
+    if visibility_mode in ("anonymous", "profile"):
+        filters.append("p.visibility_mode = ?")
+        params.append(visibility_mode)
+
+    where_clause = " AND ".join(filters)
+
+    params.extend([limit, offset])
+    posts = conn.execute(
+        f'''
+        SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode,
+               CASE WHEN p.visivel = 0 THEN 'oculto' ELSE 'publicado' END AS status,
+               u.username as author_username,
+               u.nickname as author_nickname
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE {where_clause}
+        ORDER BY p.id DESC
+        LIMIT ? OFFSET ?
+        ''',
+        tuple(params),
+    ).fetchall()
 
     conn.close()
     return posts
 
-def get_post_count_by_user(user_id, include_hidden=True):
+def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None):
     """Retorna a quantidade de posts de um usuário."""
     conn = get_db_connection()
-    if include_hidden:
-        count = conn.execute(
-            "SELECT COUNT(*) FROM posts WHERE user_id = ?",
-            (user_id,),
-        ).fetchone()[0]
-    else:
-        count = conn.execute(
-            "SELECT COUNT(*) FROM posts WHERE user_id = ? AND visivel = 1",
-            (user_id,),
-        ).fetchone()[0]
+    filters = ["user_id = ?"]
+    params = [user_id]
+    if not include_hidden:
+        filters.append("visivel = 1")
+    if visibility_mode in ("anonymous", "profile"):
+        filters.append("visibility_mode = ?")
+        params.append(visibility_mode)
+    where_clause = " AND ".join(filters)
+    count = conn.execute(
+        f"SELECT COUNT(*) FROM posts WHERE {where_clause}",
+        tuple(params),
+    ).fetchone()[0]
+
     conn.close()
     return count
 
@@ -1170,7 +1189,7 @@ def get_high_karma_comments(min_karma=10, limit=50):
 
 # Funções para usuários permanentes
 
-def create_user(username, password, nickname, bio=None, email=None):
+def create_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous'):
     """Cria um novo usuário permanente."""
     conn = get_db_connection()
     
@@ -1198,9 +1217,21 @@ def create_user(username, password, nickname, bio=None, email=None):
     try:
         # Criar o usuário
         cursor = conn.execute('''
-            INSERT INTO users (username, password_hash, nickname, bio, email, role, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
-        ''', (username, password_hash, nickname, bio, email))
+            INSERT INTO users (
+                username, password_hash, nickname, display_name, bio, email, avatar_url,
+                default_visibility_mode, role, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
+        ''', (
+            username,
+            password_hash,
+            nickname,
+            display_name or nickname or username,
+            bio,
+            email,
+            avatar_url,
+            default_visibility_mode if default_visibility_mode in ('anonymous', 'profile') else 'anonymous',
+        ))
         
         user_id = cursor.lastrowid
         conn.commit()
@@ -1218,7 +1249,8 @@ def authenticate_user(username, password):
 
     user = conn.execute(
         """
-        SELECT id, username, nickname, bio, email, created_at, updated_at, is_active, is_admin, role, password_hash
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+               created_at, updated_at, is_active, is_admin, role, password_hash
         FROM users
         WHERE (username = ? OR email = ?) AND is_active = 1
         """,
@@ -1249,7 +1281,8 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, role, created_at, updated_at, last_login, is_active, is_admin
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+               role, created_at, updated_at, last_login, is_active, is_admin
         FROM users 
         WHERE id = ? AND is_active = 1
     ''', (user_id,)).fetchone()
@@ -1262,7 +1295,8 @@ def get_user_by_username(username):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, role, created_at, updated_at, last_login, is_active, is_admin
+SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+               role, created_at, updated_at, last_login, is_active, is_admin
         FROM users 
         WHERE username = ? AND is_active = 1
     ''', (username,)).fetchone()
@@ -1277,7 +1311,8 @@ def get_user_by_email(email):
 
     user = conn.execute(
         """
-        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin, role, updated_at
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+               created_at, last_login, is_active, is_admin, role, updated_at
         FROM users
         WHERE email = ? AND is_active = 1
         """,
@@ -1287,7 +1322,7 @@ def get_user_by_email(email):
     conn.close()
     return user
 
-def update_user(user_id, nickname=None, bio=None, email=None):
+def update_user(user_id, nickname=None, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode=None):
     """Atualiza informações do usuário."""
     conn = get_db_connection()
     
@@ -1301,6 +1336,18 @@ def update_user(user_id, nickname=None, bio=None, email=None):
     if bio is not None:
         updates.append("bio = ?")
         params.append(bio)
+        
+    if display_name is not None:
+        updates.append("display_name = ?")
+        params.append(display_name)
+
+    if avatar_url is not None:
+        updates.append("avatar_url = ?")
+        params.append(avatar_url)
+
+    if default_visibility_mode in ('anonymous', 'profile'):
+        updates.append("default_visibility_mode = ?")
+        params.append(default_visibility_mode)
     
     if email is not None:
         existing_email = conn.execute(
@@ -1446,7 +1493,7 @@ def get_user_stats(user_id):
     
     # Contar posts
     post_count = conn.execute('''
-        SELECT COUNT(*) FROM posts WHERE user_id = ? AND visivel = 1
+        SELECT COUNT(*) FROM posts WHERE user_id = ?
     ''', (user_id,)).fetchone()[0]
     
     # Contar comentários

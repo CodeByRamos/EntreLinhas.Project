@@ -3,205 +3,66 @@
 {% block title %}Criar Conta - Entre Linhas{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md mx-auto">
-    <div class="text-center mb-8">
-      <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Criar Conta</h2>
-      <p class="mt-2 text-gray-600 dark:text-gray-400">
-        Junte-se à nossa comunidade de apoio
+<div class="container mx-auto px-6 py-12 max-w-2xl">
+  <div class="glass-panel p-8">
+    <h1 class="text-3xl font-semibold mb-2">Criar conta</h1>
+    <p class="text-slate-300 mb-6">Entre no EntreLinhas e escolha como quer se apresentar.</p>
+
+    <form method="POST" class="space-y-5">
+      <input type="hidden" name="next" value="{{ next_url or '' }}">
+
+      <div>
+        <label for="email" class="block text-sm mb-2">E-mail</label>
+        <input type="email" id="email" name="email" required autocomplete="email" class="input-modern w-full" placeholder="seu@email.com">
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="username" class="block text-sm mb-2">Username (opcional)</label>
+          <input type="text" id="username" name="username" minlength="3" class="input-modern w-full" placeholder="joaoramos">
+        </div>
+        <div>
+          <label for="display_name" class="block text-sm mb-2">Nome público</label>
+          <input type="text" id="display_name" name="display_name" maxlength="40" class="input-modern w-full" placeholder="João Ramos">
+        </div>
+      </div>
+
+      <div>
+        <label for="nickname" class="block text-sm mb-2">Apelido</label>
+        <input type="text" id="nickname" name="nickname" class="input-modern w-full" placeholder="Como quer ser chamado no app">
+      </div>
+
+      <div>
+        <label for="bio" class="block text-sm mb-2">Bio curta (opcional)</label>
+        <textarea id="bio" name="bio" rows="3" maxlength="180" class="input-modern w-full" placeholder="Até 180 caracteres"></textarea>
+      </div>
+
+      <div>
+        <label for="default_visibility_mode" class="block text-sm mb-2">Preferência de exibição</label>
+        <select id="default_visibility_mode" name="default_visibility_mode" class="input-modern w-full">
+          <option value="anonymous" selected>Sempre anônimo por padrão</option>
+          <option value="profile">Sempre com perfil por padrão</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="password" class="block text-sm mb-2">Senha</label>
+          <input type="password" id="password" name="password" required minlength="6" class="input-modern w-full" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div>
+          <label for="confirm_password" class="block text-sm mb-2">Confirmar senha</label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="6" class="input-modern w-full" placeholder="Repita a senha">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-modern btn-primary w-full">Criar conta</button>
+
+      <p class="text-sm text-slate-300">
+        Já tem conta?
+        <a href="{{ url_for('auth.login') }}" class="text-primary-300 hover:underline">Entrar agora</a>
       </p>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
-      <form id="registroForm" method="POST" class="space-y-6">
-        <input type="hidden" name="next" value="{{ next_url or '' }}">
-        <!-- E-mail -->
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            E-mail
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            autocomplete="email"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="seu@email.com"
-          >
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Obrigatório. Usado para entrar na plataforma.
-          </p>
-        </div>
-
-        <!-- Username -->
-        <div>
-          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Nome de usuário (opcional)
-          </label>
-          <input 
-            type="text" 
-            id="username" 
-            name="username" 
-            minlength="3"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Escolha um nome de usuário único"
-          >
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Opcional. Se não preencher, geraremos automaticamente a partir do e-mail.
-          </p>
-        </div>
-
-        <!-- Nickname -->
-        <div>
-          <label for="nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Apelido
-          </label>
-          <input 
-            type="text" 
-            id="nickname" 
-            name="nickname" 
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Como você gostaria de ser chamado"
-          >
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Opcional. Este nome aparecerá nos seus posts e comentários.
-          </p>
-        </div>
-
-        <!-- Password -->
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Senha
-          </label>
-          <input 
-            type="password" 
-            id="password" 
-            name="password" 
-            required 
-            minlength="6"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Mínimo 6 caracteres"
-          >
-        </div>
-
-        <!-- Confirm Password -->
-        <div>
-          <label for="confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Confirmar Senha
-          </label>
-          <input 
-            type="password" 
-            id="confirm_password" 
-            name="confirm_password" 
-            required 
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Digite a senha novamente"
-          >
-        </div>
-
-        <!-- Bio (opcional) -->
-        <div>
-          <label for="bio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Bio (opcional)
-          </label>
-          <textarea 
-            id="bio" 
-            name="bio" 
-            rows="3"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Conte um pouco sobre você (opcional)"
-          ></textarea>
-        </div>
-
-        <!-- Submit Button -->
-        <div>
-          <button 
-            type="submit" 
-            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300"
-          >
-            <span class="submit-text">Criar Conta</span>
-            <span class="loading-spinner hidden">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Criando...
-            </span>
-          </button>
-        </div>
-
-        <!-- Login Link -->
-        <div class="text-center">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            Já tem uma conta? 
-            <a href="{{ url_for('auth.login') }}" class="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-              Faça login
-            </a>
-          </p>
-        </div>
-      </form>
-    </div>
+    </form>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-document.getElementById('registroForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const submitButton = this.querySelector('button[type="submit"]');
-    const submitText = submitButton.querySelector('.submit-text');
-    const loadingSpinner = submitButton.querySelector('.loading-spinner');
-    
-    // Mostrar loading
-    submitText.classList.add('hidden');
-    loadingSpinner.classList.remove('hidden');
-    submitButton.disabled = true;
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    fetch('{{ url_for("auth.registro") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect;
-        } else {
-            alert(data.message);
-            // Esconder loading
-            submitText.classList.remove('hidden');
-            loadingSpinner.classList.add('hidden');
-            submitButton.disabled = false;
-        }
-    })
-    .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao criar conta. Tente novamente.');
-        // Esconder loading
-        submitText.classList.remove('hidden');
-        loadingSpinner.classList.add('hidden');
-        submitButton.disabled = false;
-    });
-});
-
-// Validação de senha em tempo real
-document.getElementById('confirm_password').addEventListener('input', function() {
-    const password = document.getElementById('password').value;
-    const confirmPassword = this.value;
-    
-    if (confirmPassword && password !== confirmPassword) {
-        this.setCustomValidity('Senhas não coincidem');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-</script>
 {% endblock %}

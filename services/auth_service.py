@@ -26,7 +26,7 @@ def generate_username_from_email(email):
     return candidate
 
 
-def register_user(username, password, nickname, bio=None, email=None):
+def register_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous'):
     """
     Registra usuário com validações básicas para cadastro com e-mail/senha.
     Retorna (success: bool, payload: dict).
@@ -63,8 +63,11 @@ def register_user(username, password, nickname, bio=None, email=None):
         username=username,
         password=password,
         nickname=nickname,
+        display_name=display_name or nickname,
         bio=bio,
         email=email,
+        avatar_url=avatar_url,
+        default_visibility_mode=default_visibility_mode,
     )
     if not success:
         return False, {'message': result}

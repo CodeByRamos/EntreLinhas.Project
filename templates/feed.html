@@ -40,8 +40,9 @@
               <div>
                 <label for="visibility_mode" class="block font-medium text-slate-300 mb-2">Como exibir este post?</label>
                 <select id="visibility_mode" name="visibility_mode" class="form-input w-full p-3">
-                  <option value="anonymous" selected>Anônimo (recomendado)</option>
-                  <option value="profile">Mostrar meu perfil</option>
+                  {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
+                  <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
+                  <option value="profile" {% if visibility_preference == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
                 </select>
               </div>
 

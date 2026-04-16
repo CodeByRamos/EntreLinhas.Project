@@ -41,8 +41,11 @@ def registro():
         password = data.get('password', '')
         confirm_password = data.get('confirm_password', '')
         nickname = data.get('nickname', '').strip()
+        display_name = data.get('display_name', '').strip()
         bio = data.get('bio', '').strip() or None
+        avatar_url = data.get('avatar_url', '').strip() or None
         email = data.get('email', '').strip()
+        default_visibility_mode = data.get('default_visibility_mode', 'anonymous').strip().lower()
         
         # Validações
         if not email or not password:
@@ -80,8 +83,30 @@ def registro():
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
+        if bio and len(bio) > 180:
+            message = "Bio deve ter no máximo 180 caracteres."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
+
+        if default_visibility_mode not in ('anonymous', 'profile'):
+            default_visibility_mode = 'anonymous'
+
+        if not display_name:
+            display_name = nickname or username or email.split('@')[0]
+
         # Criar usuário
-        success, payload = register_user(username, password, nickname, bio, email)
+        success, payload = register_user(
+            username,
+            password,
+            nickname,
+            bio,
+            email,
+            display_name=display_name,
+            avatar_url=avatar_url,
+            default_visibility_mode=default_visibility_mode,
+        )
         
         if success:
             # Fazer login automático
@@ -211,8 +236,11 @@ def editar_perfil():
         data = request.get_json() if request.is_json else request.form
         
         nickname = data.get('nickname', '').strip()
+        display_name = data.get('display_name', '').strip()
         bio = data.get('bio', '').strip() or None
+        avatar_url = data.get('avatar_url', '').strip() or None
         email = data.get('email', '').strip() or None
+        default_visibility_mode = data.get('default_visibility_mode', 'anonymous').strip().lower()
         
         if not nickname:
             message = "Apelido é obrigatório."
@@ -221,8 +249,33 @@ def editar_perfil():
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user)
         
+        if not display_name:
+            message = "Nome público é obrigatório."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/editar_perfil.html', user=user)
+
+        if bio and len(bio) > 180:
+            message = "Bio deve ter no máximo 180 caracteres."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/editar_perfil.html', user=user)
+
+        if default_visibility_mode not in ('anonymous', 'profile'):
+            default_visibility_mode = 'anonymous'
+
         # Atualizar usuário
-        success, message = db.update_user(user['id'], nickname, bio, email)
+        success, message = db.update_user(
+            user['id'],
+            nickname=nickname,
+            bio=bio,
+            email=email,
+            display_name=display_name,
+            avatar_url=avatar_url,
+            default_visibility_mode=default_visibility_mode,
+        )
         
         if success:
             # Atualizar sessão
@@ -278,6 +331,13 @@ def alterar_senha():
         
         if new_password != confirm_password:
             message = "Senhas não coincidem."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/alterar_senha.html')
+        
+        if old_password == new_password:
+            message = "A nova senha deve ser diferente da senha atual."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')

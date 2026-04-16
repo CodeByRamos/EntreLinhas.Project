@@ -47,6 +47,8 @@ def feed():
     categorias_form = current_app.config['CATEGORIAS']
     reacoes = current_app.config['REACOES']
     
+    current_user = db.get_user_by_id(session['user_id']) if session.get('user_id') else None
+
     return render_template('feed.html', 
                           desabafos=desabafos, 
                           categorias=categorias_form,
@@ -54,7 +56,8 @@ def feed():
                           categoria_atual=categoria,
                           reacoes=reacoes,
                           page=page,
-                          total_pages=total_pages)
+                          total_pages=total_pages,
+                          current_user=current_user)
 
 @posts.route('/feed/categoria/<categoria>')
 def filtrar_categoria(categoria):
@@ -117,11 +120,30 @@ def meus_posts():
         return redirect(url_for('auth.login'))
 
     page = request.args.get('page', 1, type=int)
+    filter_mode = request.args.get('tipo', 'todos')
+    visibility_mode = None
+    if filter_mode == 'anonimos':
+        visibility_mode = 'anonymous'
+    elif filter_mode == 'publicados':
+        visibility_mode = 'profile'
+
     per_page = 8
     offset = (page - 1) * per_page
 
-    posts_list = db.get_posts_by_user(current_user['id'], limit=per_page, offset=offset, include_hidden=True)
-    total_posts = db.get_post_count_by_user(current_user['id'], include_hidden=True)
+    posts_list = db.get_posts_by_user(
+        current_user['id'],
+        limit=per_page,
+        offset=offset,
+        include_hidden=True,
+        visibility_mode=visibility_mode,
+    )
+    total_posts = db.get_post_count_by_user(
+        current_user['id'],
+        include_hidden=True,
+        visibility_mode=visibility_mode,
+    )
+    total_publicados = db.get_post_count_by_user(current_user['id'], include_hidden=True, visibility_mode='profile')
+    total_anonimos = db.get_post_count_by_user(current_user['id'], include_hidden=True, visibility_mode='anonymous')
     total_pages = max(1, (total_posts + per_page - 1) // per_page)
 
     return render_template(
@@ -129,6 +151,10 @@ def meus_posts():
         meus_posts=posts_list,
         page=page,
         total_pages=total_pages,
+        filter_mode=filter_mode,
+        total_posts=total_posts,
+        total_publicados=total_publicados,
+        total_anonimos=total_anonimos,
     )
 
 @posts.route('/posts/<int:post_id>/editar', methods=['GET', 'POST'])
