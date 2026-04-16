@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
 import database as db
+from services.auth_service import register_user, authenticate_user as authenticate_user_service, get_current_user
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
@@ -50,12 +51,11 @@ def registro():
             return render_template('auth/registro.html')
         
         # Criar usuário
-        success, result = db.create_user(username, password, nickname, bio, email)
+        success, payload = register_user(username, password, nickname, bio, email)
         
         if success:
-            user_id = result
             # Fazer login automático
-            user = db.get_user_by_id(user_id)
+            user = payload['user']
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']
@@ -67,8 +67,8 @@ def registro():
             return redirect(url_for('main.feed'))
         else:
             if request.is_json:
-                return jsonify({'success': False, 'message': result}), 400
-            flash(result, 'error')
+                return jsonify({'success': False, 'message': payload['message']}), 400
+            flash(payload['message'], 'error')
             return render_template('auth/registro.html')
             
     except Exception as e:
@@ -91,16 +91,17 @@ def login():
         password = data.get('password', '')
         
         if not username or not password:
-            message = "Username e senha são obrigatórios."
+            message = "Username ou e-mail e senha são obrigatórios."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/login.html')
         
         # Autenticar usuário
-        user = db.authenticate_user(username, password)
+        success, payload = authenticate_user_service(username, password)
         
-        if user:
+        if success:
+            user = payload['user']
             # Fazer login
             session['user_id'] = user['id']
             session['username'] = user['username']
@@ -112,7 +113,7 @@ def login():
             flash(message, 'success')
             return redirect(url_for('main.feed'))
         else:
-            message = "Username ou senha incorretos."
+            message = payload['message']
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 401
             flash(message, 'error')
@@ -139,7 +140,7 @@ def perfil():
         flash("É necessário estar logado para acessar o perfil.", 'error')
         return redirect(url_for('auth.login'))
     
-    user = db.get_user_by_id(session['user_id'])
+    user = get_current_user(session)
     if not user:
         session.clear()
         flash("Usuário não encontrado.", 'error')
@@ -276,4 +277,3 @@ def login_required(f):
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
-

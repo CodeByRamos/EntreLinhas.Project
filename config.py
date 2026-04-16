@@ -1,8 +1,12 @@
 import os
 
 # Configurações básicas
-SECRET_KEY = 'chave-secreta-segura'  # Em produção, usar uma chave segura e armazenada em variável de ambiente
+SECRET_KEY = os.environ.get('SECRET_KEY', 'chave-secreta-segura')
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
+PERMANENT_SESSION_LIFETIME_HOURS = int(os.environ.get('PERMANENT_SESSION_LIFETIME_HOURS', '24'))
 
 # Configurações de categorias
 CATEGORIAS = [
@@ -23,4 +27,3 @@ REACOES = [
     {'valor': 'coracao', 'nome': 'Coração', 'emoji': '❤️'},
     {'valor': 'inspirador', 'nome': 'Inspirador', 'emoji': '✨'}
 ]
-

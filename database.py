@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime
 import os
 import secrets
+from utils.security import hash_password, verify_password, is_legacy_hash
 
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
@@ -18,6 +19,46 @@ def _ensure_column(conn, table_name, column_name, definition):
     columns = _get_table_columns(conn, table_name)
     if column_name not in columns:
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
+
+
+def _ensure_unique_index(conn, index_name, table_name, column_name):
+    """
+    Garante um índice único para a coluna informada quando possível.
+    Mantém compatibilidade com bancos legados que já tenham duplicatas.
+    """
+    existing_index = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?",
+        (index_name,),
+    ).fetchone()
+    if existing_index:
+        return
+
+    duplicates = conn.execute(
+        f"""
+        SELECT {column_name}, COUNT(1) as total
+        FROM {table_name}
+        WHERE {column_name} IS NOT NULL AND TRIM({column_name}) <> ''
+        GROUP BY {column_name}
+        HAVING COUNT(1) > 1
+        """
+    ).fetchall()
+
+    if duplicates:
+        return
+
+    conn.execute(
+        f"CREATE UNIQUE INDEX IF NOT EXISTS {index_name} ON {table_name} ({column_name}) "
+        f"WHERE {column_name} IS NOT NULL AND TRIM({column_name}) <> ''"
+    )
+
+
+def _sanitize_user_row(user_row):
+    """Retorna dicionário do usuário sem campos sensíveis."""
+    if not user_row:
+        return None
+    user_dict = dict(user_row)
+    user_dict.pop("password_hash", None)
+    return user_dict
 
 def get_db_connection():
     """Estabelece e retorna uma conexão com o banco de dados."""
@@ -101,8 +142,10 @@ def init_db():
             password_hash TEXT NOT NULL,
             nickname TEXT NOT NULL,
             bio TEXT,
-            email TEXT,
+            email TEXT UNIQUE,
+            role TEXT NOT NULL DEFAULT 'user',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,
             is_admin BOOLEAN DEFAULT 0
@@ -160,6 +203,17 @@ def init_db():
     _ensure_column(conn, "reactions", "profile_id", "INTEGER")
     _ensure_column(conn, "reactions", "data_reacao", "TEXT DEFAULT CURRENT_TIMESTAMP")
     _ensure_column(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
+    _ensure_column(conn, "users", "role", "TEXT NOT NULL DEFAULT 'user'")
+    if "updated_at" not in _get_table_columns(conn, "users"):
+        conn.execute("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP")
+    conn.execute(
+        """
+        UPDATE users
+        SET updated_at = COALESCE(updated_at, created_at, datetime('now'))
+        WHERE updated_at IS NULL
+        """
+    )
+    _ensure_unique_index(conn, "idx_users_email_unique", "users", "email")
     
     conn.commit()
     conn.close()
@@ -991,8 +1045,6 @@ def get_high_karma_comments(min_karma=10, limit=50):
 
 def create_user(username, password, nickname, bio=None, email=None):
     """Cria um novo usuário permanente."""
-    import hashlib
-    
     conn = get_db_connection()
     
     # Verificar se o username já existe
@@ -1003,15 +1055,24 @@ def create_user(username, password, nickname, bio=None, email=None):
     if existing_user:
         conn.close()
         return False, "Nome de usuário já existe."
+
+    if email:
+        existing_email = conn.execute(
+            "SELECT id FROM users WHERE email = ?",
+            (email,),
+        ).fetchone()
+        if existing_email:
+            conn.close()
+            return False, "E-mail já está em uso."
     
     # Hash da senha
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    password_hash = hash_password(password)
     
     try:
         # Criar o usuário
         cursor = conn.execute('''
-            INSERT INTO users (username, password_hash, nickname, bio, email, created_at)
-            VALUES (?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO users (username, password_hash, nickname, bio, email, role, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
         ''', (username, password_hash, nickname, bio, email))
         
         user_id = cursor.lastrowid
@@ -1026,34 +1087,42 @@ def create_user(username, password, nickname, bio=None, email=None):
 
 def authenticate_user(username, password):
     """Autentica um usuário."""
-    import hashlib
-    
     conn = get_db_connection()
+
+    user = conn.execute(
+        """
+        SELECT id, username, nickname, bio, email, created_at, updated_at, is_active, is_admin, role, password_hash
+        FROM users
+        WHERE (username = ? OR email = ?) AND is_active = 1
+        """,
+        (username, username),
+    ).fetchone()
     
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    
-    user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, is_active, is_admin
-        FROM users 
-        WHERE username = ? AND password_hash = ? AND is_active = 1
-    ''', (username, password_hash)).fetchone()
-    
-    if user:
+    if user and verify_password(password, user["password_hash"]):
         # Atualizar último login
         conn.execute('''
             UPDATE users SET last_login = datetime('now') WHERE id = ?
         ''', (user['id'],))
+
+        if is_legacy_hash(user["password_hash"]):
+            conn.execute(
+                "UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+                (hash_password(password), user["id"]),
+            )
         conn.commit()
+    else:
+        user = None
     
+    sanitized_user = _sanitize_user_row(user)
     conn.close()
-    return user
+    return sanitized_user
 
 def get_user_by_id(user_id):
     """Retorna um usuário pelo ID."""
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin
+        SELECT id, username, nickname, bio, email, role, created_at, updated_at, last_login, is_active, is_admin
         FROM users 
         WHERE id = ? AND is_active = 1
     ''', (user_id,)).fetchone()
@@ -1066,11 +1135,28 @@ def get_user_by_username(username):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin
+        SELECT id, username, nickname, bio, email, role, created_at, updated_at, last_login, is_active, is_admin
         FROM users 
         WHERE username = ? AND is_active = 1
     ''', (username,)).fetchone()
     
+    conn.close()
+    return user
+
+
+def get_user_by_email(email):
+    """Retorna um usuário pelo e-mail."""
+    conn = get_db_connection()
+
+    user = conn.execute(
+        """
+        SELECT id, username, nickname, bio, email, created_at, last_login, is_active, is_admin, role, updated_at
+        FROM users
+        WHERE email = ? AND is_active = 1
+        """,
+        (email,),
+    ).fetchone()
+
     conn.close()
     return user
 
@@ -1090,6 +1176,13 @@ def update_user(user_id, nickname=None, bio=None, email=None):
         params.append(bio)
     
     if email is not None:
+        existing_email = conn.execute(
+            "SELECT id FROM users WHERE email = ? AND id <> ?",
+            (email, user_id),
+        ).fetchone()
+        if existing_email:
+            conn.close()
+            return False, "E-mail já está em uso."
         updates.append("email = ?")
         params.append(email)
     
@@ -1097,6 +1190,7 @@ def update_user(user_id, nickname=None, bio=None, email=None):
         conn.close()
         return False, "Nenhuma informação para atualizar."
     
+    updates.append("updated_at = datetime('now')")
     params.append(user_id)
     
     try:
@@ -1114,26 +1208,23 @@ def update_user(user_id, nickname=None, bio=None, email=None):
 
 def change_password(user_id, old_password, new_password):
     """Altera a senha do usuário."""
-    import hashlib
-    
     conn = get_db_connection()
     
     # Verificar senha atual
-    old_password_hash = hashlib.sha256(old_password.encode()).hexdigest()
     user = conn.execute('''
-        SELECT id FROM users WHERE id = ? AND password_hash = ?
-    ''', (user_id, old_password_hash)).fetchone()
+        SELECT id, password_hash FROM users WHERE id = ?
+    ''', (user_id,)).fetchone()
     
-    if not user:
+    if not user or not verify_password(old_password, user["password_hash"]):
         conn.close()
         return False, "Senha atual incorreta."
     
     # Atualizar senha
-    new_password_hash = hashlib.sha256(new_password.encode()).hexdigest()
+    new_password_hash = hash_password(new_password)
     
     try:
         conn.execute('''
-            UPDATE users SET password_hash = ? WHERE id = ?
+            UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?
         ''', (new_password_hash, user_id))
         
         conn.commit()
@@ -1150,7 +1241,7 @@ def deactivate_user(user_id):
     
     try:
         conn.execute('''
-            UPDATE users SET is_active = 0 WHERE id = ?
+            UPDATE users SET is_active = 0, updated_at = datetime('now') WHERE id = ?
         ''', (user_id,))
         
         conn.commit()
@@ -1177,8 +1268,6 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
     Cria ou promove um usuário para administrador.
     Retorna (success, message).
     """
-    import hashlib
-
     conn = get_db_connection()
 
     existing = conn.execute(
@@ -1186,7 +1275,7 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
         (username,),
     ).fetchone()
 
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    password_hash = hash_password(password)
 
     try:
         if existing:
@@ -1197,6 +1286,8 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
                     nickname = COALESCE(?, nickname),
                     bio = COALESCE(?, bio),
                     email = COALESCE(?, email),
+                    role = 'admin',
+                    updated_at = datetime('now'),
                     is_active = 1,
                     is_admin = 1
                 WHERE id = ?
@@ -1209,8 +1300,8 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
         final_nickname = nickname or username
         conn.execute(
             """
-            INSERT INTO users (username, password_hash, nickname, bio, email, created_at, is_active, is_admin)
-            VALUES (?, ?, ?, ?, ?, datetime('now'), 1, 1)
+            INSERT INTO users (username, password_hash, nickname, bio, email, role, created_at, updated_at, is_active, is_admin)
+            VALUES (?, ?, ?, ?, ?, 'admin', datetime('now'), datetime('now'), 1, 1)
             """,
             (username, password_hash, final_nickname, bio, email),
         )

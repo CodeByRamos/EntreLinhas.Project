@@ -12,6 +12,7 @@ from routes.reports import reports
 from routes.karma import karma
 from routes.auth import auth
 from datetime import datetime
+from datetime import timedelta
 import os
 
 def create_app():
@@ -25,8 +26,14 @@ def create_app():
         # Configurações padrão para produção
         app.config['DEBUG'] = False
     
-    # Configuração para sessões
-    app.secret_key = os.environ.get('SECRET_KEY', 'entrelinhas_secret_key_dev')
+    # Configuração para sessões/autenticação
+    app.secret_key = app.config.get('SECRET_KEY') or os.environ.get('SECRET_KEY', 'entrelinhas_secret_key_dev')
+    app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
+    app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
+    app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', False)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
+        hours=app.config.get('PERMANENT_SESSION_LIFETIME_HOURS', 24)
+    )
     
     # Inicializa o banco de dados
     db.init_db()
@@ -57,4 +64,3 @@ app = create_app()
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
