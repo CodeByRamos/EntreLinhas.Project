@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Rascunhos - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-5xl">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">Rascunhos</h1>
+      <p class="text-slate-400">Seus textos salvos para publicar no momento certo.</p>
+    </div>
+    <a class="btn-modern btn-primary" href="{{ url_for('posts.feed') }}#formulario-de-envio">Novo texto</a>
+  </div>
+
+  {% if drafts %}
+    <div class="space-y-4">
+      {% for post in drafts %}
+      <article class="glass-panel p-6">
+        {% if post.title %}<h2 class="text-xl font-semibold mb-2">{{ post.title }}</h2>{% endif %}
+        <p class="whitespace-pre-line text-slate-100 leading-relaxed">{{ post.mensagem }}</p>
+        <div class="mt-3 text-sm text-slate-400 flex flex-wrap items-center gap-3">
+          <span class="badge-categoria {{ post.categoria }}">#{{ post.categoria }}</span>
+          <span>{{ post.data_postagem }}</span>
+          <span>{{ 'perfil público' if post.visibility_mode == 'profile' else 'anônimo' }}</span>
+        </div>
+        <div class="mt-4">
+          <a class="btn-modern btn-ghost" href="{{ url_for('posts.editar_post', post_id=post.id) }}">Editar e publicar</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="glass-panel p-8 text-center">
+      <p class="text-slate-300">Nenhum rascunho salvo.</p>
+      <p class="text-slate-400 mt-2">Você pode começar no feed e salvar sem publicar.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

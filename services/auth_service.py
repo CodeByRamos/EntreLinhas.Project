@@ -1,14 +1,7 @@
 """Serviços de autenticação para uso incremental no backend."""
 
-import re
 import database as db
-
-EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-def is_valid_email(email):
-    """Valida formato básico de e-mail."""
-    return bool(email and EMAIL_REGEX.match(email))
+from utils.validation import LIMITS, is_valid_email, is_valid_username
 
 
 def generate_username_from_email(email):
@@ -17,6 +10,7 @@ def generate_username_from_email(email):
     Mantém compatibilidade com banco atual que exige username único.
     """
     local_part = (email.split("@", 1)[0] if email else "").strip().lower()
+    import re
     base = re.sub(r"[^a-z0-9_]+", "_", local_part).strip("_") or "usuario"
     candidate = base[:30]
     suffix = 0
@@ -41,11 +35,11 @@ def register_user(username, password, nickname, bio=None, email=None, display_na
     if not is_valid_email(email):
         return False, {'message': 'Informe um e-mail válido.'}
 
-    if username and len(username) < 3:
-        return False, {'message': 'Username deve ter pelo menos 3 caracteres.'}
+    if username and not is_valid_username(username):
+        return False, {'message': 'Username inválido. Use 3 a 30 caracteres (letras, números, _ ou .).'}
 
-    if len(password) < 6:
-        return False, {'message': 'Senha deve ter pelo menos 6 caracteres.'}
+    if len(password) < LIMITS["password_min"] or len(password) > LIMITS["password_max"]:
+        return False, {'message': f'Senha deve ter entre {LIMITS["password_min"]} e {LIMITS["password_max"]} caracteres.'}
 
     if db.get_user_by_email(email):
         return False, {'message': 'E-mail já está em uso.'}

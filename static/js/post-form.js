@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const conteudoTextarea = document.getElementById('conteudo');
     const categoriaSelect = document.getElementById('categoria');
     const charCount = document.getElementById('char-count');
-    const maxLength = 500; // Limite máximo de caracteres
+    const maxLength = 1000; // Limite máximo de caracteres
     const minLength = 10;  // Limite mínimo de caracteres
     const submitButton = document.getElementById('submit-button');
     const remainingChars = document.getElementById('remaining-chars');
@@ -172,4 +172,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-

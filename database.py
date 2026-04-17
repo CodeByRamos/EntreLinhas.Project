@@ -1,8 +1,9 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import secrets
 from utils.security import hash_password, verify_password, is_legacy_hash
+from utils.validation import LIMITS, is_valid_email, is_valid_username, trim_text
 
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
@@ -75,10 +76,13 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
             mensagem TEXT NOT NULL,
             data_postagem TEXT NOT NULL,
             categoria TEXT NOT NULL,
             visivel INTEGER DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'published',
+            alias_name TEXT,
             user_id INTEGER,
             profile_id INTEGER
         )
@@ -148,9 +152,49 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
             is_active BOOLEAN DEFAULT 1,
-            is_admin BOOLEAN DEFAULT 0
+            is_admin BOOLEAN DEFAULT 0,
+            is_verified BOOLEAN DEFAULT 0,
+            email_verified_at TIMESTAMP
         )
     ''')
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            expires_at TIMESTAMP NOT NULL,
+            used_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS email_verification_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            expires_at TIMESTAMP NOT NULL,
+            used_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            reference_id INTEGER,
+            is_read BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    """)
 
     # Tabela de perfis anônimos
     cursor.execute('''
@@ -196,6 +240,9 @@ def init_db():
     _ensure_column(conn, "posts", "user_id", "INTEGER")
     _ensure_column(conn, "posts", "profile_id", "INTEGER")
     _ensure_column(conn, "posts", "visibility_mode", "TEXT DEFAULT 'anonymous'")
+    _ensure_column(conn, "posts", "status", "TEXT DEFAULT 'published'")
+    _ensure_column(conn, "posts", "title", "TEXT")
+    _ensure_column(conn, "posts", "alias_name", "TEXT")
     _ensure_column(conn, "comments", "mensagem", "TEXT")
     _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
     _ensure_column(conn, "comments", "user_id", "INTEGER")
@@ -205,6 +252,8 @@ def init_db():
     _ensure_column(conn, "reactions", "data_reacao", "TEXT DEFAULT CURRENT_TIMESTAMP")
     _ensure_column(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
     _ensure_column(conn, "users", "role", "TEXT NOT NULL DEFAULT 'user'")
+    _ensure_column(conn, "users", "is_verified", "BOOLEAN DEFAULT 0")
+    _ensure_column(conn, "users", "email_verified_at", "TIMESTAMP")
     _ensure_column(conn, "users", "display_name", "TEXT")
     _ensure_column(conn, "users", "avatar_url", "TEXT")
     _ensure_column(conn, "users", "default_visibility_mode", "TEXT DEFAULT 'anonymous'")
@@ -223,6 +272,15 @@ def init_db():
         SET default_visibility_mode = CASE
             WHEN default_visibility_mode IN ('anonymous', 'profile') THEN default_visibility_mode
             ELSE 'anonymous'
+        END
+        """
+    )
+    conn.execute(
+        """
+        UPDATE posts
+        SET status = CASE
+            WHEN status IN ('draft', 'published') THEN status
+            ELSE 'published'
         END
         """
     )
@@ -263,7 +321,7 @@ def get_posts(limit=10, offset=0, include_hidden=False):
                    u.nickname as author_nickname
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.visivel = 1 
+            WHERE p.visivel = 1 AND p.status = 'published'
             ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
             ''', (limit, offset)).fetchall()
@@ -275,7 +333,7 @@ def get_hidden_posts(limit=50):
     """Retorna os posts ocultos mais recentes."""
     conn = get_db_connection()
     posts = conn.execute('''
-        SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.data_postagem, p.visivel,
                p.user_id, p.visibility_mode,
                u.username as author_username,
                u.nickname as author_nickname
@@ -310,13 +368,13 @@ def get_post(post_id, include_hidden=False):
                    u.nickname as author_nickname
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.id = ? AND p.visivel = 1
+            WHERE p.id = ? AND p.visivel = 1 AND p.status = 'published'
         ''', (post_id,)).fetchone()
     
     conn.close()
     return post
 
-def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibility_mode=None):
+def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibility_mode=None, status=None):
     """Retorna posts de um usuário com paginação."""
     conn = get_db_connection()
     filters = ["p.user_id = ?"]
@@ -328,6 +386,9 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
     if visibility_mode in ("anonymous", "profile"):
         filters.append("p.visibility_mode = ?")
         params.append(visibility_mode)
+    if status in ("draft", "published"):
+        filters.append("p.status = ?")
+        params.append(status)
 
     where_clause = " AND ".join(filters)
 
@@ -336,7 +397,7 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
         f'''
         SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
                p.user_id, p.visibility_mode,
-               CASE WHEN p.visivel = 0 THEN 'oculto' ELSE 'publicado' END AS status,
+               p.status AS status,
                u.username as author_username,
                u.nickname as author_nickname
         FROM posts p
@@ -351,7 +412,7 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
     conn.close()
     return posts
 
-def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None):
+def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None, status=None):
     """Retorna a quantidade de posts de um usuário."""
     conn = get_db_connection()
     filters = ["user_id = ?"]
@@ -361,6 +422,9 @@ def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None):
     if visibility_mode in ("anonymous", "profile"):
         filters.append("visibility_mode = ?")
         params.append(visibility_mode)
+    if status in ("draft", "published"):
+        filters.append("status = ?")
+        params.append(status)
     where_clause = " AND ".join(filters)
     count = conn.execute(
         f"SELECT COUNT(*) FROM posts WHERE {where_clause}",
@@ -370,17 +434,26 @@ def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None):
     conn.close()
     return count
 
-def update_post(post_id, mensagem, categoria, visibility_mode):
+def update_post(post_id, mensagem, categoria, visibility_mode, title=None, status="published"):
     """Atualiza os dados de um post."""
+    mensagem = trim_text(mensagem)
+    categoria = trim_text(categoria)
+    title = trim_text(title) or None
+    if status not in ("draft", "published"):
+        return False
+    if len(mensagem) < LIMITS["post_content_min"] or len(mensagem) > LIMITS["post_content_max"]:
+        return False
+    if title and len(title) > LIMITS["post_title_max"]:
+        return False
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         '''
         UPDATE posts
-        SET mensagem = ?, categoria = ?, visibility_mode = ?
+        SET mensagem = ?, categoria = ?, visibility_mode = ?, title = ?, status = ?
         WHERE id = ?
         ''',
-        (mensagem, categoria, visibility_mode, post_id),
+        (mensagem, categoria, visibility_mode, title, status, post_id),
     )
     conn.commit()
     success = cursor.rowcount > 0
@@ -404,7 +477,7 @@ def delete_post(post_id):
     finally:
         conn.close()
 
-def create_post(mensagem, categoria, user_id, visibility_mode='anonymous'):
+def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title=None, status='published'):
     """Cria um novo post com autoria obrigatória."""
     conn = get_db_connection()
     data_postagem = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -412,6 +485,22 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous'):
     if visibility_mode not in ('anonymous', 'profile', 'alias'):
         conn.close()
         raise ValueError("Modo de visibilidade inválido.")
+    if status not in ('draft', 'published'):
+        conn.close()
+        raise ValueError("Status inválido para o post.")
+
+    mensagem = trim_text(mensagem)
+    categoria = trim_text(categoria)
+    title = trim_text(title) or None
+
+    if len(mensagem) < LIMITS["post_content_min"] or len(mensagem) > LIMITS["post_content_max"]:
+        conn.close()
+        raise ValueError(
+            f"Conteúdo deve ter entre {LIMITS['post_content_min']} e {LIMITS['post_content_max']} caracteres."
+        )
+    if title and len(title) > LIMITS["post_title_max"]:
+        conn.close()
+        raise ValueError(f"Título deve ter no máximo {LIMITS['post_title_max']} caracteres.")
 
     user = conn.execute(
         "SELECT id FROM users WHERE id = ? AND is_active = 1",
@@ -423,9 +512,9 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous'):
     
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO posts (mensagem, categoria, data_postagem, user_id, visibility_mode)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (mensagem, categoria, data_postagem, user_id, visibility_mode))
+        INSERT INTO posts (mensagem, categoria, data_postagem, user_id, visibility_mode, status, title)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (mensagem, categoria, data_postagem, user_id, visibility_mode, status, title))
     
     post_id = cursor.lastrowid
     conn.commit()
@@ -448,7 +537,7 @@ def update_post_visibility(post_id, visibility):
 def get_post_count():
     """Retorna o número total de posts."""
     conn = get_db_connection()
-    count = conn.execute('SELECT COUNT(*) FROM posts').fetchone()[0]
+    count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'published'").fetchone()[0]
     conn.close()
     return count
 
@@ -552,6 +641,10 @@ def create_comment(post_id, comment_text):
     """Cria um novo comentário para um post."""
     conn = get_db_connection()
     data_comentario = datetime.now().strftime("%d/%m/%Y %H:%M")
+    comment_text = trim_text(comment_text)
+    if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
+        conn.close()
+        return None
     
     cursor = conn.cursor()
     try:
@@ -687,7 +780,7 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
                    u.nickname as author_nickname
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.categoria = ? AND p.visivel = 1 
+            WHERE p.categoria = ? AND p.visivel = 1 AND p.status = 'published'
             ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
         ''', (categoria, limit, offset)).fetchall()
@@ -709,7 +802,7 @@ def get_post_count_by_category(categoria, include_hidden=False):
         count = conn.execute('''
             SELECT COUNT(*) 
             FROM posts 
-            WHERE categoria = ? AND visivel = 1
+            WHERE categoria = ? AND visivel = 1 AND status = 'published'
         ''', (categoria,)).fetchone()[0]
     
     conn.close()
@@ -721,7 +814,7 @@ def get_categories():
     categories = conn.execute('''
         SELECT DISTINCT categoria 
         FROM posts 
-        WHERE visivel = 1
+        WHERE visivel = 1 AND status = 'published'
         ORDER BY categoria
     ''').fetchall()
     conn.close()
@@ -736,7 +829,7 @@ def get_post_stats():
     conn = get_db_connection()
     
     # Total de posts
-    total_posts = conn.execute('SELECT COUNT(*) FROM posts WHERE visivel = 1').fetchone()[0]
+    total_posts = conn.execute("SELECT COUNT(*) FROM posts WHERE visivel = 1 AND status = 'published'").fetchone()[0]
     
     # Posts por categoria
     posts_by_category = conn.execute('''
@@ -1045,7 +1138,7 @@ def get_reports_by_post(post_id):
         SELECT r.id, r.data, p.nickname
         FROM reports r
         LEFT JOIN profiles p ON r.profile_id = p.id
-        WHERE r.post_id = ?
+                                   WHERE r.post_id = ?
         ORDER BY r.data DESC
     ''', (post_id,)).fetchall()
     conn.close()
@@ -1192,6 +1285,30 @@ def get_high_karma_comments(min_karma=10, limit=50):
 def create_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous'):
     """Cria um novo usuário permanente."""
     conn = get_db_connection()
+    username = trim_text(username)
+    nickname = trim_text(nickname)
+    display_name = trim_text(display_name) or nickname or username
+    bio = trim_text(bio) or None
+    email = trim_text(email) or None
+
+    if not is_valid_username(username):
+        conn.close()
+        return False, "Username inválido. Use 3 a 30 caracteres (letras, números, _ ou .)."
+    if email and not is_valid_email(email):
+        conn.close()
+        return False, "E-mail inválido."
+    if len(password) < LIMITS["password_min"] or len(password) > LIMITS["password_max"]:
+        conn.close()
+        return False, f"Senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+    if len(nickname) < LIMITS["nickname_min"] or len(nickname) > LIMITS["nickname_max"]:
+        conn.close()
+        return False, f"Apelido deve ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
+    if len(display_name) < LIMITS["display_name_min"] or len(display_name) > LIMITS["display_name_max"]:
+        conn.close()
+        return False, f"Nome público deve ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
+    if bio and len(bio) > LIMITS["bio_max"]:
+        conn.close()
+        return False, f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
     
     # Verificar se o username já existe
     existing_user = conn.execute('''
@@ -1226,7 +1343,7 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
             username,
             password_hash,
             nickname,
-            display_name or nickname or username,
+            display_name,
             bio,
             email,
             avatar_url,
@@ -1282,7 +1399,7 @@ def get_user_by_id(user_id):
     
     user = conn.execute('''
         SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
-               role, created_at, updated_at, last_login, is_active, is_admin
+               role, created_at, updated_at, last_login, is_active, is_admin, is_verified, email_verified_at
         FROM users 
         WHERE id = ? AND is_active = 1
     ''', (user_id,)).fetchone()
@@ -1296,7 +1413,7 @@ def get_user_by_username(username):
     
     user = conn.execute('''
 SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
-               role, created_at, updated_at, last_login, is_active, is_admin
+               role, created_at, updated_at, last_login, is_active, is_admin, is_verified, email_verified_at
         FROM users 
         WHERE username = ? AND is_active = 1
     ''', (username,)).fetchone()
@@ -1312,7 +1429,7 @@ def get_user_by_email(email):
     user = conn.execute(
         """
         SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
-               created_at, last_login, is_active, is_admin, role, updated_at
+               created_at, last_login, is_active, is_admin, role, updated_at, is_verified, email_verified_at
         FROM users
         WHERE email = ? AND is_active = 1
         """,
@@ -1330,14 +1447,26 @@ def update_user(user_id, nickname=None, bio=None, email=None, display_name=None,
     params = []
     
     if nickname is not None:
+        nickname = trim_text(nickname)
+        if len(nickname) < LIMITS["nickname_min"] or len(nickname) > LIMITS["nickname_max"]:
+            conn.close()
+            return False, f"Apelido deve ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
         updates.append("nickname = ?")
         params.append(nickname)
     
     if bio is not None:
+        bio = trim_text(bio) or None
+        if bio and len(bio) > LIMITS["bio_max"]:
+            conn.close()
+            return False, f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
         updates.append("bio = ?")
         params.append(bio)
         
     if display_name is not None:
+        display_name = trim_text(display_name)
+        if len(display_name) < LIMITS["display_name_min"] or len(display_name) > LIMITS["display_name_max"]:
+            conn.close()
+            return False, f"Nome público deve ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
         updates.append("display_name = ?")
         params.append(display_name)
 
@@ -1350,6 +1479,10 @@ def update_user(user_id, nickname=None, bio=None, email=None, display_name=None,
         params.append(default_visibility_mode)
     
     if email is not None:
+        email = trim_text(email) or None
+        if email and not is_valid_email(email):
+            conn.close()
+            return False, "E-mail inválido."
         existing_email = conn.execute(
             "SELECT id FROM users WHERE email = ? AND id <> ?",
             (email, user_id),
@@ -1408,6 +1541,162 @@ def change_password(user_id, old_password, new_password):
     except Exception as e:
         conn.close()
         return False, f"Erro ao alterar senha: {str(e)}"
+
+
+def set_new_password(user_id, new_password):
+    """Define nova senha sem exigir senha antiga (usado no reset com token)."""
+    conn = get_db_connection()
+    if len(new_password) < LIMITS["password_min"] or len(new_password) > LIMITS["password_max"]:
+        conn.close()
+        return False, f"Senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+    new_password_hash = hash_password(new_password)
+    conn.execute(
+        "UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+        (new_password_hash, user_id),
+    )
+    conn.commit()
+    conn.close()
+    return True, "Senha redefinida com sucesso."
+
+
+def create_password_reset_token(user_id, hours_valid=1):
+    conn = get_db_connection()
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.utcnow() + timedelta(hours=hours_valid)).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+        (user_id, token, expires_at),
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def consume_password_reset_token(token):
+    conn = get_db_connection()
+    token = trim_text(token)
+    row = conn.execute(
+        """
+        SELECT id, user_id, expires_at, used_at
+        FROM password_reset_tokens
+        WHERE token = ?
+        """,
+        (token,),
+    ).fetchone()
+    if not row:
+        conn.close()
+        return False, "Token inválido.", None
+    if row["used_at"]:
+        conn.close()
+        return False, "Token já utilizado.", None
+    expires_at = datetime.strptime(row["expires_at"], "%Y-%m-%d %H:%M:%S")
+    if datetime.utcnow() > expires_at:
+        conn.close()
+        return False, "Token expirado.", None
+    conn.execute(
+        "UPDATE password_reset_tokens SET used_at = datetime('now') WHERE id = ?",
+        (row["id"],),
+    )
+    conn.commit()
+    conn.close()
+    return True, "Token válido.", row["user_id"]
+
+
+def create_email_verification_token(user_id, hours_valid=48):
+    conn = get_db_connection()
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.utcnow() + timedelta(hours=hours_valid)).strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+        (user_id, token, expires_at),
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def verify_email_with_token(token):
+    conn = get_db_connection()
+    token = trim_text(token)
+    row = conn.execute(
+        """
+        SELECT id, user_id, expires_at, used_at
+        FROM email_verification_tokens
+        WHERE token = ?
+        """,
+        (token,),
+    ).fetchone()
+    if not row:
+        conn.close()
+        return False, "Token inválido."
+    user = conn.execute("SELECT id, is_verified FROM users WHERE id = ?", (row["user_id"],)).fetchone()
+    if not user:
+        conn.close()
+        return False, "Conta não encontrada."
+    if user["is_verified"]:
+        conn.close()
+        return False, "Conta já verificada."
+    if row["used_at"]:
+        conn.close()
+        return False, "Token já utilizado."
+    expires_at = datetime.strptime(row["expires_at"], "%Y-%m-%d %H:%M:%S")
+    if datetime.utcnow() > expires_at:
+        conn.close()
+        return False, "Token expirado."
+
+    conn.execute("UPDATE email_verification_tokens SET used_at = datetime('now') WHERE id = ?", (row["id"],))
+    conn.execute("UPDATE users SET is_verified = 1, email_verified_at = datetime('now') WHERE id = ?", (row["user_id"],))
+    conn.commit()
+    conn.close()
+    return True, "E-mail verificado com sucesso."
+
+
+def create_notification(user_id, notification_type, title, message, reference_id=None):
+    title = trim_text(title)
+    message = trim_text(message)
+    if not title or not message:
+        return False
+    if len(title) > LIMITS["notification_title_max"] or len(message) > LIMITS["notification_message_max"]:
+        return False
+    conn = get_db_connection()
+    conn.execute(
+        """
+        INSERT INTO notifications (user_id, type, title, message, reference_id)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (user_id, trim_text(notification_type)[:30], title, message, reference_id),
+    )
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_notifications_by_user(user_id, limit=30):
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT id, user_id, type, title, message, reference_id, is_read, created_at
+        FROM notifications
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (user_id, limit),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def mark_notification_as_read(notification_id, user_id):
+    conn = get_db_connection()
+    cursor = conn.execute(
+        "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+        (notification_id, user_id),
+    )
+    conn.commit()
+    success = cursor.rowcount > 0
+    conn.close()
+    return success
 
 def deactivate_user(user_id):
     """Desativa um usuário (soft delete)."""
@@ -1713,3 +2002,6 @@ def remove_comment_report(report_id):
         return False
     finally:
         conn.close()
+    if len(new_password) < LIMITS["password_min"] or len(new_password) > LIMITS["password_max"]:
+        conn.close()
+        return False, f"Nova senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."

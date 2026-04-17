@@ -13,9 +13,10 @@
   </div>
 
   <div class="flex flex-wrap gap-3 mb-6">
-    <a class="segmented-link {% if filter_mode == 'todos' %}active{% endif %}" href="{{ url_for('posts.meus_posts', tipo='todos') }}">Todos ({{ total_publicados + total_anonimos }})</a>
+    <a class="segmented-link {% if filter_mode == 'todos' %}active{% endif %}" href="{{ url_for('posts.meus_posts', tipo='todos') }}">Todos ({{ total_posts }})</a>
     <a class="segmented-link {% if filter_mode == 'publicados' %}active{% endif %}" href="{{ url_for('posts.meus_posts', tipo='publicados') }}">Publicados ({{ total_publicados }})</a>
     <a class="segmented-link {% if filter_mode == 'anonimos' %}active{% endif %}" href="{{ url_for('posts.meus_posts', tipo='anonimos') }}">Anônimos ({{ total_anonimos }})</a>
+    <a class="segmented-link {% if filter_mode == 'rascunhos' %}active{% endif %}" href="{{ url_for('posts.meus_posts', tipo='rascunhos') }}">Rascunhos ({{ total_rascunhos }})</a>
   </div>
 
   {% if meus_posts %}
@@ -28,7 +29,7 @@
             <div class="mt-3 text-sm text-slate-400 flex flex-wrap items-center gap-3">
               <span class="badge-categoria {{ post.categoria }}">#{{ post.categoria }}</span>
               <span>{{ post.data_postagem }}</span>
-              <span class="status-chip {{ 'status-published' if post.status == 'publicado' else 'status-hidden' }}">{{ post.status }}</span>
+              <span class="status-chip {{ 'status-published' if post.status == 'published' else 'status-hidden' }}">{{ 'publicado' if post.status == 'published' else 'rascunho' }}</span>
               <span>{{ 'perfil público' if post.visibility_mode == 'profile' else 'anônimo' }}</span>
             </div>
           </div>

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Redefinir senha - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-md">
+  <div class="glass-panel p-8">
+    <h1 class="text-2xl font-bold mb-3">Redefinir senha</h1>
+    <p class="text-slate-300 text-sm mb-6">Crie uma nova senha segura para sua conta.</p>
+    <form method="POST" class="space-y-4">
+      <input type="hidden" name="token" value="{{ token or '' }}" />
+      <div>
+        <label for="new_password" class="block text-sm mb-2">Nova senha</label>
+        <input id="new_password" name="new_password" type="password" required minlength="8" maxlength="128" class="input-modern w-full" />
+      </div>
+      <div>
+        <label for="confirm_password" class="block text-sm mb-2">Confirmar senha</label>
+        <input id="confirm_password" name="confirm_password" type="password" required minlength="8" maxlength="128" class="input-modern w-full" />
+      </div>
+      <button type="submit" class="btn-modern btn-primary w-full">Salvar nova senha</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

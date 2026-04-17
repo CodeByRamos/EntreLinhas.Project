@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Notificações - Entre Linhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-3xl">
+  <div class="glass-panel p-8">
+    <h1 class="text-2xl font-bold mb-6">Notificações</h1>
+
+    {% if notifications %}
+      <div class="space-y-4">
+      {% for item in notifications %}
+        <article class="rounded-xl border border-slate-700/60 p-4 {{ 'opacity-80' if item.is_read else 'bg-slate-900/50' }}">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="font-semibold text-slate-100">{{ item.title }}</h2>
+              <p class="text-slate-300 text-sm mt-1">{{ item.message }}</p>
+              <p class="text-xs text-slate-500 mt-2">{{ item.created_at }}</p>
+            </div>
+            {% if not item.is_read %}
+            <form method="post" action="{{ url_for('notifications.mark_as_read', notification_id=item.id) }}">
+              <button type="submit" class="btn-modern btn-ghost text-xs">Marcar como lida</button>
+            </form>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-10">
+        <p class="text-slate-300 text-lg">Você está em dia.</p>
+        <p class="text-slate-400 text-sm mt-2">Quando algo importante acontecer, aparece aqui.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,8 @@
 // Arquivo JavaScript para gerenciar comentários
 
 document.addEventListener('DOMContentLoaded', function() {
+    const COMMENT_MIN = 2;
+    const COMMENT_MAX = 300;
     // Carrega os comentários para cada post
     const commentContainers = document.querySelectorAll('.comments-container');
     commentContainers.forEach(container => {
@@ -17,6 +19,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const textarea = this.querySelector('textarea');
             const commentText = textarea.value.trim();
             
+            if (!commentText) {
+                alert('O comentário não pode estar vazio.');
+                return;
+            }
+            if (commentText.length < COMMENT_MIN || commentText.length > COMMENT_MAX) {
+                alert(`Comentário deve ter entre ${COMMENT_MIN} e ${COMMENT_MAX} caracteres.`);
+                return;
+            }
             if (commentText) {
                 submitComment(postId, commentText, textarea);
             }
@@ -206,4 +216,3 @@ function reportComment(commentId) {
             });
     }
 }
-

@@ -17,6 +17,9 @@
       <div class="space-y-2">
         <h1 class="text-3xl font-semibold">{{ user.display_name or user.nickname }}</h1>
         <p class="text-slate-400">@{{ user.username }}</p>
+        <p class="text-xs {{ 'text-emerald-300' if user.is_verified else 'text-amber-300' }}">
+          {{ 'E-mail verificado' if user.is_verified else 'E-mail não verificado' }}
+        </p>
         {% if user.bio %}<p class="text-slate-300 max-w-2xl leading-relaxed">{{ user.bio }}</p>{% endif %}
         <p class="text-xs text-slate-400">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</p>
       </div>
@@ -33,6 +36,11 @@
       <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>
       <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Meus posts</a>
       <a class="btn-modern btn-ghost" href="{{ url_for('auth.alterar_senha') }}">Alterar senha</a>
+      {% if not user.is_verified %}
+      <form method="post" action="{{ url_for('auth.reenviar_verificacao_email') }}">
+        <button type="submit" class="btn-modern btn-ghost">Reenviar verificação</button>
+      </form>
+      {% endif %}
       <form method="post" action="{{ url_for('auth.logout') }}">
         <button type="submit" class="btn-modern btn-ghost">Sair</button>
       </form>

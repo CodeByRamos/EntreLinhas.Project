@@ -9,11 +9,11 @@
     <form method="POST" class="space-y-5">
       <div>
         <label class="block text-sm mb-2" for="display_name">Nome público</label>
-        <input id="display_name" name="display_name" class="input-modern w-full" value="{{ user.display_name or user.nickname }}" maxlength="40" required />
+        <input id="display_name" name="display_name" class="input-modern w-full" value="{{ user.display_name or user.nickname }}" minlength="2" maxlength="40" required />
       </div>
       <div>
         <label class="block text-sm mb-2" for="nickname">Apelido interno</label>
-        <input id="nickname" name="nickname" class="input-modern w-full" value="{{ user.nickname }}" maxlength="30" required />
+        <input id="nickname" name="nickname" class="input-modern w-full" value="{{ user.nickname }}" minlength="2" maxlength="30" required />
       </div>
       <div>
         <label class="block text-sm mb-2" for="bio">Bio curta</label>
@@ -27,7 +27,7 @@
       </div>
       <div>
         <label class="block text-sm mb-2" for="email">E-mail</label>
-        <input id="email" type="email" name="email" class="input-modern w-full" value="{{ user.email or '' }}" />
+        <input id="email" type="email" name="email" maxlength="254" class="input-modern w-full" value="{{ user.email or '' }}" />
       </div>
       <div>
         <label class="block text-sm mb-2" for="default_visibility_mode">Preferência de exibição dos posts</label>

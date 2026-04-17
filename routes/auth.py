@@ -7,6 +7,8 @@ from services.auth_service import (
     get_current_user,
     is_valid_email,
 )
+from services.email_service import send_password_reset_email, send_email_verification
+from utils.validation import LIMITS, is_valid_username
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
@@ -55,8 +57,8 @@ def registro():
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
-        if username and len(username) < 3:
-            message = "Username deve ter pelo menos 3 caracteres."
+        if username and not is_valid_username(username):
+            message = "Username inválido. Use 3 a 30 caracteres (letras, números, _ ou .)."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -69,8 +71,8 @@ def registro():
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
-        if len(password) < 6:
-            message = "Senha deve ter pelo menos 6 caracteres."
+        if len(password) < LIMITS["password_min"] or len(password) > LIMITS["password_max"]:
+            message = f"Senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -83,8 +85,8 @@ def registro():
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
-        if bio and len(bio) > 180:
-            message = "Bio deve ter no máximo 180 caracteres."
+        if bio and len(bio) > LIMITS["bio_max"]:
+            message = f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -111,6 +113,9 @@ def registro():
         if success:
             # Fazer login automático
             user = payload['user']
+            if user.get('email'):
+                token = db.create_email_verification_token(user['id'])
+                delivery = send_email_verification(user['email'], token)
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']
@@ -121,6 +126,8 @@ def registro():
             if request.is_json:
                 return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
             flash(message, 'success')
+            if user.get('email') and delivery.get('preview_url'):
+                flash(f"Ambiente local: confirme seu e-mail em {delivery['preview_url']}", 'success')
             return redirect(redirect_target)
         else:
             if request.is_json:
@@ -256,8 +263,14 @@ def editar_perfil():
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user)
 
-        if bio and len(bio) > 180:
-            message = "Bio deve ter no máximo 180 caracteres."
+        if bio and len(bio) > LIMITS["bio_max"]:
+            message = f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/editar_perfil.html', user=user)
+        if email and not is_valid_email(email):
+            message = "Informe um e-mail válido."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -322,8 +335,8 @@ def alterar_senha():
             flash(message, 'error')
             return render_template('auth/alterar_senha.html')
         
-        if len(new_password) < 6:
-            message = "Nova senha deve ter pelo menos 6 caracteres."
+        if len(new_password) < LIMITS["password_min"] or len(new_password) > LIMITS["password_max"]:
+            message = f"Nova senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -363,6 +376,127 @@ def alterar_senha():
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
         return render_template('auth/alterar_senha.html')
+
+
+@auth.route('/esqueci-senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    if request.method == 'GET':
+        return render_template('auth/esqueci_senha.html')
+
+    data = request.get_json() if request.is_json else request.form
+    email = (data.get('email') or '').strip()
+    if not email or not is_valid_email(email):
+        message = "Informe um e-mail válido."
+        if request.is_json:
+            return jsonify({'success': False, 'message': message}), 400
+        flash(message, 'error')
+        return render_template('auth/esqueci_senha.html')
+
+    user = db.get_user_by_email(email)
+    preview_url = None
+    if user:
+        token = db.create_password_reset_token(user['id'])
+        delivery = send_password_reset_email(email, token)
+        preview_url = delivery.get('preview_url')
+
+    message = "Se houver uma conta com este e-mail, enviamos instruções para redefinir sua senha."
+    if request.is_json:
+        payload = {'success': True, 'message': message}
+        if preview_url:
+            payload['preview_url'] = preview_url
+        return jsonify(payload)
+    flash(message, 'success')
+    if preview_url:
+        flash(f"Ambiente local: link de redefinição {preview_url}", 'success')
+    return redirect(url_for('auth.login'))
+
+
+@auth.route('/redefinir-senha', methods=['GET', 'POST'])
+def redefinir_senha():
+    token = (request.args.get('token') or request.form.get('token') or '').strip()
+    if request.method == 'GET':
+        return render_template('auth/redefinir_senha.html', token=token)
+
+    data = request.get_json() if request.is_json else request.form
+    token = (data.get('token') or token).strip()
+    new_password = data.get('new_password', '')
+    confirm_password = data.get('confirm_password', '')
+
+    if not token:
+        message = "Token de redefinição é obrigatório."
+        if request.is_json:
+            return jsonify({'success': False, 'message': message}), 400
+        flash(message, 'error')
+        return render_template('auth/redefinir_senha.html', token=token)
+    if len(token) < LIMITS["token_min"] or len(token) > LIMITS["token_max"]:
+        message = "Token inválido."
+        if request.is_json:
+            return jsonify({'success': False, 'message': message}), 400
+        flash(message, 'error')
+        return render_template('auth/redefinir_senha.html', token=token)
+    if len(new_password) < LIMITS["password_min"] or len(new_password) > LIMITS["password_max"]:
+        message = f"Senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+        if request.is_json:
+            return jsonify({'success': False, 'message': message}), 400
+        flash(message, 'error')
+        return render_template('auth/redefinir_senha.html', token=token)
+    if new_password != confirm_password:
+        message = "As senhas informadas não coincidem."
+        if request.is_json:
+            return jsonify({'success': False, 'message': message}), 400
+        flash(message, 'error')
+        return render_template('auth/redefinir_senha.html', token=token)
+
+    valid, token_message, user_id = db.consume_password_reset_token(token)
+    if not valid:
+        if request.is_json:
+            return jsonify({'success': False, 'message': token_message}), 400
+        flash(token_message, 'error')
+        return render_template('auth/redefinir_senha.html', token=token)
+
+    success, update_message = db.set_new_password(user_id, new_password)
+    category = 'success' if success else 'error'
+    if request.is_json:
+        return jsonify({'success': success, 'message': update_message}), (200 if success else 400)
+    flash(update_message, category)
+    return redirect(url_for('auth.login'))
+
+
+@auth.route('/verificar-email', methods=['GET'])
+def verificar_email():
+    token = (request.args.get('token') or '').strip()
+    if not token:
+        flash("Token de verificação ausente.", 'error')
+        return redirect(url_for('auth.perfil') if session.get('user_id') else url_for('auth.login'))
+    if len(token) < LIMITS["token_min"] or len(token) > LIMITS["token_max"]:
+        flash("Token inválido.", 'error')
+        return redirect(url_for('auth.perfil') if session.get('user_id') else url_for('auth.login'))
+
+    success, message = db.verify_email_with_token(token)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('auth.perfil') if session.get('user_id') else url_for('auth.login'))
+
+
+@auth.route('/verificacao-email/reenviar', methods=['POST'])
+def reenviar_verificacao_email():
+    if 'user_id' not in session:
+        flash("É necessário estar logado.", 'error')
+        return redirect(url_for('auth.login'))
+
+    user = db.get_user_by_id(session['user_id'])
+    if not user or not user['email']:
+        flash("Cadastre um e-mail válido no perfil para verificar sua conta.", 'error')
+        return redirect(url_for('auth.editar_perfil'))
+    if user['is_verified']:
+        flash("Sua conta já está verificada.", 'success')
+        return redirect(url_for('auth.perfil'))
+
+    token = db.create_email_verification_token(user['id'])
+    delivery = send_email_verification(user['email'], token)
+    flash("Link de verificação preparado.", 'success')
+    if delivery.get('preview_url'):
+        flash(f"Ambiente local: link de verificação {delivery['preview_url']}", 'success')
+    return redirect(url_for('auth.perfil'))
 
 # Função auxiliar para verificar se o usuário está logado
 def login_required(f):

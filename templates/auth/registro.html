@@ -19,17 +19,17 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="username" class="block text-sm mb-2">Username (opcional)</label>
-          <input type="text" id="username" name="username" minlength="3" class="input-modern w-full" placeholder="joaoramos">
+          <input type="text" id="username" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_\.]+" class="input-modern w-full" placeholder="joaoramos">
         </div>
         <div>
           <label for="display_name" class="block text-sm mb-2">Nome público</label>
-          <input type="text" id="display_name" name="display_name" maxlength="40" class="input-modern w-full" placeholder="João Ramos">
+          <input type="text" id="display_name" name="display_name" minlength="2" maxlength="40" class="input-modern w-full" placeholder="João Ramos">
         </div>
       </div>
 
       <div>
         <label for="nickname" class="block text-sm mb-2">Apelido</label>
-        <input type="text" id="nickname" name="nickname" class="input-modern w-full" placeholder="Como quer ser chamado no app">
+        <input type="text" id="nickname" name="nickname" minlength="2" maxlength="30" class="input-modern w-full" placeholder="Como quer ser chamado no app">
       </div>
 
       <div>
@@ -48,11 +48,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="password" class="block text-sm mb-2">Senha</label>
-          <input type="password" id="password" name="password" required minlength="6" class="input-modern w-full" placeholder="Mínimo 6 caracteres">
+          <input type="password" id="password" name="password" required minlength="8" maxlength="128" class="input-modern w-full" placeholder="Mínimo 8 caracteres">
         </div>
         <div>
           <label for="confirm_password" class="block text-sm mb-2">Confirmar senha</label>
-          <input type="password" id="confirm_password" name="confirm_password" required minlength="6" class="input-modern w-full" placeholder="Repita a senha">
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="128" class="input-modern w-full" placeholder="Repita a senha">
         </div>
       </div>
 

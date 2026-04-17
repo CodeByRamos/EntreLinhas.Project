@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
 from datetime import datetime
 import database as db
+from utils.validation import LIMITS
 
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
@@ -74,12 +75,21 @@ def enviar():
             flash('Faça login ou crie uma conta para publicar um desabafo.', 'error')
             return redirect(url_for('auth.login', next=url_for('posts.feed')))
 
-        conteudo = request.form.get('conteudo')
+        conteudo = request.form.get('conteudo', '').strip()
+        titulo = request.form.get('titulo', '').strip() or None
         categoria = request.form.get('categoria')
         visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
+        action = request.form.get('action', 'publish')
+        post_status = 'draft' if action == 'draft' else 'published'
         
         if not conteudo or not categoria:
             flash('Por favor, preencha todos os campos.')
+            return redirect(url_for('posts.feed'))
+        if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
+            flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
+            return redirect(url_for('posts.feed'))
+        if titulo and len(titulo) > LIMITS["post_title_max"]:
+            flash(f'O título deve ter no máximo {LIMITS["post_title_max"]} caracteres.', 'error')
             return redirect(url_for('posts.feed'))
 
         if visibility_mode not in ('anonymous', 'profile'):
@@ -93,6 +103,8 @@ def enviar():
                 categoria=categoria,
                 user_id=session['user_id'],
                 visibility_mode=visibility_mode,
+                title=titulo,
+                status=post_status,
             )
         except ValueError as exc:
             flash(str(exc), 'error')
@@ -101,6 +113,9 @@ def enviar():
             flash('Não foi possível publicar seu desabafo. Tente novamente.', 'error')
             return redirect(url_for('posts.feed'))
         
+        if post_status == 'draft':
+            flash('Rascunho salvo com sucesso!', 'success')
+            return redirect(url_for('posts.rascunhos'))
         flash('Desabafo publicado com sucesso!', 'success')
         return redirect(url_for('posts.feed'))
     
@@ -122,10 +137,13 @@ def meus_posts():
     page = request.args.get('page', 1, type=int)
     filter_mode = request.args.get('tipo', 'todos')
     visibility_mode = None
+    status_filter = None
     if filter_mode == 'anonimos':
         visibility_mode = 'anonymous'
     elif filter_mode == 'publicados':
         visibility_mode = 'profile'
+    elif filter_mode == 'rascunhos':
+        status_filter = 'draft'
 
     per_page = 8
     offset = (page - 1) * per_page
@@ -136,14 +154,17 @@ def meus_posts():
         offset=offset,
         include_hidden=True,
         visibility_mode=visibility_mode,
+        status=status_filter,
     )
     total_posts = db.get_post_count_by_user(
         current_user['id'],
         include_hidden=True,
         visibility_mode=visibility_mode,
+        status=status_filter,
     )
     total_publicados = db.get_post_count_by_user(current_user['id'], include_hidden=True, visibility_mode='profile')
     total_anonimos = db.get_post_count_by_user(current_user['id'], include_hidden=True, visibility_mode='anonymous')
+    total_rascunhos = db.get_post_count_by_user(current_user['id'], include_hidden=True, status='draft')
     total_pages = max(1, (total_posts + per_page - 1) // per_page)
 
     return render_template(
@@ -155,7 +176,23 @@ def meus_posts():
         total_posts=total_posts,
         total_publicados=total_publicados,
         total_anonimos=total_anonimos,
+        total_rascunhos=total_rascunhos,
     )
+
+
+@posts.route('/rascunhos', methods=['GET'])
+def rascunhos():
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    page = request.args.get('page', 1, type=int)
+    per_page = 8
+    offset = (page - 1) * per_page
+    user_id = session['user_id']
+    drafts = db.get_posts_by_user(user_id, limit=per_page, offset=offset, include_hidden=True, status='draft')
+    total = db.get_post_count_by_user(user_id, include_hidden=True, status='draft')
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    return render_template('posts/rascunhos.html', drafts=drafts, page=page, total_pages=total_pages, total_drafts=total)
 
 @posts.route('/posts/<int:post_id>/editar', methods=['GET', 'POST'])
 def editar_post(post_id):
@@ -179,18 +216,26 @@ def editar_post(post_id):
         )
 
     conteudo = request.form.get('conteudo', '').strip()
+    titulo = request.form.get('titulo', '').strip() or None
     categoria = request.form.get('categoria', '').strip()
     visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
+    status = request.form.get('status', post.get('status') or 'published')
 
     if not conteudo or not categoria:
         flash('Preencha conteúdo e categoria para editar o desabafo.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+    if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
+        flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+    if titulo and len(titulo) > LIMITS["post_title_max"]:
+        flash(f'O título deve ter no máximo {LIMITS["post_title_max"]} caracteres.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
     if visibility_mode not in ('anonymous', 'profile'):
         flash('Visibilidade inválida para o post.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
-    updated = db.update_post(post_id, conteudo, categoria, visibility_mode)
+    updated = db.update_post(post_id, conteudo, categoria, visibility_mode, title=titulo, status=status)
     if not updated:
         flash('Não foi possível atualizar o post.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))

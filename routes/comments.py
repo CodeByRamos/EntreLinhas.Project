@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import database as db
+from utils.validation import LIMITS
 
 # Criação do Blueprint para as rotas de comentários
 comments = Blueprint('comments', __name__)
@@ -39,6 +40,8 @@ def add_comment(post_id):
             return jsonify({'error': 'O comentário não pode estar vazio'}), 400
         
         comment_text = data['text'].strip()
+        if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
+            return jsonify({'error': f'Comentário deve ter entre {LIMITS["comment_content_min"]} e {LIMITS["comment_content_max"]} caracteres.'}), 400
         
         # Verifica se o post existe
         post = db.get_post(post_id)
@@ -55,6 +58,14 @@ def add_comment(post_id):
         new_comment = db.get_comment_by_id(comment_id, include_hidden=True)
         
         if new_comment:
+            if post.get('user_id'):
+                db.create_notification(
+                    user_id=post['user_id'],
+                    notification_type='post_reply',
+                    title='Nova resposta no seu post',
+                    message='Alguém respondeu um desabafo seu. Entre para acompanhar.',
+                    reference_id=post_id,
+                )
             comment_data = {
                 'id': new_comment['id'],
                 'text': new_comment['mensagem'],
@@ -67,4 +78,3 @@ def add_comment(post_id):
     except Exception as e:
         print(f"Erro ao adicionar comentário ao post {post_id}: {e}")
         return jsonify({'error': 'Erro interno do servidor'}), 500
-

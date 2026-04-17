@@ -70,6 +70,8 @@
         <a href="{{ url_for('main.how_it_works') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Como Funciona</a>
         {% if session.get('user_id') %}
           <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Perfil</a>
+          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Notificações</a>
+          <a href="{{ url_for('posts.rascunhos') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Rascunhos</a>
           <form method="post" action="{{ url_for('auth.logout') }}" class="my-1 md:mx-3">
             <button type="submit" class="nav-link-modern text-sm">Sair</button>
           </form>
