@@ -18,6 +18,8 @@
             <div id="form-error" class="hidden mb-4 p-3 bg-red-500/15 border border-red-400/30 text-red-200 rounded-lg text-sm"></div>
 
             <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo">
+              <input type="hidden" id="sensitive_ack" name="sensitive_ack" value="0">
+              <input type="hidden" id="sensitive_risk" name="sensitive_risk" value="">
               <div>
                 <label for="titulo" class="block font-medium text-slate-300 mb-2">Título (opcional)</label>
                 <input id="titulo" name="titulo" type="text" maxlength="120" placeholder="Até 120 caracteres" class="form-input w-full p-3" />
@@ -59,6 +61,23 @@
                 </button>
               </div>
             </form>
+            <div id="sensitive-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+              <div class="modal-backdrop absolute inset-0"></div>
+              <div class="sensitive-modal-card relative w-full max-w-lg p-6 md:p-8">
+                <h3 id="sensitive-modal-title" class="text-xl font-semibold text-slate-100 mb-3"></h3>
+                <p id="sensitive-modal-message" class="text-slate-300 leading-relaxed"></p>
+                <div id="sensitive-help" class="hidden mt-4 rounded-xl p-4">
+                  <p class="text-slate-200 font-medium mb-1">Centro de Valorização da Vida (CVV)</p>
+                  <p class="text-slate-300 text-sm">Telefone: 188 (24h, gratuito)</p>
+                  <p class="text-slate-300 text-sm">Chat: <a class="underline decoration-dotted" href="https://cvv.org.br" target="_blank" rel="noopener noreferrer">https://cvv.org.br</a></p>
+                </div>
+                <p id="sensitive-block-reason" class="hidden mt-4 text-sm text-amber-200"></p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                  <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar e postar</button>
+                  <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar texto</button>
+                </div>
+              </div>
+            </div>
           {% else %}
             <div class="space-y-4">
               <p class="text-slate-300">Para publicar um desabafo, entre na sua conta.</p>

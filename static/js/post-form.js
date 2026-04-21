@@ -9,6 +9,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const minLength = 10;  // Limite mínimo de caracteres
     const submitButton = document.getElementById('submit-button');
     const remainingChars = document.getElementById('remaining-chars');
+    const sensitiveAck = document.getElementById('sensitive_ack');
+    const sensitiveRisk = document.getElementById('sensitive_risk');
+    const sensitiveModal = document.getElementById('sensitive-modal');
+    const sensitiveModalTitle = document.getElementById('sensitive-modal-title');
+    const sensitiveModalMessage = document.getElementById('sensitive-modal-message');
+    const sensitiveHelp = document.getElementById('sensitive-help');
+    const sensitiveBlockReason = document.getElementById('sensitive-block-reason');
+    const sensitiveContinue = document.getElementById('sensitive-continue');
+    const sensitiveEdit = document.getElementById('sensitive-edit');
+    let allowSubmitOnce = false;
+    let pendingSubmitter = null;
     
     // Função para atualizar o contador de caracteres
     function updateCharCount() {
@@ -127,6 +138,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return isValid;
     }
     
+     function openSensitiveModal(responseData) {
+        if (!sensitiveModal || !responseData) return;
+        sensitiveModalTitle.textContent = responseData.title || 'Um cuidado para você';
+        sensitiveModalMessage.textContent = responseData.message || '';
+        sensitiveHelp.classList.toggle('hidden', !responseData.show_help_contacts);
+
+        const isBlocked = !responseData.allow_continue;
+        sensitiveContinue.classList.toggle('hidden', isBlocked);
+        sensitiveBlockReason.classList.toggle('hidden', !isBlocked);
+        sensitiveBlockReason.textContent = isBlocked ? (responseData.block_reason || '') : '';
+
+        sensitiveModal.classList.remove('hidden');
+        sensitiveModal.classList.add('flex');
+    }
+
+    function closeSensitiveModal() {
+        if (!sensitiveModal) return;
+        sensitiveModal.classList.add('hidden');
+        sensitiveModal.classList.remove('flex');
+    }
+
     // Adicionar evento de input para o textarea
     if (conteudoTextarea) {
         conteudoTextarea.addEventListener('input', updateCharCount);
@@ -158,7 +190,72 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Adicionar validação ao envio do formulário
     if (postForm) {
-        postForm.addEventListener('submit', validateForm);
+        postForm.addEventListener('submit', async function(e) {
+            if (!validateForm(e)) return;
+            if (allowSubmitOnce) {
+                allowSubmitOnce = false;
+                return;
+            }
+
+            const action = (e.submitter && e.submitter.value) || 'publish';
+            if (action !== 'publish') {
+                return;
+            }
+
+            e.preventDefault();
+            pendingSubmitter = e.submitter || submitButton;
+
+            if (sensitiveAck) sensitiveAck.value = '0';
+            if (sensitiveRisk) sensitiveRisk.value = '';
+
+            try {
+                const analysisResponse = await fetch('/analyze-content', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: conteudoTextarea ? conteudoTextarea.value : ''
+                    })
+                });
+
+                if (!analysisResponse.ok) {
+                    allowSubmitOnce = true;
+                    postForm.requestSubmit(pendingSubmitter);
+                    return;
+                }
+
+                const data = await analysisResponse.json();
+                if (!data || data.risk_level === 'LOW') {
+                    allowSubmitOnce = true;
+                    postForm.requestSubmit(pendingSubmitter);
+                    return;
+                }
+
+                if (sensitiveRisk) sensitiveRisk.value = data.risk_level;
+                openSensitiveModal(data.response);
+            } catch (_) {
+                allowSubmitOnce = true;
+                postForm.requestSubmit(pendingSubmitter);
+            }
+        });
+    }
+
+    if (sensitiveContinue) {
+        sensitiveContinue.addEventListener('click', function() {
+            if (sensitiveAck) sensitiveAck.value = '1';
+            closeSensitiveModal();
+            allowSubmitOnce = true;
+            postForm.requestSubmit(pendingSubmitter || submitButton);
+        });
+    }
+
+    if (sensitiveEdit) {
+        sensitiveEdit.addEventListener('click', function() {
+            if (sensitiveAck) sensitiveAck.value = '0';
+            closeSensitiveModal();
+            if (conteudoTextarea) conteudoTextarea.focus();
+        });
     }
     
     // Adicionar animação de digitação

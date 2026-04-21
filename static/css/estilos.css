@@ -247,6 +247,23 @@ main {
   box-shadow: var(--shadow-hard);
 }
 
+.modal-backdrop {
+  background: rgba(2, 6, 20, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.sensitive-modal-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: linear-gradient(160deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96));
+  box-shadow: var(--shadow-hard);
+}
+
+#sensitive-help {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(30, 41, 59, 0.55);
+}
+
 .badge-categoria {
   border-radius: 999px;
   padding: 0.32rem 0.8rem;

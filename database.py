@@ -220,6 +220,15 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sensitive_post_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            risk_level TEXT NOT NULL
+        )
+    ''')
+
     # Tabela de karma de comentários
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS comment_karma (
@@ -533,6 +542,19 @@ def update_post_visibility(post_id, visibility):
     conn.commit()
     conn.close()
     return cursor.rowcount > 0
+
+def log_sensitive_post(post_id, risk_level):
+    """Registra internamente posts de risco sem dados de usuário."""
+    conn = get_db_connection()
+    conn.execute(
+        '''
+        INSERT INTO sensitive_post_logs (post_id, risk_level)
+        VALUES (?, ?)
+        ''',
+        (post_id, risk_level),
+    )
+    conn.commit()
+    conn.close()
 
 def get_post_count():
     """Retorna o número total de posts."""

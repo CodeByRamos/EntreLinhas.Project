@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from datetime import datetime
 import database as db
 from utils.validation import LIMITS
+from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIGH
+from services.sensitive_response import build_sensitive_response
 
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
@@ -95,10 +97,23 @@ def enviar():
         if visibility_mode not in ('anonymous', 'profile'):
             flash('Visibilidade inválida para o post.', 'error')
             return redirect(url_for('posts.feed'))
+        
+        sensitivity = evaluate_post_content(conteudo)
+        if post_status == 'published':
+            if sensitivity['should_block']:
+                flash('Detectamos sinais de risco imediato no texto. Edite a mensagem e, se puder, procure apoio no CVV (188).', 'error')
+                return redirect(url_for('posts.feed'))
+
+            if sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH):
+                sensitive_ack = request.form.get('sensitive_ack') == '1'
+                acknowledged_level = request.form.get('sensitive_risk')
+                if not sensitive_ack or acknowledged_level != sensitivity['risk_level']:
+                    flash('Antes de publicar, revise o aviso de cuidado exibido para o seu texto.', 'info')
+                    return redirect(url_for('posts.feed'))
 
         # Cria o post no banco de dados (user_id vem apenas da sessão)
         try:
-            db.create_post(
+            post_id = db.create_post(
                 mensagem=conteudo,
                 categoria=categoria,
                 user_id=session['user_id'],
@@ -106,6 +121,9 @@ def enviar():
                 title=titulo,
                 status=post_status,
             )
+            if post_status == 'published' and sensitivity['risk_level'] == RISK_HIGH:
+                db.log_sensitive_post(post_id=post_id, risk_level=RISK_HIGH)
+
         except ValueError as exc:
             flash(str(exc), 'error')
             return redirect(url_for('posts.feed'))
@@ -120,6 +138,21 @@ def enviar():
         return redirect(url_for('posts.feed'))
     
     return redirect(url_for('posts.feed'))
+@posts.route('/analyze-content', methods=['POST'])
+def analyze_content():
+    if 'user_id' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get('text') or '').strip()
+    analysis = evaluate_post_content(text)
+    response = build_sensitive_response(analysis['risk_level'], should_block=analysis['should_block'])
+
+    return jsonify({
+        'risk_level': analysis['risk_level'],
+        'should_block': analysis['should_block'],
+        'response': response,
+    })
 
 @posts.route('/meus-posts', methods=['GET'])
 def meus_posts():
