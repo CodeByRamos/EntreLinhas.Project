@@ -20,7 +20,7 @@ function loadReactions(postId) {
     fetch(`/api/reactions/${postId}`)
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+                throw new Error('Não conseguimos carregar as reações agora.');
             }
             return response.json();
         })
@@ -50,7 +50,7 @@ function loadReactions(postId) {
             console.error('Erro ao carregar reações:', error);
             const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
             if (container) {
-                container.innerHTML = '<span class="text-sm text-red-500 dark:text-red-400">Erro ao carregar reações</span>';
+                container.innerHTML = '<span class="text-sm text-red-500 dark:text-red-400">Não conseguimos carregar as reações agora.</span>';
             }
         });
 }
@@ -120,7 +120,7 @@ function toggleReaction(postId, reactionType) {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+                throw new Error('Não conseguimos registrar sua reação agora.');
             }
             return response.json();
         })
@@ -157,15 +157,15 @@ function toggleReaction(postId, reactionType) {
                 
                 // Feedback textual
                 if (data.action === 'added') {
-                    showReactionFeedback(postId, `Reação adicionada! 👍`);
+                    showReactionFeedback(postId, 'Sua reação ficou registrada.');
                 } else {
-                    showReactionFeedback(postId, `Reação removida`);
+                    showReactionFeedback(postId, 'Sua reação foi retirada.');
                 }
             }
         })
         .catch(error => {
             console.error('Erro ao processar reação:', error);
-            showReactionFeedback(postId, 'Erro ao processar reação. Tente novamente.', 'error');
+            showReactionFeedback(postId, 'Não conseguimos acolher sua reação agora. Tente de novo em instantes.', 'error');
         })
         .finally(() => {
             if (button) {
@@ -209,4 +209,3 @@ function showReactionFeedback(postId, message, type = 'success') {
         }
     }, 3000);
 }
-

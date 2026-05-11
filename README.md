@@ -1,177 +1,116 @@
-# Entre Linhas - Fórum de Desabafos Anônimos
+# EntreLinhas
 
-## Sobre o Projeto
+EntreLinhas é uma plataforma Flask para desabafos anônimos, com estética escura, misteriosa e acolhedora. O projeto preserva anonimato público, tags emocionais, ECHO, reports, perfil, página de ajuda e moderação.
 
-Entre Linhas é um fórum de desabafos anônimos desenvolvido com Flask, HTML, CSS e SQLite3. O objetivo é criar um espaço acolhedor onde usuários possam compartilhar seus pensamentos e sentimentos de forma anônima, além de interagir com os relatos de outras pessoas através de comentários e reações.
+## Stack
 
-## Funcionalidades
+- Python 3
+- Flask
+- Flask-SQLAlchemy
+- Flask-Migrate/Alembic
+- PostgreSQL recomendado/obrigatório em produção
+- SQLite apenas para desenvolvimento local
+- Gunicorn para servidor web
+- Storage configurável para uploads: local, Cloudinary ou S3
 
-### Funcionalidades Base
-- **Página inicial** acolhedora com introdução ao propósito do site
-- **Feed de desabafos** com design responsivo e intuitivo
-- **Sistema de comentários anônimos** para cada desabafo
-- **Sistema de reações** personalizadas ("te entendo", "força!", "abraço virtual")
-- **Páginas informativas** como "Sobre o site" e "Como funciona"
+## Rodar localmente
 
-### Novas Funcionalidades
-- **Sistema de moderação** para conteúdo inadequado
-- **Filtragem de desabafos por categoria** para facilitar a navegação
-- **Paginação** para melhor organização dos desabafos
-- **Persistência do modo escuro/claro** para melhor experiência do usuário
-- **Estatísticas anônimas** sobre o uso da plataforma
-- **Pesquisa de desabafos** por palavras-chave
-- **Contador de caracteres e validação** para melhorar a experiência de postagem
-- **Perfil anônimo** para acompanhar seus desabafos e comentários
-
-## Estrutura do Projeto
-
-```
-EntreLinhas Project/
-├── app.py                  # Arquivo principal da aplicação
-├── config.py               # Configurações da aplicação
-├── database.py             # Funções de acesso ao banco de dados
-├── init_db.py              # Script para inicializar o banco de dados
-├── entrelinhas.db          # Banco de dados SQLite
-├── static/                 # Arquivos estáticos
-│   ├── css/                # Estilos CSS
-│   │   └── estilos.css     # Estilos personalizados
-│   └── js/                 # Scripts JavaScript
-│       ├── comments.js     # Funcionalidades de comentários
-│       ├── main.js         # Script principal
-│       ├── post-form.js    # Validação do formulário de postagem
-│       ├── reactions.js    # Funcionalidades de reações
-│       └── theme.js        # Gerenciamento de tema claro/escuro
-├── templates/              # Templates HTML
-│   ├── base.html           # Template base
-│   ├── home.html           # Página inicial
-│   ├── feed.html           # Feed de desabafos
-│   ├── about.html          # Página "Sobre"
-│   ├── how_it_works.html   # Página "Como funciona"
-│   ├── search.html         # Página de pesquisa
-│   ├── stats.html          # Página de estatísticas
-│   ├── admin/              # Templates de administração
-│   │   ├── base.html       # Template base para admin
-│   │   ├── login.html      # Página de login
-│   │   ├── dashboard.html  # Dashboard administrativo
-│   │   ├── posts.html      # Gerenciamento de posts
-│   │   └── comments.html   # Gerenciamento de comentários
-│   └── profile/            # Templates de perfil anônimo
-│       ├── create.html     # Criação de perfil
-│       ├── view.html       # Visualização de perfil
-│       ├── edit.html       # Edição de perfil
-│       ├── posts.html      # Posts do perfil
-│       └── comments.html   # Comentários do perfil
-└── routes/                 # Rotas da aplicação
-    ├── __init__.py         # Inicialização do pacote
-    ├── main.py             # Rotas principais
-    ├── posts.py            # Rotas para posts
-    ├── comments.py         # Rotas para comentários
-    ├── reactions.py        # Rotas para reações
-    ├── admin.py            # Rotas administrativas
-    ├── stats.py            # Rotas para estatísticas
-    ├── search.py           # Rotas para pesquisa
-    └── profile.py          # Rotas para perfil anônimo
-```
-
-## Tecnologias Utilizadas
-
-- **Backend**: Flask (Python)
-- **Frontend**: HTML, CSS, JavaScript
-- **Banco de Dados**: SQLite3
-- **CSS Framework**: Tailwind CSS (via CDN)
-- **Ícones**: Heroicons
-
-## Instalação e Execução
-
-1. Clone o repositório:
-```
-git clone <url-do-repositorio>
-```
-
-2. Navegue até o diretório do projeto:
-```
-cd EntreLinhas
-```
-
-3. Instale as dependências:
-```
-pip install flask
-```
-
-4. Inicialize o banco de dados:
-```
-python init_db.py
-```
-
-5. Execute a aplicação:
-```
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python -c "import database as db; db.init_db()"
 python app.py
 ```
 
-6. Acesse a aplicação em seu navegador:
+Acesse `http://127.0.0.1:5000/feed`.
+
+Antes de rodar localmente com o `.env` copiado, ajuste `FLASK_ENV=development` e `ENVIRONMENT=development`. Assim você pode deixar `STORAGE_PROVIDER=local` e usar SQLite. Isso não deve ser usado como banco principal em produção.
+
+## Variáveis principais
+
+- `SECRET_KEY`: obrigatória em produção.
+- `DATABASE_URL`: PostgreSQL em produção. URLs `postgres://` são normalizadas e o SQLAlchemy usa o driver `psycopg` automaticamente.
+- `STORAGE_PROVIDER`: `local`, `cloudinary` ou `s3`.
+- `UPLOAD_FOLDER`: usado apenas no storage local.
+- `MAX_CONTENT_LENGTH`: limite geral de upload.
+- `PROFILE_PHOTO_MAX_BYTES`: limite de foto de perfil.
+- `SESSION_COOKIE_SECURE`: use `true` em HTTPS.
+- `ADMIN_EMAIL` e `ADMIN_PASSWORD`: referência operacional para criação/admin inicial.
+
+## PostgreSQL e migrations
+
+Produção deve usar PostgreSQL:
+
+```bash
+set DATABASE_URL=postgresql://usuario:senha@host:5432/banco
+flask db upgrade
 ```
-http://localhost:5000
+
+A migration inicial está em `migrations/versions/20260511_0001_production_schema.py` e cria as tabelas necessárias para usuários, posts, comentários, reports, ECHO, textos do dia, apoio emocional, notificações e tokens.
+
+O projeto ainda mantém `database.py` para compatibilidade com a base atual. Quando `DATABASE_URL` aponta para PostgreSQL, as conexões usam PostgreSQL e o SQLite local deixa de ser o caminho principal.
+
+Internamente, a configuração converte `postgresql://` para `postgresql+psycopg://` apenas no SQLAlchemy/Alembic. A camada legada continua recebendo o URI PostgreSQL puro, compatível com `psycopg`.
+
+## Storage persistente
+
+Uploads locais podem sumir em plataformas como Render, Railway, Fly.io ou Heroku-like. Em produção, configure um provider persistente.
+
+Cloudinary:
+
+```env
+STORAGE_PROVIDER=cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
-## Melhorias Implementadas
+S3:
 
-### 1. Sistema de Moderação
-- Painel administrativo para gerenciar conteúdo
-- Filtro de conteúdo inadequado
-- Possibilidade de ocultar posts e comentários
+```env
+STORAGE_PROVIDER=s3
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=
+AWS_REGION=
+AWS_PUBLIC_BASE_URL=
+```
 
-### 2. Filtragem por Categoria
-- Categorias para organizar os desabafos (trabalho, relacionamentos, família, etc.)
-- Interface intuitiva para filtrar por categoria
-- Badges coloridas para identificar categorias
+O storage local fica disponível apenas como fallback de desenvolvimento.
 
-### 3. Paginação
-- Navegação eficiente entre páginas de desabafos
-- Controle de quantidade de itens por página
-- Indicadores visuais de página atual
+## Criar admin
 
-### 4. Tema Escuro/Claro
-- Alternância entre temas claro e escuro
-- Persistência da preferência do usuário via localStorage
-- Design responsivo para ambos os temas
+```bash
+python -c "import database as db; db.init_db(); print(db.ensure_admin_user('admin', 'troque-esta-senha', nickname='Admin', email='admin@example.com'))"
+```
 
-### 5. Estatísticas Anônimas
-- Visualização de dados sobre uso da plataforma
-- Gráficos de categorias mais populares
-- Contagem de desabafos e comentários
+Depois acesse `/admin/login`.
 
-### 6. Sistema de Pesquisa
-- Busca por palavras-chave nos desabafos
-- Resultados organizados por relevância
-- Interface amigável para pesquisa
+## Deploy
 
-### 7. Melhorias na Experiência de Postagem
-- Contador de caracteres em tempo real
-- Validação de formulários
-- Feedback visual durante a digitação
+Start command:
 
-### 8. Perfil Anônimo
-- Criação de perfil sem necessidade de e-mail ou senha
-- Acompanhamento de desabafos e comentários próprios
-- Personalização com apelido e bio
+```bash
+gunicorn app:app --bind 0.0.0.0:$PORT
+```
 
-## Próximos Passos
+Configuração mínima:
 
-Algumas sugestões para futuras melhorias:
+- `ENVIRONMENT=production`
+- `FLASK_ENV=production`
+- `SECRET_KEY` configurada
+- `DATABASE_URL` com PostgreSQL
+- `SESSION_COOKIE_SECURE=true`
+- `STORAGE_PROVIDER=cloudinary` ou `s3`
+- migrations rodadas com `flask db upgrade`
 
-1. **Notificações**: Sistema para notificar usuários sobre novos comentários em seus desabafos
-2. **Tags personalizadas**: Permitir que usuários criem tags além das categorias existentes
-3. **Compartilhamento**: Opção para compartilhar desabafos em redes sociais
-4. **Recursos de acessibilidade**: Melhorar a experiência para usuários com necessidades especiais
-5. **Suporte a imagens**: Permitir anexar imagens aos desabafos
-6. **Modo offline**: Funcionalidade básica quando sem conexão com a internet
-7. **Exportação de dados**: Permitir que usuários baixem seus próprios desabafos e comentários
+## QA antes de publicar
 
-## Licença
+Use:
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.
+- `DEPLOY_CHECKLIST.md`
+- `QA_DEVICE_CHECKLIST.md`
 
-## Contato
-
-Para qualquer dúvida ou sugestão, entre em contato através do e-mail: contato@entrelinhas.com
-
+Teste cadastro, login, logout, feed, novo desabafo, conteúdo sensível, ECHO, reports, perfil, upload de foto, páginas legais, admin, responsividade e persistência após redeploy.

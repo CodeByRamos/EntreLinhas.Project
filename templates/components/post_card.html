@@ -3,7 +3,7 @@
 {% set labels = emotional_tag_labels|default({}) %}
 <article id="post-{{ post.id }}" class="post-card mood-card mood-{{ tag }} fade-in overflow-hidden">
   <div class="p-6 content-spacing">
-    <div class="flex items-start justify-between gap-4 mb-4">
+    <div class="flex items-start justify-between gap-4 mb-5">
       <div class="flex items-center gap-3 min-w-0">
         {% if post.user_id and post.visibility_mode == 'profile' %}
           {% set avatar_src = (post.author_profile_photo if 'author_profile_photo' in post.keys() else none) or (post.author_avatar_url if 'author_avatar_url' in post.keys() else none) %}
@@ -14,12 +14,12 @@
           {% endif %}
           <div class="min-w-0">
             <p class="text-sm text-primary-200 truncate">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}</p>
-            <p class="text-xs text-slate-500">perfil visivel</p>
+            <p class="text-xs text-slate-500">perfil visível</p>
           </div>
         {% else %}
           <span class="post-author-avatar avatar-default avatar-noite"></span>
           <div>
-            <p class="text-sm text-slate-400">anonimo</p>
+            <p class="text-sm text-slate-300">alguém escreveu</p>
             <p class="text-xs text-slate-500">uma voz entre as linhas</p>
           </div>
         {% endif %}
@@ -30,11 +30,11 @@
     {% if post.title %}
       <h3 class="text-xl font-semibold text-slate-100 mb-3">{{ post.title }}</h3>
     {% endif %}
-    <p class="text-gray-100 whitespace-pre-line text-lg leading-relaxed mb-4">{{ post.mensagem }}</p>
-    <div class="flex justify-between items-center text-sm text-slate-400 font-medium">
+    <p class="text-gray-100 whitespace-pre-line text-lg leading-relaxed mb-5">{{ post.mensagem }}</p>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm text-slate-400 font-medium">
       <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
-      <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 justify-end">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+      <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 sm:justify-end">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
         </svg>
         {{ post.data_postagem }}
@@ -46,7 +46,7 @@
     <div class="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
       <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
         <div class="flex items-center gap-2 reaction-buttons-container">
-          <span class="text-sm text-slate-400">Carregando reacoes...</span>
+          <span class="text-sm text-slate-400">Preparando reações...</span>
         </div>
       </div>
 
@@ -66,12 +66,12 @@
         <button
           class="report-button text-slate-400 hover:text-fuchsia-300 text-sm flex items-center transition duration-300"
           data-post-id="{{ post.id }}"
-          title="Avisar a moderacao sobre este desabafo"
+          title="Avisar a moderação sobre este desabafo"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
           </svg>
-          Avisar
+          Avisar com cuidado
         </button>
         {% endif %}
       </div>
@@ -80,17 +80,18 @@
 
   <div class="border-t border-slate-800/70">
     <div class="p-6 space-y-4">
-      <h3 class="text-lg font-semibold text-slate-100">Comentarios</h3>
+      <h3 class="text-lg font-semibold text-slate-100">Respostas</h3>
       <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
-        <p class="text-slate-400 text-sm">Carregando comentarios...</p>
+        <p class="text-slate-400 text-sm">Abrindo espaço para respostas...</p>
       </div>
 
       <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
         <div class="flex flex-col sm:flex-row items-start gap-3">
           <div class="flex-grow w-full">
+            <label class="sr-only">Responder anonimamente</label>
             <textarea
               class="input-modern w-full resize-none text-sm"
-              placeholder="Deixe um comentario anonimo..."
+              placeholder="Deixe uma resposta com cuidado..."
               rows="2"
               minlength="2"
               maxlength="500"

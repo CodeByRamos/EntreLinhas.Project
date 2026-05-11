@@ -110,20 +110,20 @@ function resolveReport(reportId) {
                     resolveBtn.remove();
                 }
                 
-                alert('Report marcado como resolvido!');
+                alert('Aviso marcado como resolvido.');
             } else {
-                alert('Erro ao resolver report: ' + data.message);
+                alert(data.message || 'Não conseguimos resolver esse aviso agora.');
             }
         })
         .catch(error => {
             console.error('Erro:', error);
-            alert('Erro ao resolver report. Tente novamente.');
+            alert('Não conseguimos resolver esse aviso agora. Tente de novo em instantes.');
         });
     }
 }
 
 function removeReport(reportId) {
-    if (confirm('Tem certeza que deseja remover este report permanentemente?')) {
+    if (confirm('Quer remover este aviso da moderação?')) {
         fetch(`/admin/comment-reports/${reportId}/remove`, {
             method: 'DELETE',
             headers: {
@@ -136,17 +136,16 @@ function removeReport(reportId) {
                 const reportItem = document.querySelector(`[data-report-id="${reportId}"]`);
                 reportItem.remove();
                 
-                alert('Report removido com sucesso!');
+                alert('Aviso removido.');
             } else {
-                alert('Erro ao remover report: ' + data.message);
+                alert(data.message || 'Não conseguimos remover esse aviso agora.');
             }
         })
         .catch(error => {
             console.error('Erro:', error);
-            alert('Erro ao remover report. Tente novamente.');
+            alert('Não conseguimos remover esse aviso agora. Tente de novo em instantes.');
         });
     }
 }
 </script>
 {% endblock %}
-

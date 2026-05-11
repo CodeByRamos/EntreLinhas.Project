@@ -32,6 +32,16 @@ def _safe_redirect_target(default_endpoint="posts.feed"):
         return next_url
     return url_for(default_endpoint)
 
+
+def _row_value(row, key, default=None):
+    if not row:
+        return default
+    if hasattr(row, "keys") and key in row.keys():
+        return row[key]
+    if isinstance(row, dict):
+        return row.get(key, default)
+    return default
+
 @auth.route('/registro', methods=['GET', 'POST'])
 def registro():
     """Página e lógica de registro de usuário."""
@@ -53,42 +63,42 @@ def registro():
         
         # Validações
         if not email or not password:
-            message = "E-mail e senha são obrigatórios."
+            message = "Preencha e-mail e senha para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
         if username and not is_valid_username(username):
-            message = "Username inválido. Use 3 a 30 caracteres (letras, números, _ ou .)."
+            message = "Esse nome precisa ter de 3 a 30 caracteres e usar apenas letras, números, ponto ou underline."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
         if not is_valid_email(email):
-            message = "Informe um e-mail válido."
+            message = "Esse e-mail não parece válido."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
         if len(password) < LIMITS["password_min"] or len(password) > LIMITS["password_max"]:
-            message = f"Senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+            message = f"Sua senha precisa ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
         if password != confirm_password:
-            message = "Senhas não coincidem."
+            message = "As senhas precisam ser iguais."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
         
         if bio and len(bio) > LIMITS["bio_max"]:
-            message = f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
+            message = f"Sua bio precisa ter no máximo {LIMITS['bio_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -115,21 +125,23 @@ def registro():
         if success:
             # Fazer login automático
             user = payload['user']
-            if user.get('email'):
+            user_email = _row_value(user, 'email')
+            delivery = {}
+            if user_email:
                 token = db.create_email_verification_token(user['id'])
-                delivery = send_email_verification(user['email'], token)
+                delivery = send_email_verification(user_email, token)
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']
             session.permanent = True
             
-            message = "Conta criada com sucesso!"
+            message = "Sua conta foi criada. Pode entrar com calma."
             redirect_target = _safe_redirect_target()
             if request.is_json:
                 return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
             flash(message, 'success')
-            if user.get('email') and delivery.get('preview_url'):
-                flash(f"Ambiente local: confirme seu e-mail em {delivery['preview_url']}", 'success')
+            if user_email and delivery.get('sent'):
+                flash("Enviamos um caminho de confirmação para seu e-mail.", 'success')
             return redirect(redirect_target)
         else:
             if request.is_json:
@@ -138,7 +150,7 @@ def registro():
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
-        message = "Erro interno do servidor."
+        message = "Não conseguimos criar sua conta agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
@@ -157,14 +169,14 @@ def login():
         password = data.get('password', '')
 
         if not email or not password:
-            message = "E-mail e senha são obrigatórios."
+            message = "Preencha e-mail e senha para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/login.html', next_url=request.form.get('next', ''))
 
         if not is_valid_email(email):
-            message = "Informe um e-mail válido."
+            message = "Esse e-mail não parece válido."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -181,7 +193,7 @@ def login():
             session['nickname'] = user['nickname']
             session.permanent = True
 
-            message = f"Bem-vindo de volta, {user['nickname']}!"
+            message = f"Que bom te ver de volta, {user['nickname']}."
             redirect_target = _safe_redirect_target()
             if request.is_json:
                 return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
@@ -195,7 +207,7 @@ def login():
             return render_template('auth/login.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
-        message = "Erro interno do servidor."
+        message = "Não conseguimos entrar agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
@@ -205,20 +217,20 @@ def login():
 def logout():
     """Logout do usuário."""
     session.clear()
-    flash("Logout realizado com sucesso!", 'success')
+    flash("Você saiu com segurança.", 'success')
     return redirect(_safe_redirect_target(default_endpoint='main.home'))
 
 @auth.route('/perfil')
 def perfil():
     """Página de perfil do usuário."""
     if 'user_id' not in session:
-        flash("É necessário estar logado para acessar o perfil.", 'error')
+        flash("Entre na sua conta para ver seu perfil.", 'error')
         return redirect(url_for('auth.login'))
     
     user = get_current_user(session)
     if not user:
         session.clear()
-        flash("Usuário não encontrado.", 'error')
+        flash("Não encontramos sua conta. Entre novamente para continuar.", 'error')
         return redirect(url_for('auth.login'))
     
     stats = db.get_user_stats(user['id'])
@@ -229,13 +241,13 @@ def perfil():
 def editar_perfil():
     """Página e lógica para editar perfil do usuário."""
     if 'user_id' not in session:
-        flash("É necessário estar logado para editar o perfil.", 'error')
+        flash("Entre na sua conta para editar seu perfil.", 'error')
         return redirect(url_for('auth.login'))
     
     user = db.get_user_by_id(session['user_id'])
     if not user:
         session.clear()
-        flash("Usuário não encontrado.", 'error')
+        flash("Não encontramos sua conta. Entre novamente para continuar.", 'error')
         return redirect(url_for('auth.login'))
     
     if request.method == 'GET':
@@ -253,27 +265,27 @@ def editar_perfil():
         default_visibility_mode = data.get('default_visibility_mode', 'anonymous').strip().lower()
         
         if not nickname:
-            message = "Apelido é obrigatório."
+            message = "Escolha um apelido para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
         
         if not display_name:
-            message = "Nome público é obrigatório."
+            message = "Escolha um nome público para o perfil."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
 
         if bio and len(bio) > LIMITS["bio_max"]:
-            message = f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
+            message = f"Sua bio precisa ter no máximo {LIMITS['bio_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
         if email and not is_valid_email(email):
-            message = "Informe um e-mail válido."
+            message = "Esse e-mail não parece válido."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -324,7 +336,7 @@ def editar_perfil():
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
             
     except Exception as e:
-        message = "Erro interno do servidor."
+        message = "Não conseguimos atualizar seu perfil agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
@@ -334,7 +346,7 @@ def editar_perfil():
 def alterar_senha():
     """Página e lógica para alterar senha do usuário."""
     if 'user_id' not in session:
-        flash("É necessário estar logado para alterar a senha.", 'error')
+        flash("Entre na sua conta para alterar sua senha.", 'error')
         return redirect(url_for('auth.login'))
     
     if request.method == 'GET':
@@ -390,7 +402,7 @@ def alterar_senha():
             return render_template('auth/alterar_senha.html')
             
     except Exception as e:
-        message = "Erro interno do servidor."
+        message = "Não conseguimos alterar sua senha agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')

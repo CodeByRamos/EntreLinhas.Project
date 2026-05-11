@@ -12,7 +12,7 @@ def get_comments(post_id):
         # Verifica se o post existe
         post = db.get_post(post_id)
         if not post:
-            return jsonify({'error': 'Post não encontrado'}), 404
+            return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
         
         comments_list = db.get_comments(post_id)
         
@@ -28,7 +28,7 @@ def get_comments(post_id):
         return jsonify({'comments': comments_data})
     except Exception as e:
         print(f"Erro ao carregar comentários do post {post_id}: {e}")
-        return jsonify({'error': 'Erro interno do servidor'}), 500
+        return jsonify({'error': 'Não conseguimos carregar as respostas agora.'}), 500
 
 @comments.route('/api/comments/<int:post_id>', methods=['POST'])
 def add_comment(post_id):
@@ -37,22 +37,22 @@ def add_comment(post_id):
         data = request.json
         
         if not data or 'text' not in data or not data['text'].strip():
-            return jsonify({'error': 'O comentário não pode estar vazio'}), 400
+            return jsonify({'error': 'Escreva uma resposta antes de enviar.'}), 400
         
         comment_text = data['text'].strip()
         if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
-            return jsonify({'error': f'Comentário deve ter entre {LIMITS["comment_content_min"]} e {LIMITS["comment_content_max"]} caracteres.'}), 400
+            return jsonify({'error': f'Sua resposta precisa ter entre {LIMITS["comment_content_min"]} e {LIMITS["comment_content_max"]} caracteres.'}), 400
         
         # Verifica se o post existe
         post = db.get_post(post_id)
         if not post:
-            return jsonify({'error': 'Post não encontrado'}), 404
+            return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
         
         # Cria o comentário no banco de dados
         comment_id = db.create_comment(post_id, comment_text)
         
         if not comment_id:
-            return jsonify({'error': 'Erro ao criar comentário'}), 500
+            return jsonify({'error': 'Não conseguimos guardar sua resposta agora.'}), 500
         
         # Obtém o comentário recém-criado para retornar
         new_comment = db.get_comment_by_id(comment_id, include_hidden=True)
@@ -73,8 +73,8 @@ def add_comment(post_id):
             }
             return jsonify({'comment': comment_data})
         else:
-            return jsonify({'error': 'Erro ao recuperar comentário criado'}), 500
+            return jsonify({'error': 'Sua resposta foi enviada, mas não conseguimos mostrá-la agora.'}), 500
             
     except Exception as e:
         print(f"Erro ao adicionar comentário ao post {post_id}: {e}")
-        return jsonify({'error': 'Erro interno do servidor'}), 500
+        return jsonify({'error': 'Não conseguimos enviar sua resposta agora.'}), 500

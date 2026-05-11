@@ -1,16 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}Editar Perfil - Entre Linhas{% endblock %}
+{% block title %}Editar Perfil - EntreLinhas{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-12 max-w-3xl">
-  <div class="glass-panel p-8">
-    <h1 class="text-2xl font-bold mb-2">Editar perfil</h1>
-    <p class="text-slate-400 mb-8">Pequenos detalhes para que sua presenca tenha um rosto, sem perder o direito ao anonimato.</p>
+<div class="container mx-auto px-6 py-12 max-w-4xl">
+  <section class="glass-panel content-band">
+    <div class="mb-8">
+      <p class="section-kicker">perfil</p>
+      <h1 class="text-3xl font-bold mt-2">Editar presença</h1>
+      <p class="text-slate-400 mt-2">Pequenos detalhes para que sua presença tenha um rosto, sem perder o direito ao anonimato.</p>
+    </div>
 
     <form method="POST" enctype="multipart/form-data" class="space-y-6">
       <div class="profile-photo-editor">
-        <div class="avatar-shell">
+        <div class="avatar-shell profile-avatar-lg">
           {% if user.profile_photo %}
             <img src="{{ user.profile_photo }}" alt="Foto de perfil atual" class="avatar-image" />
           {% elif user.avatar_url %}
@@ -22,17 +25,17 @@
         <div class="flex-1">
           <label class="block text-sm mb-2" for="profile_photo">Foto de perfil</label>
           <input id="profile_photo" name="profile_photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="input-modern w-full file-input-soft" />
-          <p class="text-xs text-slate-400 mt-2">JPG, PNG ou WEBP, ate 2MB. Se preferir, escolha um avatar padrao abaixo.</p>
+          <p class="form-helper">JPG, PNG ou WEBP, até 2MB. Se preferir, escolha um avatar padrão abaixo.</p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label class="block text-sm mb-2" for="display_name">Nome publico</label>
+          <label class="block text-sm mb-2" for="display_name">Nome público</label>
           <input id="display_name" name="display_name" class="input-modern w-full" value="{{ user.display_name or user.nickname }}" minlength="3" maxlength="30" required />
         </div>
         <div>
-          <label class="block text-sm mb-2" for="username">Nome de usuario</label>
+          <label class="block text-sm mb-2" for="username">Nome de usuário</label>
           <input id="username" name="username" class="input-modern w-full" value="{{ user.username }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.]+" required />
         </div>
       </div>
@@ -44,12 +47,12 @@
 
       <div>
         <label class="block text-sm mb-2" for="bio">Bio curta</label>
-        <textarea id="bio" name="bio" rows="3" maxlength="240" class="input-modern w-full" placeholder="Um fragmento sobre voce, se quiser.">{{ user.bio or '' }}</textarea>
-        <p class="text-xs text-slate-400 mt-1">Ate 240 caracteres.</p>
+        <textarea id="bio" name="bio" rows="3" maxlength="240" class="input-modern w-full" placeholder="Um fragmento sobre você, se quiser.">{{ user.bio or '' }}</textarea>
+        <p class="form-helper">Até 240 caracteres.</p>
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="default_avatar">Avatar padrao</label>
+        <label class="block text-sm mb-2" for="default_avatar">Avatar padrão</label>
         <select id="default_avatar" name="default_avatar" class="input-modern w-full">
           {% for avatar in default_avatars %}
           <option value="{{ avatar.valor }}" {% if (user.default_avatar or 'vazio') == avatar.valor %}selected{% endif %}>{{ avatar.nome }}</option>
@@ -63,18 +66,18 @@
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="default_visibility_mode">Preferencia de exibicao dos posts</label>
+        <label class="block text-sm mb-2" for="default_visibility_mode">Preferência de exibição dos posts</label>
         <select id="default_visibility_mode" name="default_visibility_mode" class="input-modern w-full">
-          <option value="anonymous" {% if (user.default_visibility_mode or 'anonymous') == 'anonymous' %}selected{% endif %}>Anonimo por padrao</option>
-          <option value="profile" {% if user.default_visibility_mode == 'profile' %}selected{% endif %}>Mostrar meu perfil por padrao</option>
+          <option value="anonymous" {% if (user.default_visibility_mode or 'anonymous') == 'anonymous' %}selected{% endif %}>Anônimo por padrão</option>
+          <option value="profile" {% if user.default_visibility_mode == 'profile' %}selected{% endif %}>Mostrar meu perfil por padrão</option>
         </select>
       </div>
 
-      <div class="flex flex-wrap gap-3">
-        <button type="submit" class="btn-modern btn-primary">Salvar alteracoes</button>
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button type="submit" class="btn-modern btn-primary">Salvar perfil</button>
         <a href="{{ url_for('auth.perfil') }}" class="btn-modern btn-ghost">Voltar ao perfil</a>
       </div>
     </form>
-  </div>
+  </section>
 </div>
 {% endblock %}

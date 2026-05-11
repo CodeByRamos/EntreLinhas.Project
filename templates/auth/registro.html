@@ -1,12 +1,18 @@
 {% extends 'base.html' %}
 
-{% block title %}Criar Conta - Entre Linhas{% endblock %}
+{% block title %}Criar Conta - EntreLinhas{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-12 max-w-2xl">
-  <div class="glass-panel p-8">
-    <h1 class="text-3xl font-semibold mb-2">Criar conta</h1>
-    <p class="text-slate-300 mb-6">Entre no EntreLinhas e escolha como quer se apresentar.</p>
+<div class="auth-shell">
+  <section class="auth-intro">
+    <p class="auth-kicker">chegar sem se expor</p>
+    <h1 class="auth-title">Crie uma conta para escrever com mais segurança.</h1>
+    <p class="auth-copy">Você pode continuar anônimo no feed. A conta existe para proteger seus textos, seus rascunhos e suas preferências.</p>
+  </section>
+
+  <section class="glass-panel auth-card">
+    <h2 class="text-2xl font-bold mb-2">Criar conta</h2>
+    <p class="text-sm text-slate-300 mb-6">Escolha como quer ser chamado dentro do EntreLinhas.</p>
 
     <form method="POST" class="space-y-5">
       <input type="hidden" name="next" value="{{ next_url or '' }}">
@@ -18,30 +24,32 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="username" class="block text-sm mb-2">Username (opcional)</label>
-          <input type="text" id="username" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_\.]+" class="input-modern w-full" placeholder="joaoramos">
+          <label for="username" class="block text-sm mb-2">Nome de usuário (opcional)</label>
+          <input type="text" id="username" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_\.]+" class="input-modern w-full" placeholder="entrelinhas">
+          <p class="form-helper">Use letras, números, ponto ou underline.</p>
         </div>
         <div>
           <label for="display_name" class="block text-sm mb-2">Nome público</label>
-          <input type="text" id="display_name" name="display_name" minlength="2" maxlength="40" class="input-modern w-full" placeholder="João Ramos">
+          <input type="text" id="display_name" name="display_name" minlength="3" maxlength="30" class="input-modern w-full" placeholder="Como quer aparecer no perfil">
         </div>
       </div>
 
       <div>
         <label for="nickname" class="block text-sm mb-2">Apelido</label>
-        <input type="text" id="nickname" name="nickname" minlength="2" maxlength="30" class="input-modern w-full" placeholder="Como quer ser chamado no app">
+        <input type="text" id="nickname" name="nickname" minlength="3" maxlength="30" class="input-modern w-full" placeholder="Um nome para ser chamado por aqui">
       </div>
 
       <div>
         <label for="bio" class="block text-sm mb-2">Bio curta (opcional)</label>
-        <textarea id="bio" name="bio" rows="3" maxlength="180" class="input-modern w-full" placeholder="Até 180 caracteres"></textarea>
+        <textarea id="bio" name="bio" rows="3" maxlength="240" class="input-modern w-full" placeholder="Um fragmento sobre você, se quiser."></textarea>
+        <p class="form-helper">Até 240 caracteres.</p>
       </div>
 
       <div>
         <label for="default_visibility_mode" class="block text-sm mb-2">Preferência de exibição</label>
         <select id="default_visibility_mode" name="default_visibility_mode" class="input-modern w-full">
-          <option value="anonymous" selected>Sempre anônimo por padrão</option>
-          <option value="profile">Sempre com perfil por padrão</option>
+          <option value="anonymous" selected>Anônimo por padrão</option>
+          <option value="profile">Mostrar meu perfil por padrão</option>
         </select>
       </div>
 
@@ -56,13 +64,13 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-modern btn-primary w-full">Criar conta</button>
+      <button type="submit" class="btn-modern btn-primary w-full">Criar meu espaço</button>
 
       <p class="text-sm text-slate-300">
         Já tem conta?
         <a href="{{ url_for('auth.login') }}" class="text-primary-300 hover:underline">Entrar agora</a>
       </p>
     </form>
-  </div>
+  </section>
 </div>
 {% endblock %}

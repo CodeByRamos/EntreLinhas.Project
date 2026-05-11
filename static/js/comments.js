@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const commentText = textarea.value.trim();
             
             if (!commentText) {
-                alert('O comentário não pode estar vazio.');
+                alert('Escreva uma resposta antes de enviar.');
                 return;
             }
             if (commentText.length < COMMENT_MIN || commentText.length > COMMENT_MAX) {
-                alert(`Comentário deve ter entre ${COMMENT_MIN} e ${COMMENT_MAX} caracteres.`);
+                alert(`Sua resposta precisa ter entre ${COMMENT_MIN} e ${COMMENT_MAX} caracteres.`);
                 return;
             }
             if (commentText) {
@@ -51,13 +51,13 @@ function loadComments(postId) {
                     container.appendChild(createCommentElement(comment));
                 });
             } else {
-                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Nenhum comentário ainda. Seja o primeiro a comentar!</p>';
+                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma resposta ainda. Talvez a sua seja a primeira.</p>';
             }
         })
         .catch(error => {
             console.error('Erro ao carregar comentários:', error);
             const container = document.querySelector(`.comments-container[data-post-id="${postId}"]`);
-            container.innerHTML = '<p class="text-red-500 dark:text-red-400 text-sm">Erro ao carregar comentários. Tente novamente mais tarde.</p>';
+            container.innerHTML = '<p class="text-red-500 dark:text-red-400 text-sm">Não conseguimos carregar as respostas agora. Tente de novo em instantes.</p>';
         });
 }
 
@@ -71,7 +71,7 @@ function submitComment(postId, commentText, textarea) {
     // Desabilita o textarea durante o envio
     textarea.disabled = true;
     const originalPlaceholder = textarea.placeholder;
-    textarea.placeholder = 'Enviando comentário...';
+    textarea.placeholder = 'Enviando resposta...';
     
     fetch(`/api/comments/${postId}`, {
         method: 'POST',
@@ -82,7 +82,7 @@ function submitComment(postId, commentText, textarea) {
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+                throw new Error('Não conseguimos enviar sua resposta agora.');
             }
             return response.json();
         })
@@ -119,7 +119,7 @@ function submitComment(postId, commentText, textarea) {
         })
         .catch(error => {
             console.error('Erro ao enviar comentário:', error);
-            alert(`Erro ao enviar comentário: ${error.message}`);
+            alert(error.message || 'Não conseguimos enviar sua resposta agora. Tente de novo em instantes.');
         })
         .finally(() => {
             // Reabilita o textarea
@@ -147,12 +147,12 @@ function createCommentElement(comment) {
             <button 
                 class="report-comment-button text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-xs flex items-center transition duration-300 ml-2"
                 data-comment-id="${comment.id}"
-                title="Reportar este comentário"
+                title="Avisar a moderação sobre esta resposta"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
                 </svg>
-                Reportar
+                Avisar
             </button>
         </div>
     `;
@@ -186,7 +186,7 @@ function escapeHTML(unsafe) {
  * @param {string} commentId - ID do comentário
  */
 function reportComment(commentId) {
-    if (confirm('Tem certeza que deseja reportar este comentário?')) {
+    if (confirm('Quer avisar a moderação sobre esta resposta?')) {
         fetch(`/api/report_comment/${commentId}`, {
             method: 'POST',
             headers: {
@@ -197,22 +197,22 @@ function reportComment(commentId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('Comentário reportado com sucesso. Nossa equipe irá analisar.');
+                    alert('A moderação recebeu seu aviso e vai olhar com cuidado.');
                     
                     // Desabilita o botão de report para evitar múltiplos reports
                     const reportButton = document.querySelector(`[data-comment-id="${commentId}"] .report-comment-button`);
                     if (reportButton) {
                         reportButton.disabled = true;
-                        reportButton.textContent = 'Reportado';
+                        reportButton.textContent = 'Avisado';
                         reportButton.classList.add('opacity-50', 'cursor-not-allowed');
                     }
                 } else {
-                    alert('Erro ao reportar comentário: ' + data.message);
+                    alert(data.message || 'Não conseguimos enviar seu aviso agora.');
                 }
             })
             .catch(error => {
                 console.error('Erro ao reportar comentário:', error);
-                alert('Erro ao reportar comentário. Tente novamente mais tarde.');
+                alert('Não conseguimos enviar seu aviso agora. Tente de novo em instantes.');
             });
     }
 }

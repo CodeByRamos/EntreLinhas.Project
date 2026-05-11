@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% from 'components/post_card.html' import render_post with context %}
 
-{% block title %}Entre Linhas — Desabafos{% endblock %}
+{% block title %}Feed - EntreLinhas{% endblock %}
 
 {% block content %}
-{% set title = 'Desabafos da Comunidade' %}
-{% set description = 'Escreva, respire e compartilhe. Um mural anônimo com acolhimento, empatia e presença.' %}
+{% set title = 'Desabafos da comunidade' %}
+{% set description = 'Um mural anônimo para sentimentos que precisavam sair do peito sem perder a delicadeza.' %}
 {% include 'components/hero.html' %}
 
 <div class="container mx-auto px-6 py-10 feed-mood mood-{{ feed_mood or 'vazio' }}">
@@ -23,31 +23,38 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div class="lg:col-span-1">
       <div class="sticky top-24 space-y-6">
-        <section id="formulario-de-envio" class="glass-panel p-6">
-          <h2 class="text-2xl font-bold mb-6">Compartilhe seu desabafo</h2>
+        <section id="formulario-de-envio" class="glass-panel feed-sidebar-card p-6">
+          <div class="post-composer-header">
+            <p class="section-kicker">escrever</p>
+            <h2 class="text-2xl font-bold">Escrever entrelinhas</h2>
+            <p class="post-composer-note">Seu texto pode aparecer sem revelar quem você é. Você escolhe o quanto quer se mostrar.</p>
+          </div>
+
           {% if session.get('user_id') %}
             <div id="form-error" class="hidden mb-4 p-3 bg-red-500/15 border border-red-400/30 text-red-200 rounded-lg text-sm"></div>
 
             <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo">
               <input type="hidden" id="sensitive_ack" name="sensitive_ack" value="0">
               <input type="hidden" id="sensitive_risk" name="sensitive_risk" value="">
+
               <div>
                 <label for="titulo" class="block font-medium text-slate-300 mb-2">Título (opcional)</label>
-                <input id="titulo" name="titulo" type="text" maxlength="120" placeholder="Até 120 caracteres" class="form-input w-full p-3" />
+                <input id="titulo" name="titulo" type="text" maxlength="120" placeholder="Dê um nome breve a esse sentimento" class="form-input w-full p-3" />
               </div>
+
               <div>
-                <label for="conteudo" class="block font-medium text-slate-300 mb-2">Seu desabafo:</label>
-                <textarea id="conteudo" name="conteudo" required minlength="3" maxlength="2000" placeholder="Escreva o que quiser dizer..." rows="6" class="form-input w-full p-4 resize-y"></textarea>
-                <div class="flex justify-between text-xs text-slate-400 mt-1">
+                <label for="conteudo" class="block font-medium text-slate-300 mb-2">Seu desabafo</label>
+                <textarea id="conteudo" name="conteudo" required minlength="3" maxlength="2000" placeholder="Escreva com calma. Este espaço não exige pressa." rows="7" class="form-input w-full p-4 resize-y"></textarea>
+                <div class="flex justify-between gap-3 text-xs text-slate-400 mt-1">
                   <span>Mínimo: 3 caracteres</span>
                   <span><span id="char-count">0</span>/<span id="max-chars">2000</span> (<span id="remaining-chars">2000</span> restantes)</span>
                 </div>
               </div>
 
               <div>
-                <label for="categoria" class="block font-medium text-slate-300 mb-2">Categoria:</label>
-                <select id="categoria" name="categoria" required class="form-input w-full p-3" aria-label="Selecione a categoria do desabafo">
-                  <option value="" disabled selected>Selecione uma categoria</option>
+                <label for="categoria" class="block font-medium text-slate-300 mb-2">Assunto</label>
+                <select id="categoria" name="categoria" required class="form-input w-full p-3" aria-label="Selecione o assunto do desabafo">
+                  <option value="" disabled selected>Escolha um assunto</option>
                   {% for categoria in categorias %}
                   <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
                   {% endfor %}
@@ -64,7 +71,7 @@
               </div>
 
               <div>
-                <label for="visibility_mode" class="block font-medium text-slate-300 mb-2">Como exibir este post?</label>
+                <label for="visibility_mode" class="block font-medium text-slate-300 mb-2">Como exibir este desabafo?</label>
                 <select id="visibility_mode" name="visibility_mode" class="form-input w-full p-3">
                   {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
                   <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
@@ -74,18 +81,21 @@
 
               <div class="flex flex-wrap gap-3">
                 <button id="submit-button" type="submit" name="action" value="publish" class="btn-modern btn-primary self-start" title="Enviar desabafo">
-                  <span>Publicar</span>
+                  <span>Guardar no feed</span>
                 </button>
                 <button type="submit" name="action" value="draft" class="btn-modern btn-ghost self-start" title="Salvar rascunho">
                   <span>Salvar rascunho</span>
                 </button>
               </div>
             </form>
+
             <div id="sensitive-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
               <div class="modal-backdrop absolute inset-0"></div>
               <div class="sensitive-modal-card relative w-full max-w-lg p-6 md:p-8">
-                <h3 id="sensitive-modal-title" class="text-xl font-semibold text-slate-100 mb-3"></h3>
+                <div class="sensitive-modal-icon" aria-hidden="true">EL</div>
+                <h3 id="sensitive-modal-title" class="text-xl font-semibold text-slate-100 mt-4 mb-3"></h3>
                 <p id="sensitive-modal-message" class="text-slate-300 leading-relaxed"></p>
+                <p id="sensitive-modal-support" class="hidden mt-3 text-slate-300 leading-relaxed"></p>
                 <div id="sensitive-help" class="hidden mt-4 rounded-xl p-4">
                   <p class="text-slate-200 font-medium mb-1">Centro de Valorização da Vida (CVV)</p>
                   <p class="text-slate-300 text-sm">Telefone: 188 (24h, gratuito)</p>
@@ -94,14 +104,14 @@
                 <p id="sensitive-block-reason" class="hidden mt-4 text-sm text-amber-200"></p>
                 <div class="mt-6 flex flex-wrap gap-3">
                   <a href="{{ url_for('support.ajuda') }}" class="btn-modern btn-ghost">Ver caminhos de ajuda</a>
-                  <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar e postar</button>
-                  <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar texto</button>
+                  <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar escrevendo</button>
+                  <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar meu desabafo</button>
                 </div>
               </div>
             </div>
           {% else %}
             <div class="space-y-4">
-              <p class="text-slate-300">Para publicar um desabafo, entre na sua conta.</p>
+              <p class="text-slate-300">Para escrever com segurança, entre na sua conta ou crie uma nova.</p>
               <div class="flex flex-wrap gap-3">
                 <a href="{{ url_for('auth.login', next=url_for('posts.feed')) }}" class="btn-modern btn-primary">Entrar</a>
                 <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="btn-modern btn-ghost">Criar conta</a>
@@ -110,12 +120,13 @@
           {% endif %}
         </section>
 
-        <section class="glass-panel p-6">
-          <h2 class="text-xl font-bold mb-4">Filtrar por categoria</h2>
-          <div class="space-y-2">
-            <a href="{{ url_for('posts.feed') }}" class="block px-4 py-2 rounded-lg {% if not categoria_atual %}bg-primary-900/80 text-primary-100 font-medium{% else %}hover:bg-slate-800 text-slate-300{% endif %}">Todas as categorias</a>
+        <section class="glass-panel feed-sidebar-card p-6">
+          <p class="section-kicker">encontrar</p>
+          <h2 class="text-xl font-bold mt-2 mb-4">Filtrar por assunto</h2>
+          <div class="filter-list">
+            <a href="{{ url_for('posts.feed') }}" class="filter-link {% if not categoria_atual %}active{% endif %}">Todas as categorias</a>
             {% for categoria in categorias %}
-            <a href="{{ url_for('posts.feed', categoria=categoria.valor) }}" class="block px-4 py-2 rounded-lg {% if categoria_atual == categoria.valor %}bg-primary-900/80 text-primary-100 font-medium{% else %}hover:bg-slate-800 text-slate-300{% endif %}">{{ categoria.nome }}</a>
+            <a href="{{ url_for('posts.feed', categoria=categoria.valor) }}" class="filter-link {% if categoria_atual == categoria.valor %}active{% endif %}">{{ categoria.nome }}</a>
             {% endfor %}
           </div>
         </section>
@@ -123,9 +134,14 @@
     </div>
 
     <div class="lg:col-span-2">
-      <h2 class="text-2xl font-bold mb-6">
-        {% if categoria_atual %}Desabafos na categoria: {{ categoria_atual }}{% else %}Desabafos recentes{% endif %}
-      </h2>
+      <div class="feed-layout-heading">
+        <div>
+          <p class="section-kicker">diário coletivo</p>
+          <h2 class="text-2xl font-bold mt-2">
+            {% if categoria_atual %}Entre {{ categoria_atual }} e silêncio{% else %}Desabafos recentes{% endif %}
+          </h2>
+        </div>
+      </div>
 
       {% if desabafos %}
         <div class="space-y-6">
@@ -134,8 +150,8 @@
           {% endfor %}
         </div>
       {% else %}
-        <div class="glass-panel p-8 text-center">
-          <p class="text-slate-300 text-xl font-medium">Ainda está quieto por aqui.</p>
+        <div class="empty-state">
+          <p class="text-slate-100 text-xl font-semibold">Ainda está quieto por aqui.</p>
           <p class="text-slate-400 mt-2">Seja a primeira voz entre as linhas.</p>
         </div>
       {% endif %}

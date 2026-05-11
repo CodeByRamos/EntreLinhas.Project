@@ -10,7 +10,7 @@ def get_reactions(post_id):
     # Verifica se o post existe
     post = db.get_post(post_id)
     if not post:
-        return jsonify({'error': 'Post não encontrado'}), 404
+        return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
     
     reaction_counts = db.get_reaction_counts(post_id)
     
@@ -28,7 +28,7 @@ def toggle_reaction(post_id):
     data = request.json
     
     if not data or 'type' not in data:
-        return jsonify({'error': 'Tipo de reação não especificado'}), 400
+        return jsonify({'error': 'Escolha uma reação antes de continuar.'}), 400
     
     reaction_type = data['type']
     user_id = data.get('user_id', 'anonymous')  # Para identificar o usuário
@@ -36,7 +36,7 @@ def toggle_reaction(post_id):
     # Verifica se o post existe
     post = db.get_post(post_id)
     if not post:
-        return jsonify({'error': 'Post não encontrado'}), 404
+        return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
     
     # Verifica se o tipo de reação é válido
     valid_reaction = False
@@ -46,7 +46,7 @@ def toggle_reaction(post_id):
             break
     
     if not valid_reaction:
-        return jsonify({'error': 'Tipo de reação inválido'}), 400
+        return jsonify({'error': 'Essa reação não está disponível agora.'}), 400
     
     # Verifica se o usuário já reagiu com este tipo
     existing_reaction = db.get_user_reaction(post_id, reaction_type, user_id)
@@ -61,7 +61,7 @@ def toggle_reaction(post_id):
         action = 'added' if success else 'error'
     
     if not success:
-        return jsonify({'error': 'Erro ao processar reação'}), 500
+        return jsonify({'error': 'Não conseguimos acolher sua reação agora.'}), 500
     
     # Obtém a contagem atualizada de reações
     reaction_counts = db.get_reaction_counts(post_id)
@@ -83,7 +83,7 @@ def toggle_reaction(post_id):
 def get_echo(post_id):
     post = db.get_post(post_id)
     if not post:
-        return jsonify({'success': False, 'message': 'Desabafo nao encontrado.'}), 404
+        return jsonify({'success': False, 'message': 'Esse desabafo não está mais disponível.'}), 404
     state = db.get_echo_state(post_id, session.get('user_id'))
     return jsonify({'success': True, 'echo': state})
 
@@ -98,9 +98,9 @@ def toggle_echo(post_id):
 
     success, action, count, active = db.toggle_echo(post_id, session['user_id'])
     if not success and action == 'not_found':
-        return jsonify({'success': False, 'message': 'Desabafo nao encontrado.'}), 404
+        return jsonify({'success': False, 'message': 'Esse desabafo não está mais disponível.'}), 404
     if not success:
-        return jsonify({'success': False, 'message': 'Nao conseguimos registrar seu eco agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos registrar seu eco agora.'}), 500
 
     message = 'Seu eco foi registrado.' if active else 'Seu eco foi recolhido.'
     return jsonify({

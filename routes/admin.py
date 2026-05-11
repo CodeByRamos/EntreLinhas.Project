@@ -38,10 +38,10 @@ def login():
             session['admin_logged_in'] = True
             session['admin_user_id'] = admin_user['id']
             session['admin_username'] = admin_user['username']
-            flash('Login realizado com sucesso!', 'success')
+            flash('Você entrou na moderação.', 'success')
             return redirect(url_for('admin.dashboard'))
         else:
-            flash('Credenciais inválidas ou sem permissão administrativa.', 'error')
+            flash('Não encontramos uma conta administrativa com esses dados.', 'error')
     
     return render_template('admin/login.html')
 
@@ -51,7 +51,7 @@ def logout():
     session.pop('admin_logged_in', None)
     session.pop('admin_user_id', None)
     session.pop('admin_username', None)
-    flash('Logout realizado com sucesso!', 'success')
+    flash('Você saiu da moderação.', 'success')
     return redirect(url_for('admin.login'))
 
 @admin.route('/')
@@ -99,9 +99,9 @@ def resolve_post_report(report_id):
     if action not in ('resolved', 'dismissed'):
         action = 'resolved'
     if db.resolve_report(report_id, status=action):
-        flash('Aviso marcado como cuidado pela moderacao.', 'success')
+        flash('Aviso marcado como cuidado pela moderação.', 'success')
     else:
-        flash('Nao conseguimos atualizar esse aviso agora.', 'error')
+        flash('Não conseguimos atualizar esse aviso agora.', 'error')
     return redirect(request.referrer or url_for('admin.post_reports'))
 
 @admin.route('/comments')
@@ -136,7 +136,7 @@ def toggle_post_visibility(post_id):
     """Rota para alternar a visibilidade de um post."""
     post = db.get_post(post_id, include_hidden=True)
     if not post:
-        flash('Post não encontrado.', 'error')
+        flash('Esse desabafo não está mais disponível.', 'error')
         return redirect(url_for('admin.posts'))
     
     # Alternar visibilidade
@@ -144,7 +144,7 @@ def toggle_post_visibility(post_id):
     db.update_post_visibility(post_id, new_visibility)
     
     action = "ocultado" if new_visibility == 0 else "tornado visível"
-    flash(f'Post #{post_id} foi {action} com sucesso!', 'success')
+    flash(f'Desabafo {action}.', 'success')
     
     # Redirecionar de volta para a página anterior
     return redirect(request.referrer or url_for('admin.posts'))
@@ -155,7 +155,7 @@ def toggle_comment_visibility(comment_id):
     """Rota para alternar a visibilidade de um comentário."""
     comment = db.get_comment_by_id(comment_id, include_hidden=True)
     if not comment:
-        flash('Comentário não encontrado.', 'error')
+        flash('Essa resposta não está mais disponível.', 'error')
         return redirect(url_for('admin.comments'))
     
     # Alternar visibilidade
@@ -163,7 +163,7 @@ def toggle_comment_visibility(comment_id):
     db.update_comment_visibility(comment_id, new_visibility)
     
     action = "ocultado" if new_visibility == 0 else "tornado visível"
-    flash(f'Comentário #{comment_id} foi {action} com sucesso!', 'success')
+    flash(f'Resposta {action}.', 'success')
     
     # Redirecionar de volta para a página anterior
     return redirect(request.referrer or url_for('admin.comments'))
@@ -179,7 +179,7 @@ def comment_reports():
         
         return render_template('admin/comment_reports.html', reports=reports)
     except Exception as e:
-        flash(f'Erro ao carregar reports de comentários: {str(e)}', 'error')
+        flash('Não conseguimos carregar os avisos de respostas agora.', 'error')
         return redirect(url_for('admin.dashboard'))
 
 @admin.route('/comment-reports/<int:report_id>/resolve', methods=['POST'])
@@ -192,13 +192,13 @@ def resolve_comment_report(report_id):
         if success:
             return jsonify({
                 'success': True, 
-                'message': 'Report de comentário resolvido com sucesso.'
+                'message': 'Aviso de resposta marcado como resolvido.'
             })
         else:
-            return jsonify({'success': False, 'message': 'Erro ao resolver report de comentário.'}), 500
+            return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
             
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
 
 @admin.route('/comment-reports/<int:report_id>/remove', methods=['DELETE'])
 @admin_required
@@ -210,10 +210,10 @@ def remove_comment_report(report_id):
         if success:
             return jsonify({
                 'success': True, 
-                'message': 'Report de comentário removido com sucesso.'
+                'message': 'Aviso de resposta removido.'
             })
         else:
-            return jsonify({'success': False, 'message': 'Erro ao remover report de comentário.'}), 500
+            return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
             
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500

@@ -69,7 +69,7 @@ function voteCommentKarma(commentId, karmaType, buttonElement) {
             if (data.action === 'added') {
                 showKarmaNotification(`Voto ${karmaType === 'up' ? 'positivo' : 'negativo'} adicionado!`, 'success');
             } else {
-                showKarmaNotification('Voto removido!', 'info');
+                showKarmaNotification('Sua reação foi retirada.', 'info');
             }
             
             // Verificar se o comentário atingiu karma alto
@@ -87,7 +87,7 @@ function voteCommentKarma(commentId, karmaType, buttonElement) {
     })
     .catch(error => {
         console.error('Erro ao votar no karma:', error);
-        showKarmaNotification('Erro ao votar. Tente novamente.', 'error');
+        showKarmaNotification('Não conseguimos registrar sua reação agora. Tente de novo em instantes.', 'error');
         
         // Reabilitar botões
         buttons.forEach(btn => btn.disabled = false);
@@ -296,4 +296,3 @@ karmaStyle.textContent = `
     }
 `;
 document.head.appendChild(karmaStyle);
-

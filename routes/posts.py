@@ -11,7 +11,7 @@ posts = Blueprint('posts', __name__)
 
 def _require_login_for_posts():
     if 'user_id' not in session:
-        flash('Faça login para continuar.', 'error')
+        flash('Entre na sua conta para continuar.', 'error')
         return redirect(url_for('auth.login', next=request.path))
     return None
 
@@ -82,7 +82,7 @@ def enviar():
     """Rota para enviar um novo desabafo."""
     if request.method == 'POST':
         if 'user_id' not in session:
-            flash('Faça login ou crie uma conta para publicar um desabafo.', 'error')
+            flash('Entre ou crie uma conta para publicar seu desabafo.', 'error')
             return redirect(url_for('auth.login', next=url_for('posts.feed')))
 
         conteudo = request.form.get('conteudo', '').strip()
@@ -98,10 +98,10 @@ def enviar():
             flash('Esse campo precisa ser preenchido.', 'error')
             return redirect(url_for('posts.feed'))
         if categoria not in valid_categories:
-            flash('Escolha um assunto da lista para publicar com seguranca.', 'error')
+            flash('Escolha um assunto da lista para publicar com segurança.', 'error')
             return redirect(url_for('posts.feed'))
         if not is_valid_emotional_tag(emotional_tag):
-            flash('Escolha uma emocao da lista para situar seu desabafo.', 'error')
+            flash('Escolha uma emoção da lista para situar seu desabafo.', 'error')
             return redirect(url_for('posts.feed'))
         if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
             flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
@@ -111,7 +111,7 @@ def enviar():
             return redirect(url_for('posts.feed'))
 
         if visibility_mode not in ('anonymous', 'profile'):
-            flash('Visibilidade inválida para o post.', 'error')
+            flash('Não conseguimos entender como exibir esse desabafo.', 'error')
             return redirect(url_for('posts.feed'))
         
         sensitivity = evaluate_post_content(conteudo)
@@ -121,7 +121,7 @@ def enviar():
                 sensitive_ack = request.form.get('sensitive_ack') == '1'
                 acknowledged_level = request.form.get('sensitive_risk')
                 if not sensitive_ack or acknowledged_level != sensitivity['risk_level']:
-                    flash('Antes de publicar, revise o aviso de cuidado exibido para o seu texto.', 'info')
+                    flash('Antes de publicar, leia o aviso de cuidado para esse texto.', 'info')
                     return redirect(url_for('posts.feed'))
 
         # Cria o post no banco de dados (user_id vem apenas da sessão)
@@ -143,16 +143,16 @@ def enviar():
             flash(str(exc), 'error')
             return redirect(url_for('posts.feed'))
         except Exception:
-            flash('Não foi possível publicar seu desabafo. Tente novamente.', 'error')
+            flash('Não conseguimos publicar seu desabafo agora. Tente novamente em instantes.', 'error')
             return redirect(url_for('posts.feed'))
         
         if post_status == 'draft':
-            flash('Rascunho salvo com sucesso!', 'success')
+            flash('Seu rascunho ficou guardado.', 'success')
             return redirect(url_for('posts.rascunhos'))
         if is_sensitive:
-            flash('Seu desabafo foi publicado. E existe ajuda real disponivel se essa dor estiver pesada demais.', 'success')
+            flash('Seu desabafo encontrou um lugar. E existe ajuda real disponível se essa dor estiver pesada demais.', 'success')
         else:
-            flash('Seu desabafo foi publicado.', 'success')
+            flash('Seu desabafo encontrou um lugar.', 'success')
         return redirect(url_for('posts.feed'))
     
     return redirect(url_for('posts.feed'))
@@ -182,7 +182,7 @@ def meus_posts():
     current_user = db.get_user_by_id(session['user_id'])
     if not current_user:
         session.clear()
-        flash("Usuário não encontrado.", 'error')
+        flash("Não encontramos sua conta. Entre novamente para continuar.", 'error')
         return redirect(url_for('auth.login'))
 
     page = request.args.get('page', 1, type=int)
@@ -231,6 +231,36 @@ def meus_posts():
     )
 
 
+@posts.route('/ecos', methods=['GET'])
+def ecos():
+    """Mostra os desabafos que o usuário ecoou."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+
+    current_user = db.get_user_by_id(session['user_id'])
+    if not current_user:
+        session.clear()
+        flash("Entre novamente para ver seus ecos.", 'error')
+        return redirect(url_for('auth.login'))
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 8
+    offset = (page - 1) * per_page
+    echoed_posts = db.get_echoed_posts_by_user(current_user['id'], limit=per_page, offset=offset)
+    total_echoes = db.get_echoed_post_count_by_user(current_user['id'])
+    total_pages = max(1, (total_echoes + per_page - 1) // per_page)
+
+    return render_template(
+        'posts/ecos.html',
+        echoed_posts=echoed_posts,
+        page=page,
+        total_pages=total_pages,
+        total_echoes=total_echoes,
+        emotional_tag_labels=EMOTIONAL_TAG_LABELS,
+    )
+
+
 @posts.route('/rascunhos', methods=['GET'])
 def rascunhos():
     auth_redirect = _require_login_for_posts()
@@ -256,7 +286,7 @@ def editar_post(post_id):
     post = db.get_post(post_id, include_hidden=True)
 
     if not _can_manage_post(post, current_user):
-        flash('Você não tem permissão para editar este post.', 'error')
+        flash('Você só pode editar os desabafos que escreveu.', 'error')
         return redirect(url_for('posts.meus_posts'))
 
     if request.method == 'GET':
@@ -275,10 +305,10 @@ def editar_post(post_id):
     status = request.form.get('status', post['status'] if 'status' in post.keys() else 'published')
 
     if not conteudo or not categoria:
-        flash('Preencha conteúdo e categoria para editar o desabafo.', 'error')
+        flash('Preencha o texto e o assunto para salvar o desabafo.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
     if not is_valid_emotional_tag(emotional_tag):
-        flash('Escolha uma emocao da lista para situar seu desabafo.', 'error')
+        flash('Escolha uma emoção da lista para situar seu desabafo.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
     if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
         flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
@@ -288,7 +318,7 @@ def editar_post(post_id):
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
     if visibility_mode not in ('anonymous', 'profile'):
-        flash('Visibilidade inválida para o post.', 'error')
+        flash('Não conseguimos entender como exibir esse desabafo.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
     sensitivity = evaluate_post_content(conteudo)
@@ -303,7 +333,7 @@ def editar_post(post_id):
         sensitive_flag=sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH),
     )
     if not updated:
-        flash('Não foi possível atualizar o post.', 'error')
+        flash('Não conseguimos atualizar seu desabafo agora.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
     flash('Seu desabafo foi atualizado.', 'success')
@@ -320,15 +350,15 @@ def excluir_post(post_id):
     post = db.get_post(post_id, include_hidden=True)
 
     if not _can_manage_post(post, current_user):
-        flash('Você não tem permissão para excluir este post.', 'error')
+        flash('Você só pode retirar os desabafos que escreveu.', 'error')
         return redirect(url_for('posts.meus_posts'))
 
     deleted = db.delete_post(post_id)
     if not deleted:
-        flash('Não foi possível excluir o post.', 'error')
+        flash('Não conseguimos retirar esse desabafo agora.', 'error')
         return redirect(url_for('posts.meus_posts'))
 
-    flash('Post excluído com sucesso.', 'success')
+    flash('Seu desabafo foi retirado.', 'success')
     return redirect(url_for('posts.meus_posts'))
 
 @posts.route('/categorias')

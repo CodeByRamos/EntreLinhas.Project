@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}Meu Perfil - Entre Linhas{% endblock %}
+{% block title %}Meu Perfil - EntreLinhas{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-12 max-w-4xl">
-  <div class="glass-panel p-8 space-y-8">
-    <div class="flex flex-col md:flex-row md:items-center gap-6">
-      <div class="avatar-shell">
+<div class="container mx-auto px-6 py-12 max-w-5xl">
+  <section class="profile-hero mb-6">
+    <div class="profile-identity">
+      <div class="avatar-shell profile-avatar-lg">
         {% if user.profile_photo %}
           <img src="{{ user.profile_photo }}" alt="Avatar de {{ user.display_name or user.nickname }}" class="avatar-image" />
         {% elif user.avatar_url %}
@@ -16,37 +16,52 @@
         {% endif %}
       </div>
 
-      <div class="space-y-2">
-        <h1 class="text-3xl font-semibold">{{ user.display_name or user.nickname }}</h1>
+      <div class="space-y-2 min-w-0">
+        <p class="section-kicker">perfil</p>
+        <h1 class="text-3xl md:text-4xl font-bold text-slate-100">{{ user.display_name or user.nickname }}</h1>
         <p class="text-slate-400">@{{ user.username }}</p>
-        <p class="text-xs {{ 'text-emerald-300' if user.is_verified else 'text-amber-300' }}">
-          {{ 'E-mail verificado' if user.is_verified else 'E-mail não verificado' }}
-        </p>
-        {% if user.bio %}<p class="text-slate-300 max-w-2xl leading-relaxed">{{ user.bio }}</p>{% endif %}
-        <p class="text-xs text-slate-400">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</p>
+        {% if user.bio %}
+          <p class="text-slate-300 max-w-2xl leading-relaxed">{{ user.bio }}</p>
+        {% else %}
+          <p class="text-slate-400 max-w-2xl leading-relaxed">Ainda sem bio. Um pequeno fragmento pode dizer muito sem entregar demais.</p>
+        {% endif %}
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="{{ 'text-emerald-300' if user.is_verified else 'text-amber-300' }}">
+            {{ 'E-mail verificado' if user.is_verified else 'E-mail ainda não verificado' }}
+          </span>
+          <span class="text-slate-500">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="profile-metrics mb-6">
+    <div class="metric-card"><strong>{{ stats.post_count }}</strong><span>desabafos</span></div>
+    <div class="metric-card"><strong>{{ stats.echoes_given|default(0) }}</strong><span>ecos dados</span></div>
+    <div class="metric-card"><strong>{{ stats.echoes_received|default(0) }}</strong><span>ecos recebidos</span></div>
+    <div class="metric-card"><strong>{{ stats.comment_count }}</strong><span>respostas</span></div>
+  </section>
+
+  <section class="glass-panel content-band">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+      <div>
+        <p class="section-kicker">preferências</p>
+        <h2 class="text-xl font-semibold mt-2">{{ 'Anônimo por padrão' if user.default_visibility_mode == 'anonymous' else 'Perfil visível por padrão' }}</h2>
+        <p class="text-slate-400 mt-1">Você ainda pode escolher a visibilidade em cada desabafo.</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>
+        <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Meus desabafos</a>
+        <a class="btn-modern btn-ghost" href="{{ url_for('posts.ecos') }}">Meus ecos</a>
+        <a class="btn-modern btn-ghost" href="{{ url_for('auth.alterar_senha') }}">Alterar senha</a>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-      <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.post_count }}</p><p class="text-slate-400 text-sm">Posts</p></div>
-      <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.comment_count }}</p><p class="text-slate-400 text-sm">Comentários</p></div>
-      <div class="glass-panel p-4"><p class="text-2xl font-bold">{{ stats.total_karma }}</p><p class="text-slate-400 text-sm">Karma</p></div>
-      <div class="glass-panel p-4"><p class="text-base font-semibold">{{ 'Sempre anônimo' if user.default_visibility_mode == 'anonymous' else 'Sempre com perfil' }}</p><p class="text-slate-400 text-sm">Preferência</p></div>
-    </div>
-
-    <div class="flex flex-wrap gap-3">
-      <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>
-      <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Meus posts</a>
-      <a class="btn-modern btn-ghost" href="{{ url_for('auth.alterar_senha') }}">Alterar senha</a>
-      {% if not user.is_verified %}
-      <form method="post" action="{{ url_for('auth.reenviar_verificacao_email') }}">
-        <button type="submit" class="btn-modern btn-ghost">Reenviar verificação</button>
-      </form>
-      {% endif %}
-      <form method="post" action="{{ url_for('auth.logout') }}">
-        <button type="submit" class="btn-modern btn-ghost">Sair</button>
-      </form>
-    </div>
-  </div>
+    {% if not user.is_verified %}
+    <form method="post" action="{{ url_for('auth.reenviar_verificacao_email') }}" class="mt-6">
+      <button type="submit" class="btn-modern btn-ghost">Reenviar verificação de e-mail</button>
+    </form>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

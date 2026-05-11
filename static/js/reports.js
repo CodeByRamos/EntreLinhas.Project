@@ -29,14 +29,14 @@ function ensureReportModal() {
         <div class="modal-backdrop absolute inset-0"></div>
         <form class="report-modal-card" id="report-form">
             <input type="hidden" id="report-post-id" />
-            <h3>Avisar a moderacao</h3>
+            <h3>Avisar a moderação</h3>
             <p>Use este aviso quando algo ferir o cuidado do EntreLinhas. A pessoa do outro lado continua sendo tratada com respeito.</p>
             <label for="report-reason">Motivo</label>
             <select id="report-reason" class="input-modern" required>
                 ${reportReasons.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}
             </select>
             <label for="report-details">Detalhes, se quiser</label>
-            <textarea id="report-details" class="input-modern" maxlength="500" rows="3" placeholder="O que a moderacao precisa saber?"></textarea>
+            <textarea id="report-details" class="input-modern" maxlength="500" rows="3" placeholder="O que a moderação precisa saber?"></textarea>
             <div class="report-modal-actions">
                 <button type="button" class="btn-modern btn-ghost" id="report-cancel">Voltar</button>
                 <button type="submit" class="btn-modern btn-primary">Enviar aviso</button>
@@ -84,7 +84,7 @@ function submitReport(event) {
         })
         .then((data) => {
             closeReportModal();
-            showSoftNotice(data.message || 'A moderacao recebeu seu aviso.');
+            showSoftNotice(data.message || 'A moderação recebeu seu aviso.');
             if (button) {
                 button.textContent = 'Avisado';
                 button.disabled = true;
@@ -99,7 +99,7 @@ function submitReport(event) {
             }
         })
         .catch((data) => {
-            showSoftNotice((data && data.message) || 'Nao conseguimos enviar seu aviso agora.', 'error');
+            showSoftNotice((data && data.message) || 'Não conseguimos enviar seu aviso agora.', 'error');
         })
         .finally(() => {
             submitButton.disabled = false;

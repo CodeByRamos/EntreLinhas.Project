@@ -2,6 +2,26 @@ import sqlite3
 from datetime import datetime, timedelta
 import os
 import secrets
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+except ImportError:
+    psycopg2 = None
+    DictCursor = None
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:
+    psycopg = None
+    dict_row = None
+
 from utils.security import hash_password, verify_password, is_legacy_hash
 from utils.validation import LIMITS, is_valid_email, is_valid_username, trim_text
 from utils.mood_styles import (
@@ -9,8 +29,117 @@ from utils.mood_styles import (
     normalize_emotional_tag,
 )
 
-# Caminho do banco de dados
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
+# Caminho do banco SQLite local. Em produção, prefira DATABASE_URL com as migrations.
+DB_PATH = os.environ.get(
+    'SQLITE_DB_PATH',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
+)
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+if DATABASE_URL.startswith("postgresql+psycopg://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql://", 1)
+USE_POSTGRES = bool(DATABASE_URL.startswith(("postgresql://", "postgresql+")))
+
+
+def _translate_sql_for_postgres(sql):
+    translated = sql.replace("?", "%s")
+    translated = translated.replace("datetime('now')", "CURRENT_TIMESTAMP")
+    translated = translated.replace('datetime("now")', "CURRENT_TIMESTAMP")
+    translated = translated.replace("last_insert_rowid()", "LASTVAL()")
+    return translated
+
+
+class _CompatRow(dict):
+    def __init__(self, data, columns):
+        super().__init__(data)
+        self._columns = columns
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return super().__getitem__(self._columns[key])
+        return super().__getitem__(key)
+
+
+class _PostgresCursor:
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self._lastrowid = None
+
+    def execute(self, sql, params=()):
+        self._cursor.execute(_translate_sql_for_postgres(sql), params or ())
+        if sql.lstrip().lower().startswith("insert"):
+            self._lastrowid = self._read_last_insert_id()
+        return self
+
+    def _read_last_insert_id(self):
+        try:
+            lookup = self._cursor.connection.cursor()
+            try:
+                lookup.execute("SELECT LASTVAL()")
+                row = lookup.fetchone()
+                if not row:
+                    return None
+                if isinstance(row, dict):
+                    return next(iter(row.values()), None)
+                return row[0]
+            finally:
+                lookup.close()
+        except Exception:
+            return None
+
+    def _wrap_row(self, row):
+        if row is None:
+            return None
+        if isinstance(row, _CompatRow):
+            return row
+        columns = [item[0] for item in (self._cursor.description or [])]
+        return _CompatRow(dict(row), columns)
+
+    def fetchone(self):
+        return self._wrap_row(self._cursor.fetchone())
+
+    def fetchall(self):
+        return [self._wrap_row(row) for row in self._cursor.fetchall()]
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+    @property
+    def lastrowid(self):
+        return self._lastrowid
+
+    def close(self):
+        self._cursor.close()
+
+
+class _PostgresConnection:
+    def __init__(self, url):
+        if psycopg2 is not None:
+            self._driver = "psycopg2"
+            self._conn = psycopg2.connect(url, cursor_factory=DictCursor)
+        elif psycopg is not None:
+            self._driver = "psycopg"
+            self._conn = psycopg.connect(url, row_factory=dict_row)
+        else:
+            raise RuntimeError("Instale psycopg[binary] para usar PostgreSQL.")
+
+    def execute(self, sql, params=()):
+        cursor = self.cursor()
+        return cursor.execute(sql, params)
+
+    def cursor(self):
+        return _PostgresCursor(self._conn.cursor())
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
 
 
 def _get_table_columns(conn, table_name):
@@ -67,6 +196,8 @@ def _sanitize_user_row(user_row):
 
 def get_db_connection():
     """Estabelece e retorna uma conexão com o banco de dados."""
+    if USE_POSTGRES:
+        return _PostgresConnection(DATABASE_URL)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # Para acessar colunas pelo nome
     return conn
@@ -576,6 +707,57 @@ def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None, s
     conn.close()
     return count
 
+
+def get_echoed_posts_by_user(user_id, limit=10, offset=0):
+    """Retorna posts que o usuário ecoou, com paginação."""
+    conn = get_db_connection()
+    posts = conn.execute(
+        '''
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode,
+               p.status AS status,
+               e.created_at AS echoed_at,
+               u.username as author_username,
+               u.nickname as author_nickname,
+               u.display_name as author_display_name,
+               u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url,
+               u.default_avatar as author_default_avatar
+        FROM echoes e
+        JOIN posts p ON p.id = e.post_id
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE e.user_id = ?
+          AND p.visivel = 1
+          AND p.status = 'published'
+          AND COALESCE(p.is_deleted, 0) = 0
+        ORDER BY e.id DESC
+        LIMIT ? OFFSET ?
+        ''',
+        (user_id, limit, offset),
+    ).fetchall()
+    conn.close()
+    return posts
+
+
+def get_echoed_post_count_by_user(user_id):
+    """Conta quantos posts publicados o usuário ecoou."""
+    conn = get_db_connection()
+    count = conn.execute(
+        '''
+        SELECT COUNT(*)
+        FROM echoes e
+        JOIN posts p ON p.id = e.post_id
+        WHERE e.user_id = ?
+          AND p.visivel = 1
+          AND p.status = 'published'
+          AND COALESCE(p.is_deleted, 0) = 0
+        ''',
+        (user_id,),
+    ).fetchone()[0]
+    conn.close()
+    return count
+
 def update_post(post_id, mensagem, categoria, visibility_mode, title=None, status="published", emotional_tag=None, sensitive_flag=False):
     """Atualiza os dados de um post."""
     mensagem = trim_text(mensagem)
@@ -824,7 +1006,7 @@ def create_comment(post_id, comment_text):
         conn.commit()
         print(f"Comentário criado com ID {comment_id} para o post {post_id}")
         return comment_id
-    except sqlite3.Error as e:
+    except Exception as e:
         conn.rollback()
         print(f"Erro ao criar comentário: {e}")
         return None
@@ -884,15 +1066,23 @@ def add_reaction(post_id, reaction_type, user_id='anonymous'):
         ''', (post_id, reaction_type, user_id))
         
         # Atualiza ou cria a contagem de reações usando INSERT OR REPLACE
-        cursor.execute('''
-            INSERT OR REPLACE INTO reaction_counts (post_id, reaction_type, count)
-            VALUES (?, ?, COALESCE((SELECT count FROM reaction_counts WHERE post_id = ? AND reaction_type = ?), 0) + 1)
-        ''', (post_id, reaction_type, post_id, reaction_type))
+        if USE_POSTGRES:
+            cursor.execute('''
+                INSERT INTO reaction_counts (post_id, reaction_type, count)
+                VALUES (?, ?, 1)
+                ON CONFLICT (post_id, reaction_type)
+                DO UPDATE SET count = reaction_counts.count + 1
+            ''', (post_id, reaction_type))
+        else:
+            cursor.execute('''
+                INSERT OR REPLACE INTO reaction_counts (post_id, reaction_type, count)
+                VALUES (?, ?, COALESCE((SELECT count FROM reaction_counts WHERE post_id = ? AND reaction_type = ?), 0) + 1)
+            ''', (post_id, reaction_type, post_id, reaction_type))
         
         conn.commit()
         print(f"Reação '{reaction_type}' adicionada e contagem atualizada para o post {post_id}.")
         return True
-    except sqlite3.Error as e:
+    except Exception as e:
         conn.rollback()
         print(f"Erro ao adicionar reação ou atualizar contagem: {e}")
         return False
@@ -1017,35 +1207,67 @@ def get_post_stats():
         ORDER BY count DESC
     ''').fetchall()
     
-    # Posts por dia da semana
-    posts_by_weekday = conn.execute('''
-        SELECT 
-            CASE 
-                WHEN strftime('%w', data_postagem) = '0' THEN 'Domingo'
-                WHEN strftime('%w', data_postagem) = '1' THEN 'Segunda'
-                WHEN strftime('%w', data_postagem) = '2' THEN 'Terça'
-                WHEN strftime('%w', data_postagem) = '3' THEN 'Quarta'
-                WHEN strftime('%w', data_postagem) = '4' THEN 'Quinta'
-                WHEN strftime('%w', data_postagem) = '5' THEN 'Sexta'
-                WHEN strftime('%w', data_postagem) = '6' THEN 'Sábado'
-            END as dia_semana,
-            COUNT(*) as count
-        FROM posts
-        WHERE visivel = 1
-        GROUP BY dia_semana
-        ORDER BY strftime('%w', data_postagem)
-    ''').fetchall()
-    
-    # Posts por hora do dia
-    posts_by_hour = conn.execute('''
-        SELECT 
-            strftime('%H', data_postagem) as hora,
-            COUNT(*) as count
-        FROM posts
-        WHERE visivel = 1
-        GROUP BY hora
-        ORDER BY hora
-    ''').fetchall()
+    if USE_POSTGRES:
+        posts_by_weekday = conn.execute('''
+            SELECT
+                CASE dow
+                    WHEN 0 THEN 'Domingo'
+                    WHEN 1 THEN 'Segunda'
+                    WHEN 2 THEN 'Terça'
+                    WHEN 3 THEN 'Quarta'
+                    WHEN 4 THEN 'Quinta'
+                    WHEN 5 THEN 'Sexta'
+                    WHEN 6 THEN 'Sábado'
+                END as dia_semana,
+                COUNT(*) as count
+            FROM (
+                SELECT EXTRACT(DOW FROM COALESCE(updated_at, CURRENT_TIMESTAMP))::int as dow
+                FROM posts
+                WHERE visivel = 1
+            ) grouped_posts
+            GROUP BY dow
+            ORDER BY dow
+        ''').fetchall()
+
+        posts_by_hour = conn.execute('''
+            SELECT
+                TO_CHAR(COALESCE(updated_at, CURRENT_TIMESTAMP), 'HH24') as hora,
+                COUNT(*) as count
+            FROM posts
+            WHERE visivel = 1
+            GROUP BY hora
+            ORDER BY hora
+        ''').fetchall()
+    else:
+        # Posts por dia da semana
+        posts_by_weekday = conn.execute('''
+            SELECT
+                CASE
+                    WHEN strftime('%w', data_postagem) = '0' THEN 'Domingo'
+                    WHEN strftime('%w', data_postagem) = '1' THEN 'Segunda'
+                    WHEN strftime('%w', data_postagem) = '2' THEN 'Terça'
+                    WHEN strftime('%w', data_postagem) = '3' THEN 'Quarta'
+                    WHEN strftime('%w', data_postagem) = '4' THEN 'Quinta'
+                    WHEN strftime('%w', data_postagem) = '5' THEN 'Sexta'
+                    WHEN strftime('%w', data_postagem) = '6' THEN 'Sábado'
+                END as dia_semana,
+                COUNT(*) as count
+            FROM posts
+            WHERE visivel = 1
+            GROUP BY dia_semana
+            ORDER BY strftime('%w', data_postagem)
+        ''').fetchall()
+
+        # Posts por hora do dia
+        posts_by_hour = conn.execute('''
+            SELECT
+                strftime('%H', data_postagem) as hora,
+                COUNT(*) as count
+            FROM posts
+            WHERE visivel = 1
+            GROUP BY hora
+            ORDER BY hora
+        ''').fetchall()
     
     conn.close()
     
@@ -1185,7 +1407,7 @@ def create_profile(nickname, bio=None):
     token = secrets.token_urlsafe(16)
     
     # Inserir o perfil no banco de dados
-    conn.execute('''
+    cursor = conn.execute('''
         INSERT INTO profiles (nickname, bio, token, created_at)
         VALUES (?, ?, ?, datetime('now'))
     ''', (nickname, bio, token))
@@ -1193,7 +1415,9 @@ def create_profile(nickname, bio=None):
     conn.commit()
     
     # Obter o ID do perfil recém-criado
-    profile_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+    profile_id = cursor.lastrowid
+    if profile_id is None:
+        profile_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     
     conn.close()
     return profile_id, token
@@ -1664,14 +1888,14 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         username = trim_text(username)
         if not is_valid_username(username):
             conn.close()
-            return False, "Esse nome precisa ter entre 3 e 30 caracteres e usar apenas letras, numeros, _ ou ponto."
+            return False, "Esse nome precisa ter entre 3 e 30 caracteres e usar apenas letras, números, _ ou ponto."
         existing_username = conn.execute(
             "SELECT id FROM users WHERE username = ? AND id <> ?",
             (username, user_id),
         ).fetchone()
         if existing_username:
             conn.close()
-            return False, "Esse nome ja esta em uso."
+            return False, "Esse nome já está em uso."
         updates.append("username = ?")
         params.append(username)
     
@@ -1679,7 +1903,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         nickname = trim_text(nickname)
         if len(nickname) < LIMITS["nickname_min"] or len(nickname) > LIMITS["nickname_max"]:
             conn.close()
-            return False, f"Apelido deve ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
+            return False, f"O apelido precisa ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
         updates.append("nickname = ?")
         params.append(nickname)
     
@@ -1687,7 +1911,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         bio = trim_text(bio) or None
         if bio and len(bio) > LIMITS["bio_max"]:
             conn.close()
-            return False, f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
+            return False, f"Sua bio precisa ter no máximo {LIMITS['bio_max']} caracteres."
         updates.append("bio = ?")
         params.append(bio)
         
@@ -1695,7 +1919,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         display_name = trim_text(display_name)
         if len(display_name) < LIMITS["display_name_min"] or len(display_name) > LIMITS["display_name_max"]:
             conn.close()
-            return False, f"Nome público deve ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
+            return False, f"O nome público precisa ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
         updates.append("display_name = ?")
         params.append(display_name)
 
@@ -1719,14 +1943,14 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         email = trim_text(email) or None
         if email and not is_valid_email(email):
             conn.close()
-            return False, "E-mail inválido."
+            return False, "Esse e-mail não parece válido."
         existing_email = conn.execute(
             "SELECT id FROM users WHERE email = ? AND id <> ?",
             (email, user_id),
         ).fetchone()
         if existing_email:
             conn.close()
-            return False, "E-mail já está em uso."
+            return False, "Esse e-mail já está em uso."
         updates.append("email = ?")
         params.append(email)
     
@@ -1748,7 +1972,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         
     except Exception as e:
         conn.close()
-        return False, "Nao conseguimos salvar isso agora. Tente de novo em instantes."
+        return False, "Não conseguimos salvar isso agora. Tente de novo em instantes."
 
 def change_password(user_id, old_password, new_password):
     """Altera a senha do usuário."""
@@ -2039,12 +2263,29 @@ def get_user_stats(user_id):
         WHERE c.user_id = ?
     ''', (user_id,)).fetchone()[0]
     
+    echoes_given = conn.execute(
+        "SELECT COUNT(*) FROM echoes WHERE user_id = ?",
+        (user_id,),
+    ).fetchone()[0]
+
+    echoes_received = conn.execute(
+        '''
+        SELECT COUNT(*)
+        FROM echoes e
+        JOIN posts p ON p.id = e.post_id
+        WHERE p.user_id = ?
+        ''',
+        (user_id,),
+    ).fetchone()[0]
+
     conn.close()
     
     return {
         'post_count': post_count,
         'comment_count': comment_count,
-        'total_karma': total_karma
+        'total_karma': total_karma,
+        'echoes_given': echoes_given,
+        'echoes_received': echoes_received
     }
 
 
@@ -2096,7 +2337,7 @@ def remove_report(post_id, profile_id=None):
         conn.close()
         return True, "Report removido com sucesso."
         
-    except sqlite3.Error as e:
+    except Exception as e:
         conn.rollback()
         conn.close()
         print(f"Erro ao remover report: {e}")
@@ -2155,7 +2396,7 @@ def remove_reaction(post_id, reaction_type, user_id):
         conn.commit()
         print(f"Reação '{reaction_type}' removida e contagem atualizada para o post {post_id}.")
         return True
-    except sqlite3.Error as e:
+    except Exception as e:
         conn.rollback()
         print(f"Erro ao remover reação ou atualizar contagem: {e}")
         return False
@@ -2178,7 +2419,7 @@ def report_comment(comment_id, reason):
         """, (comment_id, reason, data_report))
         conn.commit()
         return True
-    except sqlite3.Error as e:
+    except Exception as e:
         print(f"Erro ao reportar comentário: {e}")
         conn.rollback()
         return False
@@ -2215,7 +2456,7 @@ def resolve_comment_report(report_id):
         """, (report_id,))
         conn.commit()
         return cursor.rowcount > 0
-    except sqlite3.Error as e:
+    except Exception as e:
         print(f"Erro ao resolver report de comentário: {e}")
         conn.rollback()
         return False
@@ -2233,7 +2474,7 @@ def remove_comment_report(report_id):
         """, (report_id,))
         conn.commit()
         return cursor.rowcount > 0
-    except sqlite3.Error as e:
+    except Exception as e:
         print(f"Erro ao remover report de comentário: {e}")
         conn.rollback()
         return False
@@ -2244,13 +2485,13 @@ def remove_comment_report(report_id):
 DAILY_TEXT_FALLBACKS = [
     {
         "title": "Hoje",
-        "content": "Tem dias em que sobreviver em silencio ja e uma forma de coragem.",
+        "content": "Tem dias em que sobreviver em silêncio já é uma forma de coragem.",
         "author_name": "EntreLinhas",
         "mood": "tristeza",
     },
     {
         "title": "Eco",
-        "content": "Algumas dores nao pedem resposta. So pedem um lugar onde possam existir.",
+        "content": "Algumas dores não pedem resposta. Só pedem um lugar onde possam existir.",
         "author_name": "EntreLinhas",
         "mood": "saudade",
     },
@@ -2262,13 +2503,13 @@ DAILY_TEXT_FALLBACKS = [
     },
     {
         "title": "Vazio",
-        "content": "As vezes o vazio nao e ausencia. E so um quarto escuro esperando luz.",
+        "content": "Às vezes o vazio não é ausência. É só um quarto escuro esperando luz.",
         "author_name": "EntreLinhas",
         "mood": "vazio",
     },
     {
-        "title": "Recomeco",
-        "content": "Voce ainda pode ser gentil com a versao de si mesmo que esta tentando continuar.",
+        "title": "Recomeço",
+        "content": "Você ainda pode ser gentil com a versão de si mesmo que está tentando continuar.",
         "author_name": "EntreLinhas",
         "mood": "recomeco",
     },
@@ -2344,7 +2585,7 @@ def toggle_echo(post_id, user_id):
         conn.commit()
         count = conn.execute("SELECT COUNT(*) FROM echoes WHERE post_id = ?", (post_id,)).fetchone()[0]
         return True, action, count, active
-    except sqlite3.Error:
+    except Exception:
         conn.rollback()
         return False, "error", 0, False
     finally:
@@ -2471,7 +2712,7 @@ def resolve_report(report_id, status="resolved"):
         conn.execute("UPDATE posts SET report_count = ? WHERE id = ?", (pending, report["post_id"]))
         conn.commit()
         return True
-    except sqlite3.Error:
+    except Exception:
         conn.rollback()
         return False
     finally:
@@ -2507,7 +2748,7 @@ def remove_report(post_id, profile_id=None, user_id=None):
             conn.execute("UPDATE posts SET visivel = 1 WHERE id = ?", (post_id,))
         conn.commit()
         return True, "Seu aviso foi retirado."
-    except sqlite3.Error:
+    except Exception:
         conn.rollback()
         return False, "Nao conseguimos desfazer esse aviso agora."
     finally:

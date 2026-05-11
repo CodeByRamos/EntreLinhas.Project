@@ -21,7 +21,7 @@ def reportar_post():
         details = (data.get('details') or '').strip()
 
         if not post_id:
-            return jsonify({'success': False, 'message': 'Nao conseguimos identificar esse desabafo.'}), 400
+            return jsonify({'success': False, 'message': 'Não conseguimos identificar esse desabafo.'}), 400
         if details and len(details) > LIMITS["report_details_max"]:
             return jsonify({'success': False, 'message': 'Conte um pouco menos nos detalhes para conseguirmos receber seu aviso.'}), 400
 
@@ -53,7 +53,7 @@ def reportar_post():
             'report_count': db.get_report_count(post_id),
         })
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos enviar seu aviso agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos enviar seu aviso agora.'}), 500
 
 
 @reports.route('/api/report/<int:post_id>', methods=['DELETE'])
@@ -71,7 +71,7 @@ def desfazer_report(post_id):
             return jsonify({'success': True, 'message': message, 'report_count': db.get_report_count(post_id)})
         return jsonify({'success': False, 'message': message}), 400
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos desfazer esse aviso agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos desfazer esse aviso agora.'}), 500
 
 
 @reports.route('/api/report-count/<int:post_id>', methods=['GET'])
@@ -79,14 +79,14 @@ def obter_contagem_reports(post_id):
     try:
         return jsonify({'success': True, 'count': db.get_report_count(post_id)})
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos carregar os avisos agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos carregar os avisos agora.'}), 500
 
 
 @reports.route('/api/admin/reports', methods=['GET'])
 def listar_reports():
     try:
         if not _admin_session_valid():
-            return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
+            return jsonify({'success': False, 'message': 'Acesso restrito à moderação.'}), 403
         page = request.args.get('page', 1, type=int)
         per_page = 20
         offset = (page - 1) * per_page
@@ -94,18 +94,18 @@ def listar_reports():
         reports_list = db.get_all_reports(limit=per_page, offset=offset, status=status)
         return jsonify({'success': True, 'reports': [dict(report) for report in reports_list], 'page': page})
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos carregar os avisos agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos carregar os avisos agora.'}), 500
 
 
 @reports.route('/api/admin/reports/<int:post_id>', methods=['GET'])
 def obter_reports_post(post_id):
     try:
         if not _admin_session_valid():
-            return jsonify({'success': False, 'message': 'Acesso negado.'}), 403
+            return jsonify({'success': False, 'message': 'Acesso restrito à moderação.'}), 403
         reports_list = db.get_reports_by_post(post_id)
         return jsonify({'success': True, 'reports': [dict(report) for report in reports_list]})
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos carregar os avisos agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos carregar os avisos agora.'}), 500
 
 
 @reports.route('/api/report_comment/<int:comment_id>', methods=['POST'])
@@ -118,7 +118,7 @@ def reportar_comentario(comment_id):
             return jsonify({'success': False, 'message': 'Comentario nao encontrado.'}), 404
         success = db.report_comment(comment_id, reason)
         if success:
-            return jsonify({'success': True, 'message': 'A moderacao recebeu seu aviso.'})
-        return jsonify({'success': False, 'message': 'Nao conseguimos enviar seu aviso agora.'}), 500
+            return jsonify({'success': True, 'message': 'A moderação recebeu seu aviso.'})
+        return jsonify({'success': False, 'message': 'Não conseguimos enviar seu aviso agora.'}), 500
     except Exception:
-        return jsonify({'success': False, 'message': 'Nao conseguimos enviar seu aviso agora.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos enviar seu aviso agora.'}), 500

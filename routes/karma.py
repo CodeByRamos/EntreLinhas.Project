@@ -13,27 +13,27 @@ def votar_karma_comentario():
         karma_type = data.get('karma_type')  # 'up' ou 'down'
         
         if not comment_id or not karma_type:
-            return jsonify({'success': False, 'message': 'Dados incompletos.'}), 400
+            return jsonify({'success': False, 'message': 'Escolha como quer reagir a essa resposta.'}), 400
         
         if karma_type not in ['up', 'down']:
-            return jsonify({'success': False, 'message': 'Tipo de karma inválido.'}), 400
+            return jsonify({'success': False, 'message': 'Essa reação não está disponível agora.'}), 400
         
         # Verificar se o usuário está logado
         token = session.get('profile_token')
         if not token:
-            return jsonify({'success': False, 'message': 'É necessário estar logado para votar.'}), 401
+            return jsonify({'success': False, 'message': 'Entre na sua conta para reagir.'}), 401
         
         # Obter o perfil do usuário
         profile = db.get_profile_by_token(token)
         if not profile:
-            return jsonify({'success': False, 'message': 'Perfil não encontrado.'}), 404
+            return jsonify({'success': False, 'message': 'Entre novamente para continuar.'}), 404
         
         profile_id = profile['id']
         
         # Verificar se o comentário existe
         comment = db.get_comment_by_id(comment_id)
         if not comment:
-            return jsonify({'success': False, 'message': 'Comentário não encontrado.'}), 404
+            return jsonify({'success': False, 'message': 'Essa resposta não está mais disponível.'}), 404
         
         # Verificar se o usuário já votou neste comentário
         existing_karma = db.get_user_comment_karma(comment_id, profile_id)
@@ -64,7 +64,7 @@ def votar_karma_comentario():
             return jsonify({'success': False, 'message': message}), 400
             
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos registrar sua reação agora.'}), 500
 
 @karma.route('/api/comment-karma/<int:comment_id>', methods=['GET'])
 def obter_karma_comentario(comment_id):
@@ -88,7 +88,7 @@ def obter_karma_comentario(comment_id):
             'user_karma': user_karma
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
+        return jsonify({'success': False, 'message': 'Não conseguimos carregar essas reações agora.'}), 500
 
 @karma.route('/api/high-karma-comments', methods=['GET'])
 def obter_comentarios_alto_karma():
@@ -104,5 +104,4 @@ def obter_comentarios_alto_karma():
             'comments': [dict(comment) for comment in comments]
         })
     except Exception as e:
-        return jsonify({'success': False, 'message': 'Erro interno do servidor.'}), 500
-
+        return jsonify({'success': False, 'message': 'Não conseguimos carregar essas respostas agora.'}), 500

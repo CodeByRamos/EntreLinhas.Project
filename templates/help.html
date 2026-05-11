@@ -6,31 +6,52 @@
 <section class="page-hero">
   <div class="container mx-auto px-6 text-center">
     <p class="hero-kicker">Apoio emocional</p>
-    <h1 class="hero-title">Voce nao precisa atravessar isso sozinho</h1>
-    <p class="hero-description">O EntreLinhas e um espaco de escuta, mas nao substitui ajuda profissional. Se voce sente que pode se machucar ou esta em perigo agora, procure ajuda imediatamente.</p>
+    <h1 class="hero-title">Você não precisa atravessar isso sozinho.</h1>
+    <p class="hero-description">O EntreLinhas é um espaço de escuta, mas não substitui ajuda profissional. Se você sente que pode se machucar ou está em perigo agora, procure ajuda imediatamente.</p>
   </div>
 </section>
 
-<div class="container mx-auto px-6 py-12 max-w-5xl space-y-8">
-  <section class="glass-panel p-8 section-reading">
-    <h2 class="text-2xl font-semibold mb-4">Agora, se houver risco imediato</h2>
-    <p>Ligue para o CVV pelo <strong>188</strong>, gratuito e 24 horas no Brasil. Se voce esta em perigo agora, acione uma emergencia: <strong>192</strong> para atendimento medico ou <strong>190</strong> para risco imediato.</p>
-    <p>Se puder, chame alguem de confianca e nao fique sozinho enquanto a onda estiver muito alta.</p>
-    <div class="flex flex-wrap gap-3 mt-5">
+<div class="container mx-auto px-6 py-12 max-w-6xl space-y-8">
+  <section class="glass-panel content-band help-emergency section-reading">
+    <p class="section-kicker">se houver risco agora</p>
+    <h2 class="text-3xl font-bold mt-2 mb-5">Procure uma pessoa real, agora.</h2>
+    <p>Ligue para o CVV pelo <strong>188</strong>, gratuito e 24 horas no Brasil. Se você está em perigo imediato, acione uma emergência: <strong>192</strong> para atendimento médico ou <strong>190</strong> para risco imediato.</p>
+    <p>Se puder, chame alguém de confiança e não fique sozinho enquanto a onda estiver muito alta.</p>
+    <div class="flex flex-wrap gap-3 mt-6">
+      <span class="emergency-number">CVV 188</span>
+      <span class="emergency-number">SAMU 192</span>
+      <span class="emergency-number">Emergência 190</span>
+    </div>
+    <div class="flex flex-wrap gap-3 mt-6">
       <a href="https://cvv.org.br/" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Abrir CVV</a>
       <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost">Continuar no EntreLinhas</a>
     </div>
   </section>
 
-  <section class="glass-panel p-8 section-reading">
-    <h2 class="text-2xl font-semibold mb-4">Contatos de apoio cadastrados</h2>
+  <section class="help-grid">
+    <article class="help-action-card section-reading">
+      <p class="section-kicker">primeiro passo</p>
+      <h2 class="text-2xl font-semibold mt-2 mb-4">Fale com alguém de confiança</h2>
+      <p>Uma mensagem simples já pode abrir uma fresta: “não estou bem e preciso de companhia agora”. Você não precisa explicar tudo para pedir presença.</p>
+    </article>
+
+    <article class="help-action-card section-reading">
+      <p class="section-kicker">cuidado contínuo</p>
+      <h2 class="text-2xl font-semibold mt-2 mb-4">Ajuda profissional importa</h2>
+      <p>Escrever pode aliviar, mas algumas dores precisam de cuidado contínuo, acompanhamento e uma rede fora da tela.</p>
+    </article>
+  </section>
+
+  <section class="glass-panel content-band section-reading">
+    <p class="section-kicker">contatos cadastrados</p>
+    <h2 class="text-2xl font-semibold mt-2 mb-4">Apoio disponível no EntreLinhas</h2>
     {% if volunteers %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {% for volunteer in volunteers %}
         <article class="support-card">
           <h3>{{ volunteer.name }}</h3>
           {% if volunteer.professional_title %}<p>{{ volunteer.professional_title }}</p>{% endif %}
-          {% if volunteer.crp %}<p>Identificacao: {{ volunteer.crp }}</p>{% endif %}
+          {% if volunteer.crp %}<p>Identificação: {{ volunteer.crp }}</p>{% endif %}
           {% if volunteer.bio %}<p>{{ volunteer.bio }}</p>{% endif %}
           <div class="flex flex-wrap gap-2 mt-3">
             {% if volunteer.contact_email %}<a class="btn-modern btn-ghost" href="mailto:{{ volunteer.contact_email }}">E-mail</a>{% endif %}
@@ -40,13 +61,8 @@
         {% endfor %}
       </div>
     {% else %}
-      <p>Ainda nao ha psicologos ou voluntarios verificados cadastrados aqui. Enquanto isso, os recursos emergenciais acima continuam sendo os caminhos mais importantes em momentos de risco.</p>
+      <p>Ainda não há psicólogos ou voluntários verificados cadastrados aqui. Enquanto isso, os recursos emergenciais acima continuam sendo os caminhos mais importantes em momentos de risco.</p>
     {% endif %}
-  </section>
-
-  <section class="glass-panel p-8 section-reading">
-    <h2 class="text-2xl font-semibold mb-4">Um lembrete gentil</h2>
-    <p>Escrever pode aliviar, mas algumas dores precisam de presenca humana, cuidado continuo e ajuda especializada. Pedir apoio nao diminui sua historia.</p>
   </section>
 </div>
 {% endblock %}

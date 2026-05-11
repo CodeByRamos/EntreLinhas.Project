@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sensitiveModal = document.getElementById('sensitive-modal');
     const sensitiveModalTitle = document.getElementById('sensitive-modal-title');
     const sensitiveModalMessage = document.getElementById('sensitive-modal-message');
+    const sensitiveModalSupport = document.getElementById('sensitive-modal-support');
     const sensitiveHelp = document.getElementById('sensitive-help');
     const sensitiveBlockReason = document.getElementById('sensitive-block-reason');
     const sensitiveContinue = document.getElementById('sensitive-continue');
@@ -142,6 +143,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!sensitiveModal || !responseData) return;
         sensitiveModalTitle.textContent = responseData.title || 'Um cuidado para você';
         sensitiveModalMessage.textContent = responseData.message || '';
+        if (sensitiveModalSupport) {
+            sensitiveModalSupport.textContent = responseData.support_message || '';
+            sensitiveModalSupport.classList.toggle('hidden', !responseData.support_message);
+        }
         sensitiveHelp.classList.toggle('hidden', !responseData.show_help_contacts);
 
         const isBlocked = !responseData.allow_continue;

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Entre Linhas — Desabafos Anônimos{% endblock %}</title>
+  <title>{% block title %}EntreLinhas - Desabafos Anônimos{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,60 +31,76 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen text-slate-100 font-sans flex flex-col">
-  <nav class="glass-nav shadow-md py-4 sticky top-0 z-50">
-    <div class="container mx-auto px-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-      <div class="flex justify-between items-center">
-        <a href="{{ url_for('main.home') }}" class="flex items-center space-x-3 text-xl font-semibold tracking-tight text-slate-100">
-          <img src="{{ url_for('static', filename='images/logo.png') }}" alt="EntreLinhas" class="h-8 w-auto">
-          <span>EntreLinhas</span>
-        </a>
+  {% set path = request.path %}
+  {% set logged_user = current_user if current_user else none %}
 
-        <div class="md:hidden flex items-center">
-          <button id="theme-toggle-mobile" class="p-2 mr-2 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 transition duration-300" aria-label="Alternar tema">
-            <span id="theme-toggle-icon-mobile" class="block w-5 h-5"></span>
-          </button>
-          <button type="button" id="mobile-menu-button" class="text-slate-300 hover:text-white" aria-label="toggle menu">
-            <svg viewBox="0 0 24 24" class="h-6 w-6 fill-current">
-              <path fill-rule="evenodd" d="M4 5h16a1 1 0 0 1 0 2H4a1 1 0 1 1 0-2zm0 6h16a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2zm0 6h16a1 1 0 0 1 0 2H4a1 1 0 0 1 0-2z"></path>
-            </svg>
-          </button>
-        </div>
+  <nav class="site-nav" aria-label="Navegação principal">
+    <div class="nav-shell">
+      <a href="{{ url_for('posts.feed') }}" class="brand-lockup" aria-label="Ir para o feed do EntreLinhas">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="{{ url_for('static', filename='images/logo-entrelinhas.svg') }}" alt="" />
+          <span class="brand-glyph">EL</span>
+        </span>
+        <span class="brand-copy">
+          <span class="brand-name">EntreLinhas</span>
+          <span class="brand-subtitle">entre o silêncio e a palavra</span>
+        </span>
+      </a>
+
+      <div class="nav-desktop-links">
+        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path.startswith('/feed') else '' }}">Feed</a>
+        {% if logged_user %}
+          <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
+          <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
+          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
+        {% endif %}
+        <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
+        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
+        {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
+        {% endif %}
       </div>
 
-      <div class="hidden md:block md:w-1/3 mx-4">
-        <form action="{{ url_for('search.pesquisar') }}" method="get" class="relative">
-          <input type="text" name="q" placeholder="Pesquisar desabafos..." class="input-modern py-2 px-4 pr-11">
-          <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </form>
-      </div>
-
-      <div id="mobile-menu" class="md:flex flex-col md:flex-row md:items-center md:mx-6 mt-2 md:mt-0 hidden gap-1 md:gap-0">
-        <a href="{{ url_for('main.home') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Início</a>
-        <a href="{{ url_for('posts.feed') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Desabafos</a>
-        <a href="{{ url_for('search.pesquisar') }}" class="nav-link-modern my-1 md:mx-3 text-sm md:hidden">Pesquisar</a>
-        <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Estatísticas</a>
-        <a href="{{ url_for('support.ajuda') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Ajuda</a>
-        <a href="{{ url_for('main.about') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Sobre</a>
-        <a href="{{ url_for('main.how_it_works') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Como Funciona</a>
-        {% if session.get('user_id') %}
-          <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Perfil</a>
-          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Notificações</a>
-          <a href="{{ url_for('posts.rascunhos') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Rascunhos</a>
-          <form method="post" action="{{ url_for('auth.logout') }}" class="my-1 md:mx-3">
-            <button type="submit" class="nav-link-modern text-sm">Sair</button>
+      <div class="nav-actions">
+        {% if logged_user %}
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <button type="submit" class="nav-pill nav-exit">Sair</button>
           </form>
         {% else %}
-          <a href="{{ url_for('auth.login') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Entrar</a>
-          <a href="{{ url_for('auth.registro') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Cadastrar</a>
+          <a href="{{ url_for('auth.login') }}" class="nav-pill">Entrar</a>
+          <a href="{{ url_for('auth.registro') }}" class="btn-modern btn-primary nav-cta">Criar conta</a>
         {% endif %}
-
-        <button id="theme-toggle" class="hidden md:block md:ml-4 p-2 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 transition duration-300" aria-label="Alternar tema">
-          <span id="theme-toggle-icon" class="block w-5 h-5"></span>
+        <button type="button" id="mobile-menu-button" class="mobile-menu-button" aria-controls="mobile-menu" aria-expanded="false" aria-label="Abrir menu">
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
+      </div>
+    </div>
+
+    <div id="mobile-menu" class="mobile-nav-panel" hidden>
+      <div class="mobile-nav-links">
+        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path.startswith('/feed') else '' }}">Feed</a>
+        {% if logged_user %}
+          <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
+          <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
+          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
+          <a href="{{ url_for('posts.meus_posts') }}" class="nav-pill {{ 'active' if path.startswith('/meus-posts') else '' }}">Meus rastros</a>
+          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações</a>
+        {% endif %}
+        <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
+        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
+        {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
+        {% endif %}
+        {% if logged_user %}
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <button type="submit" class="nav-pill nav-exit w-full">Sair</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="nav-pill">Entrar</a>
+          <a href="{{ url_for('auth.registro') }}" class="btn-modern btn-primary w-full">Criar conta</a>
+        {% endif %}
       </div>
     </div>
   </nav>
@@ -93,8 +110,8 @@
       {% if messages %}
         <div class="container mx-auto px-6 pt-6 space-y-3">
           {% for category, message in messages %}
-            {% set alert_class = 'bg-emerald-500/20 border-emerald-300/40 text-emerald-100' if category == 'success' else 'bg-rose-500/20 border-rose-300/40 text-rose-100' %}
-            <div class="rounded-lg border px-4 py-3 text-sm {{ alert_class }}">{{ message }}</div>
+            {% set alert_class = 'flash-success' if category == 'success' else 'flash-info' if category == 'info' else 'flash-error' %}
+            <div class="flash-message {{ alert_class }}">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
@@ -102,24 +119,36 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="glass-footer py-6 mt-12">
+  <footer class="site-footer mt-12">
     <div class="container mx-auto px-6">
-      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-        <p class="text-sm text-slate-400">&copy; 2026 Entre Linhas. Um refúgio digital para sentir em silêncio.</p>
-        <div class="flex flex-wrap gap-4 text-sm justify-center">
-          <a href="{{ url_for('main.home') }}" class="nav-link-modern">Início</a>
-          <a href="{{ url_for('posts.feed') }}" class="nav-link-modern">Desabafos</a>
-          <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern">Estatísticas</a>
-          <a href="{{ url_for('support.ajuda') }}" class="nav-link-modern">Ajuda</a>
-          <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern">Perfil</a>
-          <a href="{{ url_for('main.about') }}" class="nav-link-modern">Sobre</a>
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <span class="brand-mark footer-mark" aria-hidden="true">
+            <img src="{{ url_for('static', filename='images/logo-entrelinhas.svg') }}" alt="" />
+            <span class="brand-glyph">EL</span>
+          </span>
+          <div>
+            <p class="footer-title">EntreLinhas</p>
+            <p class="footer-phrase">Entre o que foi dito e o que ficou guardado.</p>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="{{ url_for('posts.feed') }}">Feed</a>
+          <a href="{{ url_for('support.ajuda') }}">Ajuda</a>
+          <a href="{{ url_for('main.about') }}">Sobre</a>
+          <a href="{{ url_for('main.privacy') }}">Privacidade</a>
+          <a href="{{ url_for('main.terms') }}">Termos</a>
+          {% if logged_user %}
+            <a href="{{ url_for('auth.perfil') }}">Perfil</a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}">Entrar</a>
+          {% endif %}
         </div>
       </div>
     </div>
   </footer>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -127,20 +156,10 @@
 
       if (mobileMenuButton && mobileMenu) {
         mobileMenuButton.addEventListener('click', function() {
-          mobileMenu.classList.toggle('hidden');
-        });
-      }
-
-      const themeToggleMobile = document.getElementById('theme-toggle-mobile');
-      const themeToggle = document.getElementById('theme-toggle');
-      const themeToggleIconMobile = document.getElementById('theme-toggle-icon-mobile');
-
-      if (themeToggleMobile && themeToggle) {
-        themeToggleMobile.addEventListener('click', function() {
-          themeToggle.click();
-          if (themeToggleIconMobile) {
-            themeToggleIconMobile.innerHTML = document.getElementById('theme-toggle-icon').innerHTML;
-          }
+          const isOpen = mobileMenuButton.getAttribute('aria-expanded') === 'true';
+          mobileMenuButton.setAttribute('aria-expanded', String(!isOpen));
+          mobileMenu.hidden = isOpen;
+          mobileMenuButton.classList.toggle('is-open', !isOpen);
         });
       }
     });

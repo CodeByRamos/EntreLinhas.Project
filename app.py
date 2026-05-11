@@ -1,5 +1,13 @@
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from flask import Flask, render_template, session
 import database as db
+from extensions import db as sqlalchemy_db, migrate
+from models import sqlalchemy_schema  # noqa: F401
 from routes.main import main
 from routes.posts import posts
 from routes.comments import comments
@@ -29,17 +37,32 @@ def create_app():
         # Configurações padrão para produção
         app.config['DEBUG'] = False
     
+    if app.config.get('IS_PRODUCTION'):
+        if not app.config.get('USE_POSTGRES'):
+            raise RuntimeError('DATABASE_URL com PostgreSQL precisa estar configurada em produção.')
+        if app.config.get('STORAGE_PROVIDER', 'local') == 'local':
+            raise RuntimeError('Configure storage persistente em produção: cloudinary ou s3.')
+
     # Configuração para sessões/autenticação
-    app.secret_key = app.config.get('SECRET_KEY') or os.environ.get('SECRET_KEY', 'entrelinhas_secret_key_dev')
+    secret_key = app.config.get('SECRET_KEY') or os.environ.get('SECRET_KEY')
+    if not secret_key:
+        if app.config.get('IS_PRODUCTION'):
+            raise RuntimeError('SECRET_KEY precisa estar configurada em produção.')
+        secret_key = 'dev-only-entrelinhas-secret'
+    app.secret_key = secret_key
     app.config['SESSION_COOKIE_HTTPONLY'] = app.config.get('SESSION_COOKIE_HTTPONLY', True)
     app.config['SESSION_COOKIE_SAMESITE'] = app.config.get('SESSION_COOKIE_SAMESITE', 'Lax')
     app.config['SESSION_COOKIE_SECURE'] = app.config.get('SESSION_COOKIE_SECURE', False)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
         hours=app.config.get('PERMANENT_SESSION_LIFETIME_HOURS', 24)
     )
+
+    sqlalchemy_db.init_app(app)
+    migrate.init_app(app, sqlalchemy_db)
     
-    # Inicializa o banco de dados
-    db.init_db()
+    # Inicializa o banco SQLite apenas em desenvolvimento local.
+    if not app.config.get('USE_POSTGRES'):
+        db.init_db()
     
     # Registra os blueprints
     app.register_blueprint(main)

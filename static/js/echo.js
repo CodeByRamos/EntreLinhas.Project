@@ -37,7 +37,7 @@ function toggleEcho(button, postId) {
             setTimeout(() => button.classList.remove('echo-pop'), 300);
         })
         .catch((data) => {
-            showSoftNotice((data && data.message) || 'Nao conseguimos registrar seu eco agora.', 'error');
+            showSoftNotice((data && data.message) || 'Não conseguimos registrar seu eco agora.', 'error');
         })
         .finally(() => {
             button.disabled = false;
