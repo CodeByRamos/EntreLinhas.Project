@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'components/post_card.html' import render_post %}
+{% from 'components/post_card.html' import render_post with context %}
 
 {% block title %}Entre Linhas — Pesquisar{% endblock %}
 
@@ -55,4 +55,5 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/echo.js') }}"></script>
 {% endblock %}

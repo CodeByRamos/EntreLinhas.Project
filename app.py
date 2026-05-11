@@ -1,4 +1,4 @@
-from flask import Flask, session
+from flask import Flask, render_template, session
 import database as db
 from routes.main import main
 from routes.posts import posts
@@ -12,6 +12,7 @@ from routes.reports import reports
 from routes.karma import karma
 from routes.auth import auth
 from routes.notifications import notifications
+from routes.help import support
 from services.auth_service import get_current_user
 from datetime import datetime
 from datetime import timedelta
@@ -53,6 +54,15 @@ def create_app():
     app.register_blueprint(karma)
     app.register_blueprint(auth)
     app.register_blueprint(notifications)
+    app.register_blueprint(support)
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return render_template('errors/500.html'), 500
     
     # Contexto global para templates
     @app.context_processor

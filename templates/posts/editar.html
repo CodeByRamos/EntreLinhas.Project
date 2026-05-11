@@ -17,7 +17,16 @@
       </div>
       <div>
         <label for="conteudo" class="block font-medium text-slate-300 mb-2">Conteúdo</label>
-        <textarea id="conteudo" name="conteudo" rows="8" required minlength="10" maxlength="1000" class="form-input w-full p-4 resize-y">{{ post.mensagem }}</textarea>
+        <textarea id="conteudo" name="conteudo" rows="8" required minlength="3" maxlength="2000" class="form-input w-full p-4 resize-y">{{ post.mensagem }}</textarea>
+      </div>
+
+      <div>
+        <label for="emotional_tag" class="block font-medium text-slate-300 mb-2">Emocao</label>
+        <select id="emotional_tag" name="emotional_tag" required class="form-input w-full p-3">
+          {% for tag in emotional_tags %}
+          <option value="{{ tag.valor }}" {% if (post.emotional_tag or 'vazio') == tag.valor %}selected{% endif %}>{{ tag.nome }}</option>
+          {% endfor %}
+        </select>
       </div>
 
       <div>

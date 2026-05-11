@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const conteudoTextarea = document.getElementById('conteudo');
     const categoriaSelect = document.getElementById('categoria');
     const charCount = document.getElementById('char-count');
-    const maxLength = 1000; // Limite máximo de caracteres
-    const minLength = 10;  // Limite mínimo de caracteres
+    const maxLength = 2000; // Limite maximo de caracteres
+    const minLength = 3;  // Limite minimo de caracteres
     const submitButton = document.getElementById('submit-button');
     const remainingChars = document.getElementById('remaining-chars');
     const sensitiveAck = document.getElementById('sensitive_ack');

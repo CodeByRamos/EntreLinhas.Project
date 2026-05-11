@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Pagina nao encontrada - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-20 max-w-2xl text-center">
+  <div class="glass-panel p-8 section-reading">
+    <p class="hero-kicker">404</p>
+    <h1 class="text-3xl font-semibold mb-4">Essa linha se perdeu no caminho.</h1>
+    <p>Talvez o desabafo tenha sido removido, talvez o endereco tenha mudado. Ainda existe um lugar para continuar.</p>
+    <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-primary mt-6">Voltar ao feed</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,68 +1,99 @@
 {% macro render_post(post, show_report=False) -%}
-<article id="post-{{ post.id }}" class="post-card fade-in overflow-hidden">
+{% set tag = post.emotional_tag if 'emotional_tag' in post.keys() and post.emotional_tag else 'vazio' %}
+{% set labels = emotional_tag_labels|default({}) %}
+<article id="post-{{ post.id }}" class="post-card mood-card mood-{{ tag }} fade-in overflow-hidden">
   <div class="p-6 content-spacing">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div class="flex items-center gap-3 min-w-0">
+        {% if post.user_id and post.visibility_mode == 'profile' %}
+          {% set avatar_src = (post.author_profile_photo if 'author_profile_photo' in post.keys() else none) or (post.author_avatar_url if 'author_avatar_url' in post.keys() else none) %}
+          {% if avatar_src %}
+            <img src="{{ avatar_src }}" alt="" class="post-author-avatar" loading="lazy" />
+          {% else %}
+            <span class="post-author-avatar avatar-default avatar-{{ (post.author_default_avatar if 'author_default_avatar' in post.keys() and post.author_default_avatar else 'vazio') }}"></span>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="text-sm text-primary-200 truncate">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}</p>
+            <p class="text-xs text-slate-500">perfil visivel</p>
+          </div>
+        {% else %}
+          <span class="post-author-avatar avatar-default avatar-noite"></span>
+          <div>
+            <p class="text-sm text-slate-400">anonimo</p>
+            <p class="text-xs text-slate-500">uma voz entre as linhas</p>
+          </div>
+        {% endif %}
+      </div>
+      <span class="badge-emocional">{{ labels.get(tag, tag|capitalize) }}</span>
+    </div>
+
+    {% if post.title %}
+      <h3 class="text-xl font-semibold text-slate-100 mb-3">{{ post.title }}</h3>
+    {% endif %}
     <p class="text-gray-100 whitespace-pre-line text-lg leading-relaxed mb-4">{{ post.mensagem }}</p>
     <div class="flex justify-between items-center text-sm text-slate-400 font-medium">
       <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
-      <div class="text-right space-y-1">
-        {% if post.user_id and post.visibility_mode == 'profile' %}
-          <div class="text-xs text-primary-200">
-            por @{{ post.author_username or post.author_nickname or 'usuario' }}
-          </div>
-        {% elif not post.user_id %}
-          <div class="text-xs text-slate-500">conteúdo legado</div>
-        {% else %}
-          <div class="text-xs text-slate-500">anônimo</div>
-        {% endif %}
-        <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 justify-end">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
-          </svg>
-          {{ post.data_postagem }}
-        </time>
-      </div>
+      <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 justify-end">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+        </svg>
+        {{ post.data_postagem }}
+      </time>
     </div>
   </div>
 
   <div class="border-t border-slate-800/70 bg-slate-950/50 px-6 py-3">
-    <div class="flex justify-between items-center">
+    <div class="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
       <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
         <div class="flex items-center gap-2 reaction-buttons-container">
-          <span class="text-sm text-slate-400">Carregando reações...</span>
+          <span class="text-sm text-slate-400">Carregando reacoes...</span>
         </div>
       </div>
 
-      {% if show_report %}
-      <button
-        class="report-button text-slate-400 hover:text-fuchsia-300 text-sm flex items-center transition duration-300"
-        data-post-id="{{ post.id }}"
-        title="Reportar este desabafo"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
-        </svg>
-        Reportar
-      </button>
-      {% endif %}
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          class="echo-button"
+          data-post-id="{{ post.id }}"
+          type="button"
+          title="isso poderia ter sido escrito por mim"
+        >
+          <span class="echo-icon"></span>
+          <span class="echo-label">Ecoar</span>
+          <span class="echo-count">0</span>
+        </button>
+
+        {% if show_report %}
+        <button
+          class="report-button text-slate-400 hover:text-fuchsia-300 text-sm flex items-center transition duration-300"
+          data-post-id="{{ post.id }}"
+          title="Avisar a moderacao sobre este desabafo"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
+          </svg>
+          Avisar
+        </button>
+        {% endif %}
+      </div>
     </div>
   </div>
 
   <div class="border-t border-slate-800/70">
     <div class="p-6 space-y-4">
-      <h3 class="text-lg font-semibold text-slate-100">Comentários</h3>
+      <h3 class="text-lg font-semibold text-slate-100">Comentarios</h3>
       <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
-        <p class="text-slate-400 text-sm">Carregando comentários...</p>
+        <p class="text-slate-400 text-sm">Carregando comentarios...</p>
       </div>
 
       <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
-        <div class="flex items-start space-x-3">
-          <div class="flex-grow">
+        <div class="flex flex-col sm:flex-row items-start gap-3">
+          <div class="flex-grow w-full">
             <textarea
               class="input-modern w-full resize-none text-sm"
-              placeholder="Deixe um comentário anônimo..."
+              placeholder="Deixe um comentario anonimo..."
               rows="2"
               minlength="2"
-              maxlength="300"
+              maxlength="500"
               required
             ></textarea>
           </div>

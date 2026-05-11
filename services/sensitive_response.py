@@ -6,8 +6,8 @@ def build_sensitive_response(risk_level, should_block=False):
         return {
             "level": RISK_MEDIUM,
             "title": "Um cuidado antes de publicar",
-            "message": "Percebemos que seu texto pode refletir um momento difícil. Você não precisa passar por isso sozinho.",
-            "show_help_contacts": False,
+            "message": "Percebemos que esse desabafo pode carregar uma dor muito pesada. Voce pode continuar escrevendo, mas queremos lembrar que existe ajuda real disponivel.",
+            "show_help_contacts": True,
             "allow_continue": True,
             "allow_edit": True,
         }
@@ -15,12 +15,12 @@ def build_sensitive_response(risk_level, should_block=False):
     if risk_level == RISK_HIGH:
         return {
             "level": RISK_HIGH,
-            "title": "Você importa",
-            "message": "Seu texto indica que você pode estar passando por um momento muito difícil. Sua vida importa.",
+            "title": "Voce nao precisa atravessar isso sozinho",
+            "message": "Seu texto parece tocar uma dor urgente. O EntreLinhas pode te escutar, mas ajuda real tambem pode chegar agora.",
             "show_help_contacts": True,
-            "allow_continue": not should_block,
+            "allow_continue": True,
             "allow_edit": True,
-            "block_reason": "Detectamos sinais de risco imediato. Recomendamos fortemente buscar ajuda agora.",
+            "block_reason": "",
         }
 
     return {

@@ -1,5 +1,5 @@
 from urllib.parse import urljoin, urlparse
-from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, flash, current_app
 import database as db
 from services.auth_service import (
     register_user,
@@ -9,6 +9,8 @@ from services.auth_service import (
 )
 from services.email_service import send_password_reset_email, send_email_verification
 from utils.validation import LIMITS, is_valid_username
+from utils.mood_styles import DEFAULT_AVATARS, normalize_default_avatar
+from utils.uploads import save_profile_photo
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
@@ -237,16 +239,17 @@ def editar_perfil():
         return redirect(url_for('auth.login'))
     
     if request.method == 'GET':
-        return render_template('auth/editar_perfil.html', user=user)
+        return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
     
     try:
         data = request.get_json() if request.is_json else request.form
         
+        username = data.get('username', user['username']).strip()
         nickname = data.get('nickname', '').strip()
         display_name = data.get('display_name', '').strip()
         bio = data.get('bio', '').strip() or None
-        avatar_url = data.get('avatar_url', '').strip() or None
         email = data.get('email', '').strip() or None
+        default_avatar = normalize_default_avatar(data.get('default_avatar'))
         default_visibility_mode = data.get('default_visibility_mode', 'anonymous').strip().lower()
         
         if not nickname:
@@ -254,45 +257,61 @@ def editar_perfil():
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user)
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
         
         if not display_name:
             message = "Nome público é obrigatório."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user)
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
 
         if bio and len(bio) > LIMITS["bio_max"]:
             message = f"Bio deve ter no máximo {LIMITS['bio_max']} caracteres."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user)
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
         if email and not is_valid_email(email):
             message = "Informe um e-mail válido."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user)
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
 
         if default_visibility_mode not in ('anonymous', 'profile'):
             default_visibility_mode = 'anonymous'
 
         # Atualizar usuário
+        profile_photo_path = None
+        if not request.is_json:
+            success_upload, upload_result = save_profile_photo(
+                request.files.get('profile_photo'),
+                user['id'],
+                current_app.root_path,
+                old_path=user['profile_photo'] if 'profile_photo' in user.keys() else None,
+            )
+            if not success_upload:
+                flash(upload_result, 'error')
+                return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
+            profile_photo_path = upload_result
+
         success, message = db.update_user(
             user['id'],
+            username=username,
             nickname=nickname,
             bio=bio,
             email=email,
             display_name=display_name,
-            avatar_url=avatar_url,
+            profile_photo=profile_photo_path,
+            default_avatar=default_avatar,
             default_visibility_mode=default_visibility_mode,
         )
         
         if success:
             # Atualizar sessão
             session['nickname'] = nickname
+            session['username'] = username
             
             if request.is_json:
                 return jsonify({'success': True, 'message': message, 'redirect': url_for('auth.perfil')})
@@ -302,14 +321,14 @@ def editar_perfil():
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user)
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
             
     except Exception as e:
         message = "Erro interno do servidor."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
-        return render_template('auth/editar_perfil.html', user=user)
+        return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
 
 @auth.route('/perfil/alterar-senha', methods=['GET', 'POST'])
 def alterar_senha():

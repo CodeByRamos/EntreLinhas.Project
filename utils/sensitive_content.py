@@ -28,6 +28,10 @@ MEDIUM_KEYWORDS = (
     "me cortar",
     "automutilacao",
     "me machucar",
+    "vontade de morrer",
+    "se cortar",
+    "overdose",
+    "sumir pra sempre",
 )
 
 HIGH_KEYWORDS = (
@@ -70,6 +74,12 @@ HIGH_KEYWORDS = (
     "já aceitei que acabou",
     "isso termina hoje",
     "vou encerrar tudo agora",
+    "suicidio",
+    "nao aguento mais viver",
+    "tirar minha vida",
+    "me matar",
+    "morrer hoje",
+    "despedida",
     
 
 )

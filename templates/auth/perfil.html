@@ -7,10 +7,12 @@
   <div class="glass-panel p-8 space-y-8">
     <div class="flex flex-col md:flex-row md:items-center gap-6">
       <div class="avatar-shell">
-        {% if user.avatar_url %}
+        {% if user.profile_photo %}
+          <img src="{{ user.profile_photo }}" alt="Avatar de {{ user.display_name or user.nickname }}" class="avatar-image" />
+        {% elif user.avatar_url %}
           <img src="{{ user.avatar_url }}" alt="Avatar de {{ user.display_name or user.nickname }}" class="avatar-image" />
         {% else %}
-          <div class="avatar-placeholder">{{ (user.display_name or user.nickname or user.username)[0]|upper }}</div>
+          <div class="avatar-placeholder avatar-default avatar-{{ user.default_avatar or 'vazio' }}">{{ (user.display_name or user.nickname or user.username)[0]|upper }}</div>
         {% endif %}
       </div>
 

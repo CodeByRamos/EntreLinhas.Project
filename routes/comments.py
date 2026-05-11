@@ -58,7 +58,7 @@ def add_comment(post_id):
         new_comment = db.get_comment_by_id(comment_id, include_hidden=True)
         
         if new_comment:
-            if post.get('user_id'):
+            if 'user_id' in post.keys() and post['user_id']:
                 db.create_notification(
                     user_id=post['user_id'],
                     notification_type='post_reply',

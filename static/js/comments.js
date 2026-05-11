@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     const COMMENT_MIN = 2;
-    const COMMENT_MAX = 300;
+    const COMMENT_MAX = 500;
     // Carrega os comentários para cada post
     const commentContainers = document.querySelectorAll('.comments-container');
     commentContainers.forEach(container => {

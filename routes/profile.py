@@ -17,7 +17,7 @@ def ver_perfil():
         return redirect(url_for('auth.login', next=url_for('auth.perfil')))
     return redirect(url_for('auth.perfil'))
 
-@profile.route('/perfil/editar', methods=['GET', 'POST'])
+@profile.route('/perfil-legado/editar', methods=['GET', 'POST'])
 def editar_perfil():
     """Fluxo legado desativado: usar perfil autenticado."""
     flash('Use o perfil da conta para editar seus dados.', 'error')

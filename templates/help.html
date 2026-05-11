@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajuda - EntreLinhas{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center">
+    <p class="hero-kicker">Apoio emocional</p>
+    <h1 class="hero-title">Voce nao precisa atravessar isso sozinho</h1>
+    <p class="hero-description">O EntreLinhas e um espaco de escuta, mas nao substitui ajuda profissional. Se voce sente que pode se machucar ou esta em perigo agora, procure ajuda imediatamente.</p>
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-12 max-w-5xl space-y-8">
+  <section class="glass-panel p-8 section-reading">
+    <h2 class="text-2xl font-semibold mb-4">Agora, se houver risco imediato</h2>
+    <p>Ligue para o CVV pelo <strong>188</strong>, gratuito e 24 horas no Brasil. Se voce esta em perigo agora, acione uma emergencia: <strong>192</strong> para atendimento medico ou <strong>190</strong> para risco imediato.</p>
+    <p>Se puder, chame alguem de confianca e nao fique sozinho enquanto a onda estiver muito alta.</p>
+    <div class="flex flex-wrap gap-3 mt-5">
+      <a href="https://cvv.org.br/" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Abrir CVV</a>
+      <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost">Continuar no EntreLinhas</a>
+    </div>
+  </section>
+
+  <section class="glass-panel p-8 section-reading">
+    <h2 class="text-2xl font-semibold mb-4">Contatos de apoio cadastrados</h2>
+    {% if volunteers %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for volunteer in volunteers %}
+        <article class="support-card">
+          <h3>{{ volunteer.name }}</h3>
+          {% if volunteer.professional_title %}<p>{{ volunteer.professional_title }}</p>{% endif %}
+          {% if volunteer.crp %}<p>Identificacao: {{ volunteer.crp }}</p>{% endif %}
+          {% if volunteer.bio %}<p>{{ volunteer.bio }}</p>{% endif %}
+          <div class="flex flex-wrap gap-2 mt-3">
+            {% if volunteer.contact_email %}<a class="btn-modern btn-ghost" href="mailto:{{ volunteer.contact_email }}">E-mail</a>{% endif %}
+            {% if volunteer.contact_link %}<a class="btn-modern btn-ghost" href="{{ volunteer.contact_link }}" target="_blank" rel="noopener noreferrer">Contato</a>{% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>Ainda nao ha psicologos ou voluntarios verificados cadastrados aqui. Enquanto isso, os recursos emergenciais acima continuam sendo os caminhos mais importantes em momentos de risco.</p>
+    {% endif %}
+  </section>
+
+  <section class="glass-panel p-8 section-reading">
+    <h2 class="text-2xl font-semibold mb-4">Um lembrete gentil</h2>
+    <p>Escrever pode aliviar, mas algumas dores precisam de presenca humana, cuidado continuo e ajuda especializada. Pedir apoio nao diminui sua historia.</p>
+  </section>
+</div>
+{% endblock %}

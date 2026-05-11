@@ -4,6 +4,10 @@ import os
 import secrets
 from utils.security import hash_password, verify_password, is_legacy_hash
 from utils.validation import LIMITS, is_valid_email, is_valid_username, trim_text
+from utils.mood_styles import (
+    normalize_default_avatar,
+    normalize_emotional_tag,
+)
 
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'entrelinhas.db')
@@ -221,11 +225,51 @@ def init_db():
     ''')
 
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS echoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            post_id INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (post_id) REFERENCES posts (id),
+            UNIQUE(user_id, post_id)
+        )
+    ''')
+
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS sensitive_post_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             post_id INTEGER NOT NULL,
             timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             risk_level TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS psychologists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            professional_title TEXT,
+            crp TEXT,
+            contact_email TEXT,
+            contact_link TEXT,
+            bio TEXT,
+            is_verified INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS daily_texts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author_name TEXT,
+            date TEXT UNIQUE,
+            mood TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -252,6 +296,12 @@ def init_db():
     _ensure_column(conn, "posts", "status", "TEXT DEFAULT 'published'")
     _ensure_column(conn, "posts", "title", "TEXT")
     _ensure_column(conn, "posts", "alias_name", "TEXT")
+    _ensure_column(conn, "posts", "emotional_tag", "TEXT DEFAULT 'vazio'")
+    _ensure_column(conn, "posts", "sensitive_flag", "INTEGER DEFAULT 0")
+    _ensure_column(conn, "posts", "mood_type", "TEXT DEFAULT 'vazio'")
+    _ensure_column(conn, "posts", "updated_at", "TIMESTAMP")
+    _ensure_column(conn, "posts", "is_deleted", "INTEGER DEFAULT 0")
+    _ensure_column(conn, "posts", "report_count", "INTEGER DEFAULT 0")
     _ensure_column(conn, "comments", "mensagem", "TEXT")
     _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
     _ensure_column(conn, "comments", "user_id", "INTEGER")
@@ -265,7 +315,15 @@ def init_db():
     _ensure_column(conn, "users", "email_verified_at", "TIMESTAMP")
     _ensure_column(conn, "users", "display_name", "TEXT")
     _ensure_column(conn, "users", "avatar_url", "TEXT")
+    _ensure_column(conn, "users", "profile_photo", "TEXT")
+    _ensure_column(conn, "users", "default_avatar", "TEXT DEFAULT 'vazio'")
     _ensure_column(conn, "users", "default_visibility_mode", "TEXT DEFAULT 'anonymous'")
+    _ensure_column(conn, "reports", "user_id", "INTEGER")
+    _ensure_column(conn, "reports", "profile_id", "INTEGER")
+    _ensure_column(conn, "reports", "reason", "TEXT DEFAULT 'outro'")
+    _ensure_column(conn, "reports", "details", "TEXT")
+    _ensure_column(conn, "reports", "status", "TEXT DEFAULT 'pending'")
+    _ensure_column(conn, "reports", "created_at", "TIMESTAMP")
     if "updated_at" not in _get_table_columns(conn, "users"):
         conn.execute("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP")
         conn.execute(
@@ -286,11 +344,50 @@ def init_db():
     )
     conn.execute(
         """
+        UPDATE users
+        SET display_name = COALESCE(NULLIF(TRIM(display_name), ''), nickname, username),
+            default_avatar = COALESCE(NULLIF(TRIM(default_avatar), ''), 'vazio')
+        WHERE display_name IS NULL OR TRIM(display_name) = ''
+           OR default_avatar IS NULL OR TRIM(default_avatar) = ''
+        """
+    )
+    conn.execute(
+        """
         UPDATE posts
         SET status = CASE
             WHEN status IN ('draft', 'published') THEN status
             ELSE 'published'
         END
+        """
+    )
+    conn.execute(
+        """
+        UPDATE posts
+        SET emotional_tag = COALESCE(NULLIF(TRIM(emotional_tag), ''), 'vazio'),
+            mood_type = COALESCE(NULLIF(TRIM(mood_type), ''), emotional_tag, 'vazio'),
+            updated_at = COALESCE(updated_at, data_postagem, datetime('now')),
+            is_deleted = COALESCE(is_deleted, 0),
+            sensitive_flag = COALESCE(sensitive_flag, 0),
+            report_count = (
+                SELECT COUNT(*) FROM reports r WHERE r.post_id = posts.id
+            )
+        WHERE emotional_tag IS NULL OR TRIM(emotional_tag) = ''
+           OR mood_type IS NULL OR TRIM(mood_type) = ''
+           OR updated_at IS NULL
+           OR is_deleted IS NULL
+           OR sensitive_flag IS NULL
+           OR report_count IS NULL
+        """
+    )
+    conn.execute(
+        """
+        UPDATE reports
+        SET reason = COALESCE(NULLIF(TRIM(reason), ''), 'outro'),
+            status = COALESCE(NULLIF(TRIM(status), ''), 'pending'),
+            created_at = COALESCE(created_at, data, datetime('now'))
+        WHERE reason IS NULL OR TRIM(reason) = ''
+           OR status IS NULL OR TRIM(status) = ''
+           OR created_at IS NULL
         """
     )
     conn.execute(
@@ -301,6 +398,11 @@ def init_db():
         """
     )
     _ensure_unique_index(conn, "idx_users_email_unique", "users", "email")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_emotional_tag ON posts (emotional_tag)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_sensitive_flag ON posts (sensitive_flag)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_report_count ON posts (report_count)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_echoes_post_id ON echoes (post_id)")
     
     conn.commit()
     conn.close()
@@ -313,24 +415,35 @@ def get_posts(limit=10, offset=0, include_hidden=False):
     
     if include_hidden:
         posts = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
+            WHERE COALESCE(p.is_deleted, 0) = 0
             ORDER BY p.id DESC
             LIMIT ? OFFSET ?
         ''', (limit, offset)).fetchall()
     else:
         posts = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.visivel = 1 AND p.status = 'published'
+            WHERE p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
             ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
             ''', (limit, offset)).fetchall()
@@ -342,13 +455,18 @@ def get_hidden_posts(limit=50):
     """Retorna os posts ocultos mais recentes."""
     conn = get_db_connection()
     posts = conn.execute('''
-        SELECT p.id, p.title, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-               p.user_id, p.visibility_mode,
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode, p.status,
                u.username as author_username,
-               u.nickname as author_nickname
+               u.nickname as author_nickname,
+               u.display_name as author_display_name,
+               u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url,
+               u.default_avatar as author_default_avatar
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
-        WHERE p.visivel = 0 
+        WHERE p.visivel = 0 AND COALESCE(p.is_deleted, 0) = 0
         ORDER BY p.id DESC
         LIMIT ?
     ''', (limit,)).fetchall()
@@ -361,23 +479,33 @@ def get_post(post_id, include_hidden=False):
     
     if include_hidden:
         post = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                                      u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.id = ?
+            WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0
         ''', (post_id,)).fetchone()
     else:
         post = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.id = ? AND p.visivel = 1 AND p.status = 'published'
+            WHERE p.id = ? AND p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
         ''', (post_id,)).fetchone()
     
     conn.close()
@@ -386,7 +514,7 @@ def get_post(post_id, include_hidden=False):
 def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibility_mode=None, status=None):
     """Retorna posts de um usuário com paginação."""
     conn = get_db_connection()
-    filters = ["p.user_id = ?"]
+    filters = ["p.user_id = ?", "COALESCE(p.is_deleted, 0) = 0"]
     params = [user_id]
 
     if not include_hidden:
@@ -404,11 +532,16 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
     params.extend([limit, offset])
     posts = conn.execute(
         f'''
-        SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
                p.user_id, p.visibility_mode,
                p.status AS status,
                u.username as author_username,
-               u.nickname as author_nickname
+               u.nickname as author_nickname,
+               u.display_name as author_display_name,
+               u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url,
+               u.default_avatar as author_default_avatar
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE {where_clause}
@@ -424,7 +557,7 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
 def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None, status=None):
     """Retorna a quantidade de posts de um usuário."""
     conn = get_db_connection()
-    filters = ["user_id = ?"]
+    filters = ["user_id = ?", "COALESCE(is_deleted, 0) = 0"]
     params = [user_id]
     if not include_hidden:
         filters.append("visivel = 1")
@@ -443,11 +576,13 @@ def get_post_count_by_user(user_id, include_hidden=True, visibility_mode=None, s
     conn.close()
     return count
 
-def update_post(post_id, mensagem, categoria, visibility_mode, title=None, status="published"):
+def update_post(post_id, mensagem, categoria, visibility_mode, title=None, status="published", emotional_tag=None, sensitive_flag=False):
     """Atualiza os dados de um post."""
     mensagem = trim_text(mensagem)
     categoria = trim_text(categoria)
     title = trim_text(title) or None
+    emotional_tag = normalize_emotional_tag(emotional_tag)
+    mood_type = emotional_tag
     if status not in ("draft", "published"):
         return False
     if len(mensagem) < LIMITS["post_content_min"] or len(mensagem) > LIMITS["post_content_max"]:
@@ -459,10 +594,11 @@ def update_post(post_id, mensagem, categoria, visibility_mode, title=None, statu
     cursor.execute(
         '''
         UPDATE posts
-        SET mensagem = ?, categoria = ?, visibility_mode = ?, title = ?, status = ?
+        SET mensagem = ?, categoria = ?, visibility_mode = ?, title = ?, status = ?,
+            emotional_tag = ?, mood_type = ?, sensitive_flag = ?, updated_at = datetime('now')
         WHERE id = ?
         ''',
-        (mensagem, categoria, visibility_mode, title, status, post_id),
+        (mensagem, categoria, visibility_mode, title, status, emotional_tag, mood_type, 1 if sensitive_flag else 0, post_id),
     )
     conn.commit()
     success = cursor.rowcount > 0
@@ -476,6 +612,7 @@ def delete_post(post_id):
         conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM reactions WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM reaction_counts WHERE post_id = ?", (post_id,))
+        conn.execute("DELETE FROM echoes WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
         cursor = conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
         conn.commit()
@@ -486,7 +623,7 @@ def delete_post(post_id):
     finally:
         conn.close()
 
-def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title=None, status='published'):
+def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title=None, status='published', emotional_tag=None, sensitive_flag=False):
     """Cria um novo post com autoria obrigatória."""
     conn = get_db_connection()
     data_postagem = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -501,6 +638,8 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title
     mensagem = trim_text(mensagem)
     categoria = trim_text(categoria)
     title = trim_text(title) or None
+    emotional_tag = normalize_emotional_tag(emotional_tag)
+    mood_type = emotional_tag
 
     if len(mensagem) < LIMITS["post_content_min"] or len(mensagem) > LIMITS["post_content_max"]:
         conn.close()
@@ -521,9 +660,15 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title
     
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO posts (mensagem, categoria, data_postagem, user_id, visibility_mode, status, title)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (mensagem, categoria, data_postagem, user_id, visibility_mode, status, title))
+        INSERT INTO posts (
+            mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
+            emotional_tag, sensitive_flag, mood_type, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ''', (
+        mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
+        emotional_tag, 1 if sensitive_flag else 0, mood_type,
+    ))
     
     post_id = cursor.lastrowid
     conn.commit()
@@ -559,14 +704,14 @@ def log_sensitive_post(post_id, risk_level):
 def get_post_count():
     """Retorna o número total de posts."""
     conn = get_db_connection()
-    count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'published'").fetchone()[0]
+    count = conn.execute("SELECT COUNT(*) FROM posts WHERE status = 'published' AND visivel = 1 AND COALESCE(is_deleted, 0) = 0").fetchone()[0]
     conn.close()
     return count
 
 def get_hidden_post_count():
     """Retorna o número de posts ocultos."""
     conn = get_db_connection()
-    count = conn.execute('SELECT COUNT(*) FROM posts WHERE visivel = 0').fetchone()[0]
+    count = conn.execute('SELECT COUNT(*) FROM posts WHERE visivel = 0 AND COALESCE(is_deleted, 0) = 0').fetchone()[0]
     conn.close()
     return count
 
@@ -784,25 +929,35 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
     
     if include_hidden:
         posts = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.categoria = ?
+            WHERE p.categoria = ? AND COALESCE(p.is_deleted, 0) = 0
             ORDER BY p.id DESC
             LIMIT ? OFFSET ?
         ''', (categoria, limit, offset)).fetchall()
     else:
         posts = conn.execute('''
-            SELECT p.id, p.mensagem, p.categoria, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode,
+            SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+                   p.mood_type, p.report_count, p.data_postagem, p.visivel,
+                   p.user_id, p.visibility_mode, p.status,
                    u.username as author_username,
-                   u.nickname as author_nickname
+                   u.nickname as author_nickname,
+                   u.display_name as author_display_name,
+                   u.profile_photo as author_profile_photo,
+                   u.avatar_url as author_avatar_url,
+                   u.default_avatar as author_default_avatar
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.categoria = ? AND p.visivel = 1 AND p.status = 'published'
+            WHERE p.categoria = ? AND p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
             ORDER BY p.id DESC 
             LIMIT ? OFFSET ?
         ''', (categoria, limit, offset)).fetchall()
@@ -818,13 +973,13 @@ def get_post_count_by_category(categoria, include_hidden=False):
         count = conn.execute('''
             SELECT COUNT(*) 
             FROM posts 
-            WHERE categoria = ?
+            WHERE categoria = ? AND COALESCE(is_deleted, 0) = 0
         ''', (categoria,)).fetchone()[0]
     else:
         count = conn.execute('''
             SELECT COUNT(*) 
             FROM posts 
-            WHERE categoria = ? AND visivel = 1 AND status = 'published'
+            WHERE categoria = ? AND visivel = 1 AND status = 'published' AND COALESCE(is_deleted, 0) = 0
         ''', (categoria,)).fetchone()[0]
     
     conn.close()
@@ -836,7 +991,7 @@ def get_categories():
     categories = conn.execute('''
         SELECT DISTINCT categoria 
         FROM posts 
-        WHERE visivel = 1 AND status = 'published'
+        WHERE visivel = 1 AND status = 'published' AND COALESCE(is_deleted, 0) = 0
         ORDER BY categoria
     ''').fetchall()
     conn.close()
@@ -978,15 +1133,25 @@ def search_posts(query, limit=10, offset=0):
     search_query = f"%{query}%"
     
     posts = conn.execute('''
-        SELECT id, mensagem, categoria, data_postagem, visivel 
-        FROM posts 
-        WHERE visivel = 1 AND (
-            mensagem LIKE ? OR
-            categoria LIKE ?
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode, p.status,
+               u.username as author_username,
+               u.nickname as author_nickname,
+               u.display_name as author_display_name,
+               u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url,
+               u.default_avatar as author_default_avatar
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0 AND (
+            p.mensagem LIKE ? OR
+            p.categoria LIKE ? OR
+            p.emotional_tag LIKE ?
         )
-        ORDER BY id DESC 
+        ORDER BY p.id DESC 
         LIMIT ? OFFSET ?
-    ''', (search_query, search_query, limit, offset)).fetchall()
+    ''', (search_query, search_query, search_query, limit, offset)).fetchall()
     
     conn.close()
     return posts
@@ -1001,11 +1166,12 @@ def count_search_results(query):
     count = conn.execute('''
         SELECT COUNT(*) 
         FROM posts 
-        WHERE visivel = 1 AND (
+        WHERE visivel = 1 AND status = 'published' AND COALESCE(is_deleted, 0) = 0 AND (
             mensagem LIKE ? OR
-            categoria LIKE ?
+            categoria LIKE ? OR
+            emotional_tag LIKE ?
         )
-    ''', (search_query, search_query)).fetchone()[0]
+    ''', (search_query, search_query, search_query)).fetchone()[0]
     
     conn.close()
     return count
@@ -1108,30 +1274,48 @@ def get_comments_by_profile(profile_id, limit=20, offset=0):
     return comments
 
 
-def create_report(post_id, profile_id=None):
+REPORT_REASON_VALUES = {"ofensivo", "odio", "assedio", "perigoso", "spam", "exposicao", "outro"}
+
+
+def create_report(post_id, profile_id=None, user_id=None, reason="outro", details=None):
     """Cria um novo report para um post."""
     conn = get_db_connection()
+    reason = trim_text(reason) or "outro"
+    reason = reason if reason in REPORT_REASON_VALUES else "outro"
+    details = trim_text(details) or None
+    if details and len(details) > LIMITS["report_details_max"]:
+        conn.close()
+        return False, "Conte um pouco menos nos detalhes para conseguirmos receber seu aviso."
     
     # Verificar se o usuário já reportou este post
-    if profile_id:
+    if user_id:
         existing_report = conn.execute('''
             SELECT id FROM reports 
-            WHERE post_id = ? AND profile_id = ?
+            WHERE post_id = ? AND user_id = ? AND status = 'pending'
+        ''', (post_id, user_id)).fetchone()
+
+        if existing_report:
+            conn.close()
+            return False, "Voce ja avisou a moderacao sobre esse desabafo."
+    elif profile_id:
+        existing_report = conn.execute('''
+            SELECT id FROM reports 
+            WHERE post_id = ? AND profile_id = ? AND status = 'pending'
         ''', (post_id, profile_id)).fetchone()
         
         if existing_report:
             conn.close()
-            return False, "Você já reportou este desabafo."
+            return False, "Voce ja avisou a moderacao sobre esse desabafo."
     
     # Criar o report
     conn.execute('''
-        INSERT INTO reports (post_id, profile_id, data)
-        VALUES (?, ?, datetime('now'))
-    ''', (post_id, profile_id))
+        INSERT INTO reports (post_id, profile_id, user_id, reason, details, status, data, created_at)
+        VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'), datetime('now'))
+    ''', (post_id, profile_id, user_id, reason, details))
     
     # Verificar quantos reports o post tem
     report_count = conn.execute('''
-        SELECT COUNT(*) FROM reports WHERE post_id = ?
+        SELECT COUNT(*) FROM reports WHERE post_id = ? AND status = 'pending'
     ''', (post_id,)).fetchone()[0]
     
     # Se atingir 5 ou mais reports, ocultar o post
@@ -1139,10 +1323,11 @@ def create_report(post_id, profile_id=None):
         conn.execute('''
             UPDATE posts SET visivel = 0 WHERE id = ?
         ''', (post_id,))
+    conn.execute("UPDATE posts SET report_count = ? WHERE id = ?", (report_count, post_id))
     
     conn.commit()
     conn.close()
-    return True, "Desabafo reportado com sucesso."
+    return True, "Obrigada por cuidar deste espaco. A moderacao recebeu seu aviso."
 
 def get_report_count(post_id):
     """Retorna a quantidade de reports de um post."""
@@ -1304,7 +1489,7 @@ def get_high_karma_comments(min_karma=10, limit=50):
 
 # Funções para usuários permanentes
 
-def create_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous'):
+def create_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous', profile_photo=None, default_avatar=None):
     """Cria um novo usuário permanente."""
     conn = get_db_connection()
     username = trim_text(username)
@@ -1312,6 +1497,7 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
     display_name = trim_text(display_name) or nickname or username
     bio = trim_text(bio) or None
     email = trim_text(email) or None
+    default_avatar = normalize_default_avatar(default_avatar)
 
     if not is_valid_username(username):
         conn.close()
@@ -1358,9 +1544,9 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
         cursor = conn.execute('''
             INSERT INTO users (
                 username, password_hash, nickname, display_name, bio, email, avatar_url,
-                default_visibility_mode, role, created_at, updated_at
+                profile_photo, default_avatar, default_visibility_mode, role, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
         ''', (
             username,
             password_hash,
@@ -1369,6 +1555,8 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
             bio,
             email,
             avatar_url,
+            profile_photo,
+            default_avatar,
             default_visibility_mode if default_visibility_mode in ('anonymous', 'profile') else 'anonymous',
         ))
         
@@ -1388,7 +1576,8 @@ def authenticate_user(username, password):
 
     user = conn.execute(
         """
-        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, profile_photo,
+               default_avatar, default_visibility_mode,
                created_at, updated_at, is_active, is_admin, role, password_hash
         FROM users
         WHERE (username = ? OR email = ?) AND is_active = 1
@@ -1420,7 +1609,8 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     
     user = conn.execute('''
-        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, profile_photo,
+               default_avatar, default_visibility_mode,
                role, created_at, updated_at, last_login, is_active, is_admin, is_verified, email_verified_at
         FROM users 
         WHERE id = ? AND is_active = 1
@@ -1434,7 +1624,8 @@ def get_user_by_username(username):
     conn = get_db_connection()
     
     user = conn.execute('''
-SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+SELECT id, username, nickname, display_name, bio, email, avatar_url, profile_photo,
+               default_avatar, default_visibility_mode,
                role, created_at, updated_at, last_login, is_active, is_admin, is_verified, email_verified_at
         FROM users 
         WHERE username = ? AND is_active = 1
@@ -1450,7 +1641,8 @@ def get_user_by_email(email):
 
     user = conn.execute(
         """
-        SELECT id, username, nickname, display_name, bio, email, avatar_url, default_visibility_mode,
+        SELECT id, username, nickname, display_name, bio, email, avatar_url, profile_photo,
+               default_avatar, default_visibility_mode,
                created_at, last_login, is_active, is_admin, role, updated_at, is_verified, email_verified_at
         FROM users
         WHERE email = ? AND is_active = 1
@@ -1461,12 +1653,27 @@ def get_user_by_email(email):
     conn.close()
     return user
 
-def update_user(user_id, nickname=None, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode=None):
+def update_user(user_id, username=None, nickname=None, bio=None, email=None, display_name=None, avatar_url=None, profile_photo=None, default_avatar=None, default_visibility_mode=None):
     """Atualiza informações do usuário."""
     conn = get_db_connection()
     
     updates = []
     params = []
+
+    if username is not None:
+        username = trim_text(username)
+        if not is_valid_username(username):
+            conn.close()
+            return False, "Esse nome precisa ter entre 3 e 30 caracteres e usar apenas letras, numeros, _ ou ponto."
+        existing_username = conn.execute(
+            "SELECT id FROM users WHERE username = ? AND id <> ?",
+            (username, user_id),
+        ).fetchone()
+        if existing_username:
+            conn.close()
+            return False, "Esse nome ja esta em uso."
+        updates.append("username = ?")
+        params.append(username)
     
     if nickname is not None:
         nickname = trim_text(nickname)
@@ -1495,6 +1702,14 @@ def update_user(user_id, nickname=None, bio=None, email=None, display_name=None,
     if avatar_url is not None:
         updates.append("avatar_url = ?")
         params.append(avatar_url)
+
+    if profile_photo is not None:
+        updates.append("profile_photo = ?")
+        params.append(profile_photo)
+
+    if default_avatar is not None:
+        updates.append("default_avatar = ?")
+        params.append(normalize_default_avatar(default_avatar))
 
     if default_visibility_mode in ('anonymous', 'profile'):
         updates.append("default_visibility_mode = ?")
@@ -1529,11 +1744,11 @@ def update_user(user_id, nickname=None, bio=None, email=None, display_name=None,
         
         conn.commit()
         conn.close()
-        return True, "Usuário atualizado com sucesso."
+        return True, "Seu perfil foi atualizado."
         
     except Exception as e:
         conn.close()
-        return False, f"Erro ao atualizar usuário: {str(e)}"
+        return False, "Nao conseguimos salvar isso agora. Tente de novo em instantes."
 
 def change_password(user_id, old_password, new_password):
     """Altera a senha do usuário."""
@@ -2024,6 +2239,276 @@ def remove_comment_report(report_id):
         return False
     finally:
         conn.close()
-    if len(new_password) < LIMITS["password_min"] or len(new_password) > LIMITS["password_max"]:
+
+
+DAILY_TEXT_FALLBACKS = [
+    {
+        "title": "Hoje",
+        "content": "Tem dias em que sobreviver em silencio ja e uma forma de coragem.",
+        "author_name": "EntreLinhas",
+        "mood": "tristeza",
+    },
+    {
+        "title": "Eco",
+        "content": "Algumas dores nao pedem resposta. So pedem um lugar onde possam existir.",
+        "author_name": "EntreLinhas",
+        "mood": "saudade",
+    },
+    {
+        "title": "Entrelinhas",
+        "content": "Nem tudo que pesa precisa ser carregado sozinho.",
+        "author_name": "EntreLinhas",
+        "mood": "esperanca",
+    },
+    {
+        "title": "Vazio",
+        "content": "As vezes o vazio nao e ausencia. E so um quarto escuro esperando luz.",
+        "author_name": "EntreLinhas",
+        "mood": "vazio",
+    },
+    {
+        "title": "Recomeco",
+        "content": "Voce ainda pode ser gentil com a versao de si mesmo que esta tentando continuar.",
+        "author_name": "EntreLinhas",
+        "mood": "recomeco",
+    },
+]
+
+
+def get_daily_text(target_date=None):
+    """Retorna o texto ativo do dia ou um fallback autoral."""
+    if target_date is None:
+        target_date = datetime.now().date()
+    date_key = target_date.isoformat() if hasattr(target_date, "isoformat") else str(target_date)
+    conn = get_db_connection()
+    row = conn.execute(
+        """
+        SELECT id, title, content, author_name, date, mood, is_active
+        FROM daily_texts
+        WHERE date = ? AND is_active = 1
+        LIMIT 1
+        """,
+        (date_key,),
+    ).fetchone()
+    conn.close()
+    if row:
+        return dict(row)
+    index = target_date.timetuple().tm_yday % len(DAILY_TEXT_FALLBACKS) if hasattr(target_date, "timetuple") else 0
+    fallback = dict(DAILY_TEXT_FALLBACKS[index])
+    fallback["date"] = date_key
+    fallback["is_active"] = 1
+    return fallback
+
+
+def get_active_help_volunteers():
+    """Lista contatos cadastrados de apoio emocional quando existirem."""
+    conn = get_db_connection()
+    volunteers = conn.execute(
+        """
+        SELECT id, name, professional_title, crp, contact_email, contact_link, bio, is_verified
+        FROM psychologists
+        WHERE is_active = 1
+        ORDER BY is_verified DESC, name ASC
+        """
+    ).fetchall()
+    conn.close()
+    return volunteers
+
+
+def toggle_echo(post_id, user_id):
+    """Adiciona ou remove um ECHO do usuario para um post."""
+    conn = get_db_connection()
+    try:
+        post = conn.execute(
+            "SELECT id FROM posts WHERE id = ? AND visivel = 1 AND status = 'published' AND COALESCE(is_deleted, 0) = 0",
+            (post_id,),
+        ).fetchone()
+        if not post:
+            return False, "not_found", 0, False
+
+        existing = conn.execute(
+            "SELECT id FROM echoes WHERE post_id = ? AND user_id = ?",
+            (post_id, user_id),
+        ).fetchone()
+        if existing:
+            conn.execute("DELETE FROM echoes WHERE id = ?", (existing["id"],))
+            active = False
+            action = "removed"
+        else:
+            conn.execute(
+                "INSERT INTO echoes (post_id, user_id, created_at) VALUES (?, ?, datetime('now'))",
+                (post_id, user_id),
+            )
+            active = True
+            action = "added"
+        conn.commit()
+        count = conn.execute("SELECT COUNT(*) FROM echoes WHERE post_id = ?", (post_id,)).fetchone()[0]
+        return True, action, count, active
+    except sqlite3.Error:
+        conn.rollback()
+        return False, "error", 0, False
+    finally:
         conn.close()
-        return False, f"Nova senha deve ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+
+
+def get_echo_state(post_id, user_id=None):
+    conn = get_db_connection()
+    count = conn.execute("SELECT COUNT(*) FROM echoes WHERE post_id = ?", (post_id,)).fetchone()[0]
+    active = False
+    if user_id:
+        active = bool(
+            conn.execute(
+                "SELECT id FROM echoes WHERE post_id = ? AND user_id = ?",
+                (post_id, user_id),
+            ).fetchone()
+        )
+    conn.close()
+    return {"count": count, "active": active}
+
+
+def get_moderation_stats():
+    conn = get_db_connection()
+    stats = {
+        "pending_reports": conn.execute("SELECT COUNT(*) FROM reports WHERE status = 'pending'").fetchone()[0],
+        "sensitive_posts": conn.execute("SELECT COUNT(*) FROM posts WHERE sensitive_flag = 1 AND COALESCE(is_deleted, 0) = 0").fetchone()[0],
+        "reported_posts": conn.execute("SELECT COUNT(DISTINCT post_id) FROM reports WHERE status = 'pending'").fetchone()[0],
+    }
+    conn.close()
+    return stats
+
+
+def get_admin_posts(filter_mode="all", limit=50, offset=0):
+    conn = get_db_connection()
+    filters = ["COALESCE(p.is_deleted, 0) = 0"]
+    params = []
+    if filter_mode == "visible":
+        filters.append("p.visivel = 1")
+    elif filter_mode == "hidden":
+        filters.append("p.visivel = 0")
+    elif filter_mode == "sensitive":
+        filters.append("p.sensitive_flag = 1")
+    elif filter_mode in ("reported", "pending"):
+        filters.append("p.report_count > 0")
+    where_clause = " AND ".join(filters)
+    params.extend([limit, offset])
+    posts = conn.execute(
+        f"""
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.report_count, p.data_postagem, p.visivel, p.status,
+               u.username as author_username, u.display_name as author_display_name
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE {where_clause}
+        ORDER BY p.report_count DESC, p.id DESC
+        LIMIT ? OFFSET ?
+        """,
+        tuple(params),
+    ).fetchall()
+    conn.close()
+    return posts
+
+
+def get_reports_by_post(post_id):
+    conn = get_db_connection()
+    reports = conn.execute(
+        """
+        SELECT r.id, r.data, r.created_at, r.reason, r.details, r.status,
+               p.nickname, u.username
+        FROM reports r
+        LEFT JOIN profiles p ON r.profile_id = p.id
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.post_id = ?
+        ORDER BY r.created_at DESC, r.data DESC
+        """,
+        (post_id,),
+    ).fetchall()
+    conn.close()
+    return reports
+
+
+def get_all_reports(limit=50, offset=0, status=None):
+    conn = get_db_connection()
+    filters = []
+    params = []
+    if status in ("pending", "resolved", "dismissed"):
+        filters.append("r.status = ?")
+        params.append(status)
+    where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+    params.extend([limit, offset])
+    reports = conn.execute(
+        f"""
+        SELECT r.id, r.post_id, r.data, r.created_at, r.reason, r.details, r.status,
+               p.nickname, u.username,
+               posts.mensagem, posts.categoria, posts.emotional_tag, posts.sensitive_flag, posts.visivel,
+               (SELECT COUNT(*) FROM reports r2 WHERE r2.post_id = r.post_id AND r2.status = 'pending') as total_reports
+        FROM reports r
+        LEFT JOIN profiles p ON r.profile_id = p.id
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN posts ON r.post_id = posts.id
+        {where_clause}
+        ORDER BY total_reports DESC, r.created_at DESC, r.data DESC
+        LIMIT ? OFFSET ?
+        """,
+        tuple(params),
+    ).fetchall()
+    conn.close()
+    return reports
+
+
+def resolve_report(report_id, status="resolved"):
+    if status not in ("resolved", "dismissed"):
+        status = "resolved"
+    conn = get_db_connection()
+    try:
+        report = conn.execute("SELECT id, post_id FROM reports WHERE id = ?", (report_id,)).fetchone()
+        if not report:
+            return False
+        conn.execute("UPDATE reports SET status = ? WHERE id = ?", (status, report_id))
+        pending = conn.execute(
+            "SELECT COUNT(*) FROM reports WHERE post_id = ? AND status = 'pending'",
+            (report["post_id"],),
+        ).fetchone()[0]
+        conn.execute("UPDATE posts SET report_count = ? WHERE id = ?", (pending, report["post_id"]))
+        conn.commit()
+        return True
+    except sqlite3.Error:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def remove_report(post_id, profile_id=None, user_id=None):
+    """Remove apenas o report do usuario atual."""
+    conn = get_db_connection()
+    try:
+        if user_id:
+            cursor = conn.execute(
+                "DELETE FROM reports WHERE post_id = ? AND user_id = ?",
+                (post_id, user_id),
+            )
+        elif profile_id:
+            cursor = conn.execute(
+                "DELETE FROM reports WHERE post_id = ? AND profile_id = ?",
+                (post_id, profile_id),
+            )
+        else:
+            return False, "Nao encontramos um aviso seu para desfazer."
+
+        if cursor.rowcount == 0:
+            return False, "Nao encontramos um aviso seu para desfazer."
+
+        report_count = conn.execute(
+            "SELECT COUNT(*) FROM reports WHERE post_id = ? AND status = 'pending'",
+            (post_id,),
+        ).fetchone()[0]
+        conn.execute("UPDATE posts SET report_count = ? WHERE id = ?", (report_count, post_id))
+        if report_count < 5:
+            conn.execute("UPDATE posts SET visivel = 1 WHERE id = ?", (post_id,))
+        conn.commit()
+        return True, "Seu aviso foi retirado."
+    except sqlite3.Error:
+        conn.rollback()
+        return False, "Nao conseguimos desfazer esse aviso agora."
+    finally:
+        conn.close()

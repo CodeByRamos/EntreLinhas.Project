@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'components/post_card.html' import render_post %}
+{% from 'components/post_card.html' import render_post with context %}
 
 {% block title %}Entre Linhas — Desabafos{% endblock %}
 
@@ -8,7 +8,18 @@
 {% set description = 'Escreva, respire e compartilhe. Um mural anônimo com acolhimento, empatia e presença.' %}
 {% include 'components/hero.html' %}
 
-<div class="container mx-auto px-6 py-10">
+<div class="container mx-auto px-6 py-10 feed-mood mood-{{ feed_mood or 'vazio' }}">
+  {% if daily_text %}
+  <section class="daily-text-card mb-8">
+    <div>
+      <p class="daily-kicker">Texto do dia</p>
+      <h2>{{ daily_text.title }}</h2>
+      <p>{{ daily_text.content }}</p>
+      {% if daily_text.author_name %}<span>{{ daily_text.author_name }}</span>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <div class="lg:col-span-1">
       <div class="sticky top-24 space-y-6">
@@ -26,10 +37,10 @@
               </div>
               <div>
                 <label for="conteudo" class="block font-medium text-slate-300 mb-2">Seu desabafo:</label>
-                <textarea id="conteudo" name="conteudo" required minlength="10" maxlength="1000" placeholder="Escreva o que quiser dizer..." rows="6" class="form-input w-full p-4 resize-y"></textarea>
+                <textarea id="conteudo" name="conteudo" required minlength="3" maxlength="2000" placeholder="Escreva o que quiser dizer..." rows="6" class="form-input w-full p-4 resize-y"></textarea>
                 <div class="flex justify-between text-xs text-slate-400 mt-1">
-                  <span>Mínimo: 10 caracteres</span>
-                  <span><span id="char-count">0</span>/<span id="max-chars">1000</span> (<span id="remaining-chars">1000</span> restantes)</span>
+                  <span>Mínimo: 3 caracteres</span>
+                  <span><span id="char-count">0</span>/<span id="max-chars">2000</span> (<span id="remaining-chars">2000</span> restantes)</span>
                 </div>
               </div>
 
@@ -39,6 +50,15 @@
                   <option value="" disabled selected>Selecione uma categoria</option>
                   {% for categoria in categorias %}
                   <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                <label for="emotional_tag" class="block font-medium text-slate-300 mb-2">Como esse desabafo se sente?</label>
+                <select id="emotional_tag" name="emotional_tag" required class="form-input w-full p-3" aria-label="Selecione a emoção do desabafo">
+                  {% for tag in emotional_tags %}
+                  <option value="{{ tag.valor }}" {% if tag.valor == 'vazio' %}selected{% endif %}>{{ tag.nome }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -73,6 +93,7 @@
                 </div>
                 <p id="sensitive-block-reason" class="hidden mt-4 text-sm text-amber-200"></p>
                 <div class="mt-6 flex flex-wrap gap-3">
+                  <a href="{{ url_for('support.ajuda') }}" class="btn-modern btn-ghost">Ver caminhos de ajuda</a>
                   <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar e postar</button>
                   <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar texto</button>
                 </div>
@@ -114,7 +135,7 @@
         </div>
       {% else %}
         <div class="glass-panel p-8 text-center">
-          <p class="text-slate-300 text-xl font-medium">Nenhum desabafo encontrado.</p>
+          <p class="text-slate-300 text-xl font-medium">Ainda está quieto por aqui.</p>
           <p class="text-slate-400 mt-2">Seja a primeira voz entre as linhas.</p>
         </div>
       {% endif %}
@@ -126,6 +147,7 @@
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/echo.js') }}"></script>
 <script src="{{ url_for('static', filename='js/post-form.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
 <script src="{{ url_for('static', filename='js/karma.js') }}"></script>

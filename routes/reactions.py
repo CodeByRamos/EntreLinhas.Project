@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, session
 import database as db
 
 # Criação do Blueprint para as rotas de reações
@@ -78,3 +78,35 @@ def toggle_reaction(post_id):
         'reaction_type': reaction_type
     })
 
+
+@reactions.route('/api/echo/<int:post_id>', methods=['GET'])
+def get_echo(post_id):
+    post = db.get_post(post_id)
+    if not post:
+        return jsonify({'success': False, 'message': 'Desabafo nao encontrado.'}), 404
+    state = db.get_echo_state(post_id, session.get('user_id'))
+    return jsonify({'success': True, 'echo': state})
+
+
+@reactions.route('/api/echo/<int:post_id>', methods=['POST'])
+def toggle_echo(post_id):
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'message': 'Entre na sua conta para ecoar um desabafo.'
+        }), 401
+
+    success, action, count, active = db.toggle_echo(post_id, session['user_id'])
+    if not success and action == 'not_found':
+        return jsonify({'success': False, 'message': 'Desabafo nao encontrado.'}), 404
+    if not success:
+        return jsonify({'success': False, 'message': 'Nao conseguimos registrar seu eco agora.'}), 500
+
+    message = 'Seu eco foi registrado.' if active else 'Seu eco foi recolhido.'
+    return jsonify({
+        'success': True,
+        'action': action,
+        'count': count,
+        'active': active,
+        'message': message,
+    })

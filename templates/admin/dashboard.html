@@ -81,6 +81,12 @@
         <a href="{{ url_for('admin.posts', visibility='hidden') }}" class="block px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-800 dark:text-white transition duration-300">
           Ver desabafos ocultos
         </a>
+        <a href="{{ url_for('admin.post_reports') }}" class="block px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-800 dark:text-white transition duration-300">
+          Reports pendentes: {{ stats.pending_reports }}
+        </a>
+        <a href="{{ url_for('admin.posts', visibility='sensitive') }}" class="block px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-800 dark:text-white transition duration-300">
+          Posts sensiveis: {{ stats.sensitive_posts }}
+        </a>
         <a href="{{ url_for('admin.comments', visibility='hidden') }}" class="block px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-800 dark:text-white transition duration-300">
           Ver comentários ocultos
         </a>
@@ -106,4 +112,3 @@
   </div>
 </div>
 {% endblock %}
-

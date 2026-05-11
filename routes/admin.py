@@ -66,6 +66,7 @@ def dashboard():
         'hidden_posts': db.get_hidden_post_count(),
         'hidden_comments': db.get_hidden_comment_count()
     }
+    stats.update(db.get_moderation_stats())
     
     return render_template('admin/dashboard.html', stats=stats)
 
@@ -76,15 +77,32 @@ def posts():
     # Parâmetros de filtro
     visibility = request.args.get('visibility', 'all')
     
-    # Obter posts com base no filtro
-    if visibility == 'visible':
-        posts_list = db.get_posts(include_hidden=False)
-    elif visibility == 'hidden':
-        posts_list = db.get_hidden_posts()
-    else:  # 'all'
-        posts_list = db.get_posts(include_hidden=True)
+    posts_list = db.get_admin_posts(filter_mode=visibility, limit=80)
     
     return render_template('admin/posts.html', posts=posts_list, visibility=visibility)
+
+
+@admin.route('/reports')
+@admin_required
+def post_reports():
+    status = request.args.get('status', 'pending')
+    if status not in ('pending', 'resolved', 'dismissed', 'all'):
+        status = 'pending'
+    reports_list = db.get_all_reports(status=None if status == 'all' else status, limit=80)
+    return render_template('admin/reports.html', reports=reports_list, status=status)
+
+
+@admin.route('/reports/<int:report_id>/resolve', methods=['POST'])
+@admin_required
+def resolve_post_report(report_id):
+    action = request.form.get('action', 'resolved')
+    if action not in ('resolved', 'dismissed'):
+        action = 'resolved'
+    if db.resolve_report(report_id, status=action):
+        flash('Aviso marcado como cuidado pela moderacao.', 'success')
+    else:
+        flash('Nao conseguimos atualizar esse aviso agora.', 'error')
+    return redirect(request.referrer or url_for('admin.post_reports'))
 
 @admin.route('/comments')
 @admin_required

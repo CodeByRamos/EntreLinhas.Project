@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, current_app
 import database as db
+from utils.mood_styles import EMOTIONAL_TAG_LABELS
 
 # Criação do Blueprint para as rotas de pesquisa
 search = Blueprint('search', __name__)
@@ -36,20 +37,10 @@ def pesquisar():
         categorias = current_app.config.get('CATEGORIAS', [])
         reacoes = current_app.config.get('REACOES', [])
         
-        # Preparar dados para cada post
-        for post in desabafos:
-            try:
-                post_id = post['id']
-                post['comments'] = db.get_comments(post_id) or []
-                post['reaction_counts'] = db.get_reaction_counts(post_id) or {}
-            except Exception as e:
-                print(f"Erro ao processar post {post.get('id', 'unknown')}: {e}")
-                post['comments'] = []
-                post['reaction_counts'] = {}
-        
         return render_template('search.html', 
                               query=query,
                               desabafos=desabafos,
+                              emotional_tag_labels=EMOTIONAL_TAG_LABELS,
                               categorias=categorias,
                               reacoes=reacoes,
                               page=page,
@@ -95,23 +86,18 @@ def api_pesquisar():
         # Calcular número total de páginas
         total_pages = (total_posts + per_page - 1) // per_page if total_posts > 0 else 0
         
-        # Preparar dados para cada post
         results = []
         for post in desabafos:
-            try:
-                post_id = post['id']
-                post_data = {
-                    'id': post['id'],
-                    'mensagem': post['mensagem'],
-                    'categoria': post['categoria'],
-                    'data_postagem': post['data_postagem'],
-                    'comments': db.get_comments(post_id) or [],
-                    'reaction_counts': db.get_reaction_counts(post_id) or {}
-                }
-                results.append(post_data)
-            except Exception as e:
-                print(f"Erro ao processar post {post.get('id', 'unknown')}: {e}")
-                continue
+            post_id = post['id']
+            results.append({
+                'id': post['id'],
+                'mensagem': post['mensagem'],
+                'categoria': post['categoria'],
+                'emotional_tag': post['emotional_tag'] if 'emotional_tag' in post.keys() else 'vazio',
+                'data_postagem': post['data_postagem'],
+                'comments': [dict(comment) for comment in (db.get_comments(post_id) or [])],
+                'reaction_counts': db.get_reaction_counts(post_id) or {}
+            })
         
         return jsonify({
             'query': query,
@@ -131,4 +117,3 @@ def api_pesquisar():
             'total_pages': 0,
             'total_results': 0
         }), 500
-

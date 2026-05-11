@@ -66,6 +66,7 @@
         <a href="{{ url_for('posts.feed') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Desabafos</a>
         <a href="{{ url_for('search.pesquisar') }}" class="nav-link-modern my-1 md:mx-3 text-sm md:hidden">Pesquisar</a>
         <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Estatísticas</a>
+        <a href="{{ url_for('support.ajuda') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Ajuda</a>
         <a href="{{ url_for('main.about') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Sobre</a>
         <a href="{{ url_for('main.how_it_works') }}" class="nav-link-modern my-1 md:mx-3 text-sm">Como Funciona</a>
         {% if session.get('user_id') %}
@@ -109,6 +110,7 @@
           <a href="{{ url_for('main.home') }}" class="nav-link-modern">Início</a>
           <a href="{{ url_for('posts.feed') }}" class="nav-link-modern">Desabafos</a>
           <a href="{{ url_for('stats.estatisticas') }}" class="nav-link-modern">Estatísticas</a>
+          <a href="{{ url_for('support.ajuda') }}" class="nav-link-modern">Ajuda</a>
           <a href="{{ url_for('auth.perfil') }}" class="nav-link-modern">Perfil</a>
           <a href="{{ url_for('main.about') }}" class="nav-link-modern">Sobre</a>
         </div>

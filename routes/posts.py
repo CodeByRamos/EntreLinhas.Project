@@ -4,6 +4,7 @@ import database as db
 from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIGH
 from services.sensitive_response import build_sensitive_response
+from utils.mood_styles import EMOTIONAL_TAG_LABELS, dominant_mood, is_valid_emotional_tag, normalize_emotional_tag
 
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
@@ -48,13 +49,20 @@ def feed():
     
     # Usar categorias da configuração para o formulário
     categorias_form = current_app.config['CATEGORIAS']
+    emotional_tags = current_app.config.get('TAGS_EMOCIONAIS', [])
     reacoes = current_app.config['REACOES']
+    daily_text = db.get_daily_text()
+    feed_mood = dominant_mood(desabafos)
     
     current_user = db.get_user_by_id(session['user_id']) if session.get('user_id') else None
 
     return render_template('feed.html', 
                           desabafos=desabafos, 
                           categorias=categorias_form,
+                          emotional_tags=emotional_tags,
+                          emotional_tag_labels=EMOTIONAL_TAG_LABELS,
+                          daily_text=daily_text,
+                          feed_mood=feed_mood,
                           categorias_disponiveis=categorias_disponiveis,
                           categoria_atual=categoria,
                           reacoes=reacoes,
@@ -80,12 +88,20 @@ def enviar():
         conteudo = request.form.get('conteudo', '').strip()
         titulo = request.form.get('titulo', '').strip() or None
         categoria = request.form.get('categoria')
+        emotional_tag = normalize_emotional_tag(request.form.get('emotional_tag'))
         visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
         action = request.form.get('action', 'publish')
         post_status = 'draft' if action == 'draft' else 'published'
         
+        valid_categories = {item['valor'] for item in current_app.config.get('CATEGORIAS', [])}
         if not conteudo or not categoria:
-            flash('Por favor, preencha todos os campos.')
+            flash('Esse campo precisa ser preenchido.', 'error')
+            return redirect(url_for('posts.feed'))
+        if categoria not in valid_categories:
+            flash('Escolha um assunto da lista para publicar com seguranca.', 'error')
+            return redirect(url_for('posts.feed'))
+        if not is_valid_emotional_tag(emotional_tag):
+            flash('Escolha uma emocao da lista para situar seu desabafo.', 'error')
             return redirect(url_for('posts.feed'))
         if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
             flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
@@ -99,12 +115,9 @@ def enviar():
             return redirect(url_for('posts.feed'))
         
         sensitivity = evaluate_post_content(conteudo)
+        is_sensitive = sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH)
         if post_status == 'published':
-            if sensitivity['should_block']:
-                flash('Detectamos sinais de risco imediato no texto. Edite a mensagem e, se puder, procure apoio no CVV (188).', 'error')
-                return redirect(url_for('posts.feed'))
-
-            if sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH):
+            if is_sensitive:
                 sensitive_ack = request.form.get('sensitive_ack') == '1'
                 acknowledged_level = request.form.get('sensitive_risk')
                 if not sensitive_ack or acknowledged_level != sensitivity['risk_level']:
@@ -120,6 +133,8 @@ def enviar():
                 visibility_mode=visibility_mode,
                 title=titulo,
                 status=post_status,
+                emotional_tag=emotional_tag,
+                sensitive_flag=is_sensitive,
             )
             if post_status == 'published' and sensitivity['risk_level'] == RISK_HIGH:
                 db.log_sensitive_post(post_id=post_id, risk_level=RISK_HIGH)
@@ -134,7 +149,10 @@ def enviar():
         if post_status == 'draft':
             flash('Rascunho salvo com sucesso!', 'success')
             return redirect(url_for('posts.rascunhos'))
-        flash('Desabafo publicado com sucesso!', 'success')
+        if is_sensitive:
+            flash('Seu desabafo foi publicado. E existe ajuda real disponivel se essa dor estiver pesada demais.', 'success')
+        else:
+            flash('Seu desabafo foi publicado.', 'success')
         return redirect(url_for('posts.feed'))
     
     return redirect(url_for('posts.feed'))
@@ -246,16 +264,21 @@ def editar_post(post_id):
             'posts/editar.html',
             post=post,
             categorias=current_app.config['CATEGORIAS'],
+            emotional_tags=current_app.config.get('TAGS_EMOCIONAIS', []),
         )
 
     conteudo = request.form.get('conteudo', '').strip()
     titulo = request.form.get('titulo', '').strip() or None
     categoria = request.form.get('categoria', '').strip()
+    emotional_tag = normalize_emotional_tag(request.form.get('emotional_tag'))
     visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
-    status = request.form.get('status', post.get('status') or 'published')
+    status = request.form.get('status', post['status'] if 'status' in post.keys() else 'published')
 
     if not conteudo or not categoria:
         flash('Preencha conteúdo e categoria para editar o desabafo.', 'error')
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+    if not is_valid_emotional_tag(emotional_tag):
+        flash('Escolha uma emocao da lista para situar seu desabafo.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
     if len(conteudo) < LIMITS["post_content_min"] or len(conteudo) > LIMITS["post_content_max"]:
         flash(f'O desabafo deve ter entre {LIMITS["post_content_min"]} e {LIMITS["post_content_max"]} caracteres.', 'error')
@@ -268,12 +291,22 @@ def editar_post(post_id):
         flash('Visibilidade inválida para o post.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
-    updated = db.update_post(post_id, conteudo, categoria, visibility_mode, title=titulo, status=status)
+    sensitivity = evaluate_post_content(conteudo)
+    updated = db.update_post(
+        post_id,
+        conteudo,
+        categoria,
+        visibility_mode,
+        title=titulo,
+        status=status,
+        emotional_tag=emotional_tag,
+        sensitive_flag=sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH),
+    )
     if not updated:
         flash('Não foi possível atualizar o post.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
-    flash('Post atualizado com sucesso!', 'success')
+    flash('Seu desabafo foi atualizado.', 'success')
     return redirect(url_for('posts.meus_posts'))
 
 @posts.route('/posts/<int:post_id>/excluir', methods=['POST'])

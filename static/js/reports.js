@@ -1,188 +1,107 @@
-// Arquivo JavaScript para gerenciar reports de posts
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Adicionar event listeners para botões de report
-    const reportButtons = document.querySelectorAll('.report-button');
-    
-    reportButtons.forEach(button => {
+    ensureReportModal();
+    document.querySelectorAll('.report-button').forEach((button) => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            const postId = this.getAttribute('data-post-id');
-            reportPost(postId, this);
+            openReportModal(this.dataset.postId, this);
         });
     });
 });
 
-function reportPost(postId, buttonElement) {
-    // Confirmar ação com o usuário
-    if (!confirm('Tem certeza que deseja reportar este desabafo? Esta ação não pode ser desfeita.')) {
-        return;
-    }
-    
-    // Desabilitar o botão temporariamente
-    buttonElement.disabled = true;
-    buttonElement.innerHTML = '<span class="loading-spinner"></span> Reportando...';
-    
-    // Fazer a requisição para reportar o post
+const reportReasons = [
+    ['ofensivo', 'Conteudo ofensivo'],
+    ['odio', 'Discurso de odio'],
+    ['assedio', 'Assedio'],
+    ['perigoso', 'Conteudo perigoso'],
+    ['spam', 'Spam'],
+    ['exposicao', 'Exposicao pessoal'],
+    ['outro', 'Outro'],
+];
+
+let currentReportButton = null;
+
+function ensureReportModal() {
+    if (document.getElementById('report-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'report-modal';
+    modal.className = 'report-modal hidden';
+    modal.innerHTML = `
+        <div class="modal-backdrop absolute inset-0"></div>
+        <form class="report-modal-card" id="report-form">
+            <input type="hidden" id="report-post-id" />
+            <h3>Avisar a moderacao</h3>
+            <p>Use este aviso quando algo ferir o cuidado do EntreLinhas. A pessoa do outro lado continua sendo tratada com respeito.</p>
+            <label for="report-reason">Motivo</label>
+            <select id="report-reason" class="input-modern" required>
+                ${reportReasons.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}
+            </select>
+            <label for="report-details">Detalhes, se quiser</label>
+            <textarea id="report-details" class="input-modern" maxlength="500" rows="3" placeholder="O que a moderacao precisa saber?"></textarea>
+            <div class="report-modal-actions">
+                <button type="button" class="btn-modern btn-ghost" id="report-cancel">Voltar</button>
+                <button type="submit" class="btn-modern btn-primary">Enviar aviso</button>
+            </div>
+        </form>
+    `;
+    document.body.appendChild(modal);
+    document.getElementById('report-cancel').addEventListener('click', closeReportModal);
+    document.getElementById('report-form').addEventListener('submit', submitReport);
+}
+
+function openReportModal(postId, button) {
+    currentReportButton = button;
+    document.getElementById('report-post-id').value = postId;
+    document.getElementById('report-details').value = '';
+    const modal = document.getElementById('report-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeReportModal() {
+    const modal = document.getElementById('report-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function submitReport(event) {
+    event.preventDefault();
+    const postId = document.getElementById('report-post-id').value;
+    const reason = document.getElementById('report-reason').value;
+    const details = document.getElementById('report-details').value.trim();
+    const button = currentReportButton;
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
     fetch('/api/report', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            post_id: postId
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: postId, reason, details })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mostrar mensagem de sucesso
-            showNotification(data.message, 'success');
-            
-            // Atualizar o botão
-            buttonElement.innerHTML = '✓ Reportado';
-            buttonElement.classList.add('reported');
-            buttonElement.disabled = true;
-            
-            // Se o post foi ocultado (5+ reports), remover do feed
+        .then(async (response) => {
+            const data = await response.json();
+            if (!response.ok) throw data;
+            return data;
+        })
+        .then((data) => {
+            closeReportModal();
+            showSoftNotice(data.message || 'A moderacao recebeu seu aviso.');
+            if (button) {
+                button.textContent = 'Avisado';
+                button.disabled = true;
+                button.classList.add('reported');
+            }
             if (data.report_count >= 5) {
-                const postElement = buttonElement.closest('article.post-card');
+                const postElement = button ? button.closest('article.post-card') : null;
                 if (postElement) {
-                    postElement.style.transition = 'opacity 0.5s ease';
                     postElement.style.opacity = '0';
-                    setTimeout(() => {
-                        postElement.remove();
-                        showNotification('O desabafo foi removido devido ao número de reports.', 'info');
-                    }, 500);
+                    setTimeout(() => postElement.remove(), 450);
                 }
             }
-        } else {
-            // Mostrar mensagem de erro
-            showNotification(data.message, 'error');
-            
-            // Reabilitar o botão
-            buttonElement.disabled = false;
-            buttonElement.innerHTML = '🚩 Reportar';
-        }
-    })
-    .catch(error => {
-        console.error('Erro ao reportar post:', error);
-        showNotification('Erro ao reportar o desabafo. Tente novamente.', 'error');
-        
-        // Reabilitar o botão
-        buttonElement.disabled = false;
-        buttonElement.innerHTML = '🚩 Reportar';
-    });
+        })
+        .catch((data) => {
+            showSoftNotice((data && data.message) || 'Nao conseguimos enviar seu aviso agora.', 'error');
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+        });
 }
-
-function showNotification(message, type) {
-    // Criar elemento de notificação
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <span class="notification-message">${message}</span>
-            <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
-        </div>
-    `;
-    
-    // Adicionar estilos inline para a notificação
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1000;
-        max-width: 400px;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        animation: slideIn 0.3s ease;
-    `;
-    
-    // Definir cores baseadas no tipo
-    if (type === 'success') {
-        notification.style.backgroundColor = '#10b981';
-        notification.style.color = 'white';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#ef4444';
-        notification.style.color = 'white';
-    } else if (type === 'info') {
-        notification.style.backgroundColor = '#3b82f6';
-        notification.style.color = 'white';
-    }
-    
-    // Adicionar ao DOM
-    document.body.appendChild(notification);
-    
-    // Remover automaticamente após 5 segundos
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-        }
-    }, 5000);
-}
-
-// Adicionar estilos CSS para as animações
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-    
-    .loading-spinner {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        border-top-color: transparent;
-        animation: spin 1s ease-in-out infinite;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-    
-    .report-button.reported {
-        background-color: #6b7280 !important;
-        cursor: not-allowed !important;
-    }
-    
-    .notification-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .notification-close {
-        background: none;
-        border: none;
-        color: inherit;
-        font-size: 18px;
-        cursor: pointer;
-        margin-left: 10px;
-    }
-`;
-document.head.appendChild(style);
