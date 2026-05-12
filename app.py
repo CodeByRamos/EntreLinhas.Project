@@ -42,6 +42,8 @@ def create_app():
             raise RuntimeError('DATABASE_URL com PostgreSQL precisa estar configurada em produção.')
         if app.config.get('STORAGE_PROVIDER', 'local') == 'local':
             raise RuntimeError('Configure storage persistente em produção: cloudinary ou s3.')
+        if not app.config.get('MAIL_SERVER') or not app.config.get('MAIL_DEFAULT_SENDER'):
+            raise RuntimeError('SMTP precisa estar configurado em produção para verificação de e-mail e recuperação de senha.')
 
     # Configuração para sessões/autenticação
     secret_key = app.config.get('SECRET_KEY') or os.environ.get('SECRET_KEY')
@@ -94,6 +96,23 @@ def create_app():
             'now': datetime.now(),
             'current_user': get_current_user(session)
         }
+
+    @app.cli.command("create-admin")
+    def create_admin_command():
+        """Cria ou reseta o admin usando ADMIN_EMAIL e ADMIN_PASSWORD."""
+        import click
+        from services.admin_setup import AdminSetupError, create_or_reset_admin_from_env
+
+        try:
+            result = create_or_reset_admin_from_env()
+        except AdminSetupError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+        click.echo(result["message"])
+        click.echo(f"E-mail: {result['email']}")
+        click.echo(f"Username: {result['username']}")
+        click.echo(f"Banco: {result['database']}")
+        click.echo("Agora entre em /admin/login com o e-mail e a senha definidos no ambiente.")
     
     return app
 

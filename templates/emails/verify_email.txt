@@ -1,0 +1,11 @@
+Oi.
+
+Antes de seguir escrevendo entrelinhas, confirme que este email é seu.
+
+Esse link expira por segurança:
+{{ action_url }}
+
+Se você não criou uma conta no EntreLinhas, ignore esta mensagem.
+
+EntreLinhas
+entre o silêncio e a palavra

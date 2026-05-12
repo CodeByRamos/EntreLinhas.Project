@@ -17,9 +17,26 @@
 
 ## Conta
 - [ ] Cadastro funciona
+- [ ] Email duplicado é bloqueado
 - [ ] Login funciona
 - [ ] Logout funciona
 - [ ] Sessão permanece após recarregar
+- [ ] Usuário não verificado vê aviso adequado
+
+## Verificação de email
+- [ ] Email de verificação chega
+- [ ] Link válido confirma a conta
+- [ ] Reenvio de verificação funciona
+- [ ] Link inválido mostra mensagem amigável
+- [ ] Link expirado mostra mensagem amigável
+
+## Recuperação de senha
+- [ ] Página "Esqueci minha senha" abre
+- [ ] Mensagem não revela se o email existe
+- [ ] Email de reset chega
+- [ ] Link válido permite criar nova senha
+- [ ] Senha nova permite login
+- [ ] Senha antiga deixa de funcionar
 
 ## Feed
 - [ ] Feed carrega
@@ -65,4 +82,5 @@
 - [ ] Static files carregam
 - [ ] Banco persiste dados
 - [ ] Uploads persistem após redeploy
+- [ ] SMTP real envia emails
 - [ ] Debug não aparece

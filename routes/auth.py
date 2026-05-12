@@ -140,8 +140,10 @@ def registro():
             if request.is_json:
                 return jsonify({'success': True, 'message': message, 'redirect': redirect_target})
             flash(message, 'success')
-            if user_email and delivery.get('sent'):
+            if user_email and (delivery.get('sent') or delivery.get('debug_url')):
                 flash("Enviamos um caminho de confirmação para seu e-mail.", 'success')
+            elif user_email:
+                flash("Sua conta foi criada. Não conseguimos enviar a confirmação agora, mas você pode pedir um novo envio pelo perfil.", 'info')
             return redirect(redirect_target)
         else:
             if request.is_json:
@@ -424,27 +426,21 @@ def esqueci_senha():
         return render_template('auth/esqueci_senha.html')
 
     user = db.get_user_by_email(email)
-    preview_url = None
     if user:
         token = db.create_password_reset_token(user['id'])
-        delivery = send_password_reset_email(email, token)
-        preview_url = delivery.get('preview_url')
+        send_password_reset_email(email, token)
 
     message = "Se houver uma conta com este e-mail, enviamos instruções para redefinir sua senha."
     if request.is_json:
-        payload = {'success': True, 'message': message}
-        if preview_url:
-            payload['preview_url'] = preview_url
-        return jsonify(payload)
+        return jsonify({'success': True, 'message': message})
     flash(message, 'success')
-    if preview_url:
-        flash(f"Ambiente local: link de redefinição {preview_url}", 'success')
     return redirect(url_for('auth.login'))
 
 
+@auth.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
 @auth.route('/redefinir-senha', methods=['GET', 'POST'])
-def redefinir_senha():
-    token = (request.args.get('token') or request.form.get('token') or '').strip()
+def redefinir_senha(token=None):
+    token = (token or request.args.get('token') or request.form.get('token') or '').strip()
     if request.method == 'GET':
         return render_template('auth/redefinir_senha.html', token=token)
 
@@ -454,13 +450,13 @@ def redefinir_senha():
     confirm_password = data.get('confirm_password', '')
 
     if not token:
-        message = "Token de redefinição é obrigatório."
+        message = "Esse caminho de redefinição não parece completo. Peça um novo link e tente de novo."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 400
         flash(message, 'error')
         return render_template('auth/redefinir_senha.html', token=token)
     if len(token) < LIMITS["token_min"] or len(token) > LIMITS["token_max"]:
-        message = "Token inválido."
+        message = "Esse caminho de redefinição não parece mais válido. Peça um novo link e tente de novo."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 400
         flash(message, 'error')
@@ -493,14 +489,15 @@ def redefinir_senha():
     return redirect(url_for('auth.login'))
 
 
+@auth.route('/verificar-email/<token>', methods=['GET'])
 @auth.route('/verificar-email', methods=['GET'])
-def verificar_email():
-    token = (request.args.get('token') or '').strip()
+def verificar_email(token=None):
+    token = (token or request.args.get('token') or '').strip()
     if not token:
-        flash("Token de verificação ausente.", 'error')
+        flash("Esse caminho de confirmação não parece completo. Peça um novo envio e tente de novo.", 'error')
         return redirect(url_for('auth.perfil') if session.get('user_id') else url_for('auth.login'))
     if len(token) < LIMITS["token_min"] or len(token) > LIMITS["token_max"]:
-        flash("Token inválido.", 'error')
+        flash("Esse caminho de confirmação não parece mais válido. Peça um novo envio e tente de novo.", 'error')
         return redirect(url_for('auth.perfil') if session.get('user_id') else url_for('auth.login'))
 
     success, message = db.verify_email_with_token(token)
@@ -524,9 +521,10 @@ def reenviar_verificacao_email():
 
     token = db.create_email_verification_token(user['id'])
     delivery = send_email_verification(user['email'], token)
-    flash("Link de verificação preparado.", 'success')
-    if delivery.get('preview_url'):
-        flash(f"Ambiente local: link de verificação {delivery['preview_url']}", 'success')
+    if delivery.get('sent') or delivery.get('debug_url'):
+        flash("Enviamos um novo caminho de confirmação para seu e-mail.", 'success')
+    else:
+        flash("Não conseguimos enviar a confirmação agora. Tente novamente em instantes.", 'error')
     return redirect(url_for('auth.perfil'))
 
 # Função auxiliar para verificar se o usuário está logado

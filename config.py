@@ -32,6 +32,19 @@ USE_POSTGRES = bool(DATABASE_URL and DATABASE_URL.startswith(('postgresql://', '
 MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', str(5 * 1024 * 1024)))
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
 STORAGE_PROVIDER = os.environ.get('STORAGE_PROVIDER', 'local').lower()
+APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://127.0.0.1:5000').rstrip('/')
+
+MAIL_SERVER = os.environ.get('MAIL_SERVER')
+MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))
+MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or MAIL_USERNAME
+MAIL_ALLOW_CONSOLE_FALLBACK = os.environ.get(
+    'MAIL_ALLOW_CONSOLE_FALLBACK',
+    'false' if IS_PRODUCTION else 'true'
+).lower() == 'true'
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
@@ -39,6 +52,7 @@ SESSION_COOKIE_SECURE = os.environ.get(
     'SESSION_COOKIE_SECURE',
     'true' if IS_PRODUCTION else 'false'
 ).lower() == 'true'
+TEMPLATES_AUTO_RELOAD = not IS_PRODUCTION
 PERMANENT_SESSION_LIFETIME_HOURS = int(os.environ.get('PERMANENT_SESSION_LIFETIME_HOURS', '24'))
 
 TAGS_EMOCIONAIS = EMOTIONAL_TAGS

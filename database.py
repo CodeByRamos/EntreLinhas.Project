@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timedelta
 import os
+import re
 import secrets
 try:
     from dotenv import load_dotenv
@@ -40,6 +41,17 @@ if DATABASE_URL.startswith("postgres://"):
 if DATABASE_URL.startswith("postgresql+psycopg://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql://", 1)
 USE_POSTGRES = bool(DATABASE_URL.startswith(("postgresql://", "postgresql+")))
+
+
+def _as_datetime(value):
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+    return value
 
 
 def _translate_sql_for_postgres(sql):
@@ -2046,21 +2058,21 @@ def consume_password_reset_token(token):
     ).fetchone()
     if not row:
         conn.close()
-        return False, "Token inválido.", None
+        return False, "Esse caminho de redefinição não parece mais válido. Peça um novo link e tente de novo.", None
     if row["used_at"]:
         conn.close()
-        return False, "Token já utilizado.", None
-    expires_at = datetime.strptime(row["expires_at"], "%Y-%m-%d %H:%M:%S")
+        return False, "Esse caminho de redefinição já foi usado. Peça um novo link se ainda precisar.", None
+    expires_at = _as_datetime(row["expires_at"])
     if datetime.utcnow() > expires_at:
         conn.close()
-        return False, "Token expirado.", None
+        return False, "Esse caminho de redefinição expirou. Peça um novo link e tente de novo.", None
     conn.execute(
         "UPDATE password_reset_tokens SET used_at = datetime('now') WHERE id = ?",
         (row["id"],),
     )
     conn.commit()
     conn.close()
-    return True, "Token válido.", row["user_id"]
+    return True, "Caminho válido.", row["user_id"]
 
 
 def create_email_verification_token(user_id, hours_valid=48):
@@ -2089,27 +2101,27 @@ def verify_email_with_token(token):
     ).fetchone()
     if not row:
         conn.close()
-        return False, "Token inválido."
+        return False, "Esse caminho de confirmação não parece mais válido. Peça um novo envio e tente de novo."
     user = conn.execute("SELECT id, is_verified FROM users WHERE id = ?", (row["user_id"],)).fetchone()
     if not user:
         conn.close()
-        return False, "Conta não encontrada."
+        return False, "Não encontramos essa conta para confirmar o e-mail."
     if user["is_verified"]:
         conn.close()
-        return False, "Conta já verificada."
+        return True, "Seu e-mail já está confirmado."
     if row["used_at"]:
         conn.close()
-        return False, "Token já utilizado."
-    expires_at = datetime.strptime(row["expires_at"], "%Y-%m-%d %H:%M:%S")
+        return False, "Esse caminho de confirmação já foi usado. Peça um novo envio se ainda precisar."
+    expires_at = _as_datetime(row["expires_at"])
     if datetime.utcnow() > expires_at:
         conn.close()
-        return False, "Token expirado."
+        return False, "Esse caminho de confirmação expirou. Peça um novo envio e tente de novo."
 
     conn.execute("UPDATE email_verification_tokens SET used_at = datetime('now') WHERE id = ?", (row["id"],))
     conn.execute("UPDATE users SET is_verified = 1, email_verified_at = datetime('now') WHERE id = ?", (row["user_id"],))
     conn.commit()
     conn.close()
-    return True, "E-mail verificado com sucesso."
+    return True, "Seu e-mail foi confirmado."
 
 
 def create_notification(user_id, notification_type, title, message, reference_id=None):
@@ -2187,7 +2199,7 @@ def authenticate_admin(username, password):
     return user
 
 
-def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
+def _legacy_ensure_admin_user(username, password, nickname=None, bio=None, email=None):
     """
     Cria ou promove um usuário para administrador.
     Retorna (success, message).
@@ -2236,6 +2248,173 @@ def ensure_admin_user(username, password, nickname=None, bio=None, email=None):
         return False, f"Erro ao configurar admin: {str(e)}"
     finally:
         conn.close()
+
+def _username_from_email(email):
+    local_part = (email or "").split("@", 1)[0].lower()
+    username = re.sub(r"[^a-z0-9_.]+", "_", local_part).strip("._")
+    username = username[:LIMITS["username_max"]] or "admin"
+    if len(username) < LIMITS["username_min"]:
+        username = "admin"
+    return username
+
+
+def _username_available(conn, username, current_user_id=None):
+    row = conn.execute(
+        "SELECT id FROM users WHERE username = ? AND id <> ?",
+        (username, current_user_id or 0),
+    ).fetchone()
+    return row is None
+
+
+def _unique_username(conn, base_username):
+    base = (base_username or "admin")[:LIMITS["username_max"]]
+    if len(base) < LIMITS["username_min"]:
+        base = "admin"
+    candidate = base
+    suffix = 1
+    while not _username_available(conn, candidate):
+        suffix += 1
+        suffix_text = f"_{suffix}"
+        candidate = f"{base[:LIMITS['username_max'] - len(suffix_text)]}{suffix_text}"
+    return candidate
+
+
+def ensure_admin_user(username=None, password=None, nickname=None, bio=None, email=None, display_name=None):
+    """
+    Cria, reseta ou promove um usuario para administrador.
+    Procura primeiro pelo e-mail e depois pelo username para evitar duplicidade.
+    Retorna (success, message).
+    """
+    username_was_supplied = bool(trim_text(username))
+    username = trim_text(username) or None
+    nickname = trim_text(nickname) or None
+    display_name = trim_text(display_name) or nickname or "Admin EntreLinhas"
+    bio = trim_text(bio) or None
+    email = trim_text(email) or None
+
+    if not password or len(password) < LIMITS["password_min"] or len(password) > LIMITS["password_max"]:
+        return False, f"A senha do admin precisa ter entre {LIMITS['password_min']} e {LIMITS['password_max']} caracteres."
+    if email and not is_valid_email(email):
+        return False, "O e-mail do admin não parece válido."
+    if username and not is_valid_username(username):
+        return False, "O username do admin precisa ter de 3 a 30 caracteres e usar apenas letras, números, ponto ou underline."
+    if not username and not email:
+        return False, "Informe ADMIN_EMAIL ou ADMIN_USERNAME para configurar o admin."
+    if bio and len(bio) > LIMITS["bio_max"]:
+        return False, f"A bio do admin precisa ter no máximo {LIMITS['bio_max']} caracteres."
+
+    conn = get_db_connection()
+    try:
+        existing = None
+        if email:
+            existing = conn.execute(
+                "SELECT id, username, nickname, display_name, bio, email FROM users WHERE LOWER(email) = LOWER(?)",
+                (email,),
+            ).fetchone()
+        if not existing and username:
+            existing = conn.execute(
+                "SELECT id, username, nickname, display_name, bio, email FROM users WHERE username = ?",
+                (username,),
+            ).fetchone()
+
+        if existing:
+            user_id = existing["id"]
+            final_username = username or existing["username"]
+            if username_was_supplied and final_username != existing["username"] and not _username_available(conn, final_username, user_id):
+                return False, "Esse username já pertence a outra conta."
+
+            final_email = email if email is not None else existing["email"]
+            if final_email:
+                email_owner = conn.execute(
+                    "SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id <> ?",
+                    (final_email, user_id),
+                ).fetchone()
+                if email_owner:
+                    return False, "Esse e-mail já pertence a outra conta."
+
+            final_nickname = nickname or existing["nickname"] or final_username
+            final_display_name = display_name or existing["display_name"] or final_nickname
+            if len(final_nickname) < LIMITS["nickname_min"] or len(final_nickname) > LIMITS["nickname_max"]:
+                return False, f"O apelido do admin precisa ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
+            if len(final_display_name) < LIMITS["display_name_min"] or len(final_display_name) > LIMITS["display_name_max"]:
+                return False, f"O nome público do admin precisa ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
+
+            conn.execute(
+                """
+                UPDATE users
+                SET username = ?,
+                    password_hash = ?,
+                    nickname = ?,
+                    display_name = ?,
+                    bio = ?,
+                    email = ?,
+                    role = 'admin',
+                    updated_at = datetime('now'),
+                    is_active = 1,
+                    is_admin = 1,
+                    is_verified = CASE WHEN ? IS NULL THEN is_verified ELSE 1 END,
+                    email_verified_at = CASE WHEN ? IS NULL THEN email_verified_at ELSE COALESCE(email_verified_at, datetime('now')) END
+                WHERE id = ?
+                """,
+                (
+                    final_username,
+                    hash_password(password),
+                    final_nickname,
+                    final_display_name,
+                    bio if bio is not None else existing["bio"],
+                    final_email,
+                    final_email,
+                    final_email,
+                    user_id,
+                ),
+            )
+            conn.commit()
+            return True, f"Admin '{final_username}' atualizado com segurança."
+
+        if not username:
+            username = _unique_username(conn, _username_from_email(email))
+        elif not _username_available(conn, username):
+            return False, "Esse username já pertence a outra conta."
+
+        if email:
+            email_owner = conn.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,)).fetchone()
+            if email_owner:
+                return False, "Esse e-mail já pertence a outra conta."
+
+        final_nickname = nickname or "Admin EntreLinhas"
+        final_display_name = display_name or final_nickname
+        if len(final_nickname) < LIMITS["nickname_min"] or len(final_nickname) > LIMITS["nickname_max"]:
+            return False, f"O apelido do admin precisa ter entre {LIMITS['nickname_min']} e {LIMITS['nickname_max']} caracteres."
+        if len(final_display_name) < LIMITS["display_name_min"] or len(final_display_name) > LIMITS["display_name_max"]:
+            return False, f"O nome público do admin precisa ter entre {LIMITS['display_name_min']} e {LIMITS['display_name_max']} caracteres."
+
+        conn.execute(
+            """
+            INSERT INTO users (
+                username, password_hash, nickname, display_name, bio, email,
+                role, created_at, updated_at, is_active, is_admin, is_verified,
+                email_verified_at, default_avatar, default_visibility_mode
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 'admin', datetime('now'), datetime('now'), 1, 1, ?, datetime('now'), 'eco', 'anonymous')
+            """,
+            (
+                username,
+                hash_password(password),
+                final_nickname,
+                final_display_name,
+                bio,
+                email,
+                1 if email else 0,
+            ),
+        )
+        conn.commit()
+        return True, f"Admin '{username}' criado com segurança."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Não conseguimos configurar o admin: {str(e)}"
+    finally:
+        conn.close()
+
 
 def get_user_stats(user_id):
     """Retorna estatísticas do usuário."""
