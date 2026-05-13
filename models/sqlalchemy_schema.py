@@ -5,6 +5,7 @@ migrations em PostgreSQL e para a evolução gradual do repositório de dados.
 """
 
 from datetime import datetime
+import sqlalchemy as sa
 from extensions import db
 
 
@@ -18,17 +19,17 @@ class User(db.Model):
     display_name = db.Column(db.String(30))
     bio = db.Column(db.String(240))
     email = db.Column(db.String(254), unique=True)
-    role = db.Column(db.String(30), nullable=False, default="user")
+    role = db.Column(db.String(30), nullable=False, default="user", server_default="user")
     avatar_url = db.Column(db.Text)
     profile_photo = db.Column(db.Text)
-    default_avatar = db.Column(db.String(30), nullable=False, default="vazio")
-    default_visibility_mode = db.Column(db.String(20), nullable=False, default="anonymous")
+    default_avatar = db.Column(db.String(30), nullable=False, default="vazio", server_default="vazio")
+    default_visibility_mode = db.Column(db.String(20), nullable=False, default="anonymous", server_default="anonymous")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime)
-    is_active = db.Column(db.Integer, default=1, nullable=False)
-    is_admin = db.Column(db.Integer, default=0, nullable=False)
-    is_verified = db.Column(db.Integer, default=0, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
+    is_verified = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
     email_verified_at = db.Column(db.DateTime)
 
 
@@ -194,8 +195,8 @@ class Psychologist(db.Model):
     contact_email = db.Column(db.String(254))
     contact_link = db.Column(db.Text)
     bio = db.Column(db.Text)
-    is_verified = db.Column(db.Integer, default=0, nullable=False)
-    is_active = db.Column(db.Integer, default=1, nullable=False)
+    is_verified = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
+    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
@@ -208,7 +209,7 @@ class DailyText(db.Model):
     author_name = db.Column(db.String(120))
     date = db.Column(db.Date, unique=True)
     mood = db.Column(db.String(30))
-    is_active = db.Column(db.Integer, default=1, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 

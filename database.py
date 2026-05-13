@@ -298,9 +298,9 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP,
-            is_active BOOLEAN DEFAULT 1,
-            is_admin BOOLEAN DEFAULT 0,
-            is_verified BOOLEAN DEFAULT 0,
+            is_active BOOLEAN NOT NULL DEFAULT 1,
+            is_admin BOOLEAN NOT NULL DEFAULT 0,
+            is_verified BOOLEAN NOT NULL DEFAULT 0,
             email_verified_at TIMESTAMP
         )
     ''')
@@ -1780,9 +1780,10 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
         cursor = conn.execute('''
             INSERT INTO users (
                 username, password_hash, nickname, display_name, bio, email, avatar_url,
-                profile_photo, default_avatar, default_visibility_mode, role, created_at, updated_at
+                profile_photo, default_avatar, default_visibility_mode,
+                role, is_active, is_admin, is_verified, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', datetime('now'), datetime('now'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 1, 0, 0, datetime('now'), datetime('now'))
         ''', (
             username,
             password_hash,
