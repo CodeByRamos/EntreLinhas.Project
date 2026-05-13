@@ -5,6 +5,7 @@ from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIGH
 from services.sensitive_response import build_sensitive_response
 from utils.mood_styles import EMOTIONAL_TAG_LABELS, dominant_mood, is_valid_emotional_tag, normalize_emotional_tag
+from utils.safe_logging import log_exception
 
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
@@ -142,8 +143,23 @@ def enviar():
         except ValueError as exc:
             flash(str(exc), 'error')
             return redirect(url_for('posts.feed'))
-        except Exception:
-            flash('Não conseguimos publicar seu desabafo agora. Tente novamente em instantes.', 'error')
+        except Exception as exc:
+            log_exception(
+                current_app.logger,
+                "posts.create",
+                "create_post",
+                exc,
+                user_id=session.get('user_id'),
+                table="posts",
+                operation="insert",
+                status=post_status,
+                emotional_tag=emotional_tag,
+                category=categoria,
+            )
+            message = 'Não conseguimos publicar seu desabafo agora. Tente novamente em instantes.'
+            if current_app.config.get("ENVIRONMENT") == "development":
+                message = f"{message} Detalhe local: {exc.__class__.__name__}: {exc}"
+            flash(message, 'error')
             return redirect(url_for('posts.feed'))
         
         if post_status == 'draft':

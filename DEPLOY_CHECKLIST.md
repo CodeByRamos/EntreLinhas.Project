@@ -6,6 +6,8 @@
 - [ ] `APP_BASE_URL` aponta para o domínio público
 - [ ] `SESSION_COOKIE_SECURE=true` em HTTPS
 - [ ] Admin criado/resetado com `python scripts/create_admin.py` ou `python -m flask create-admin`
+- [ ] Start command usa `python -m flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT`
+- [ ] Start command não usa `drop`, `reset`, `create_all` destrutivo ou recriação de banco
 - [ ] Static files carregando
 - [ ] Logo SVG carregando corretamente
 - [ ] Privacidade e Termos publicados

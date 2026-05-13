@@ -24,12 +24,12 @@ class User(db.Model):
     profile_photo = db.Column(db.Text)
     default_avatar = db.Column(db.String(30), nullable=False, default="vazio", server_default="vazio")
     default_visibility_mode = db.Column(db.String(20), nullable=False, default="anonymous", server_default="anonymous")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), onupdate=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
-    is_verified = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
+    is_active = db.Column(db.Integer, default=1, server_default="1", nullable=False)
+    is_admin = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    is_verified = db.Column(db.Integer, default=0, server_default="0", nullable=False)
     email_verified_at = db.Column(db.DateTime)
 
 
@@ -51,18 +51,18 @@ class Post(db.Model):
     mensagem = db.Column(db.Text, nullable=False)
     data_postagem = db.Column(db.String(20), nullable=False)
     categoria = db.Column(db.String(40), nullable=False)
-    visivel = db.Column(db.Integer, default=1, nullable=False)
-    status = db.Column(db.String(20), nullable=False, default="published")
+    visivel = db.Column(db.Integer, default=1, server_default="1", nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="published", server_default="published")
     alias_name = db.Column(db.String(80))
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     profile_id = db.Column(db.Integer, db.ForeignKey("profiles.id"))
-    visibility_mode = db.Column(db.String(20), nullable=False, default="anonymous")
-    emotional_tag = db.Column(db.String(30), nullable=False, default="vazio")
-    sensitive_flag = db.Column(db.Integer, default=0, nullable=False)
-    mood_type = db.Column(db.String(30), nullable=False, default="vazio")
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    is_deleted = db.Column(db.Integer, default=0, nullable=False)
-    report_count = db.Column(db.Integer, default=0, nullable=False)
+    visibility_mode = db.Column(db.String(20), nullable=False, default="anonymous", server_default="anonymous")
+    emotional_tag = db.Column(db.String(30), nullable=False, default="vazio", server_default="vazio")
+    sensitive_flag = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    mood_type = db.Column(db.String(30), nullable=False, default="vazio", server_default="vazio")
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), onupdate=datetime.utcnow, nullable=False)
+    is_deleted = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    report_count = db.Column(db.Integer, default=0, server_default="0", nullable=False)
 
 
 class Comment(db.Model):
@@ -195,8 +195,8 @@ class Psychologist(db.Model):
     contact_email = db.Column(db.String(254))
     contact_link = db.Column(db.Text)
     bio = db.Column(db.Text)
-    is_verified = db.Column(db.Boolean, default=False, server_default=sa.false(), nullable=False)
-    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
+    is_verified = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    is_active = db.Column(db.Integer, default=1, server_default="1", nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
@@ -209,7 +209,7 @@ class DailyText(db.Model):
     author_name = db.Column(db.String(120))
     date = db.Column(db.Date, unique=True)
     mood = db.Column(db.String(30))
-    is_active = db.Column(db.Boolean, default=True, server_default=sa.true(), nullable=False)
+    is_active = db.Column(db.Integer, default=1, server_default="1", nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 

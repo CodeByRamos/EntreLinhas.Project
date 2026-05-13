@@ -57,9 +57,9 @@ def _fix_postgres_users(bind, columns):
                 "users",
                 sa.Column(
                     column_name,
-                    sa.Boolean(),
+                    sa.Integer(),
                     nullable=False,
-                    server_default=sa.true() if default_value else sa.false(),
+                    server_default="1" if default_value else "0",
                 ),
             )
             continue

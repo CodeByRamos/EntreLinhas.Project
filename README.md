@@ -142,7 +142,7 @@ O comando cria o admin se ele não existir. Se já existir uma conta com o `ADMI
 Start command:
 
 ```bash
-gunicorn app:app --bind 0.0.0.0:$PORT
+python -m flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT
 ```
 
 Configuração mínima:
@@ -156,7 +156,7 @@ Configuração mínima:
 - `MAIL_ALLOW_CONSOLE_FALLBACK=false`
 - `SESSION_COOKIE_SECURE=true`
 - `STORAGE_PROVIDER=cloudinary` ou `s3`
-- migrations rodadas com `python -m flask db upgrade`
+- migrations rodadas automaticamente no start command, sem `drop`, `reset` ou recriação de banco
 
 ## QA antes de publicar
 

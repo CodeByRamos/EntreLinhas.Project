@@ -11,6 +11,7 @@ from services.email_service import send_password_reset_email, send_email_verific
 from utils.validation import LIMITS, is_valid_username
 from utils.mood_styles import DEFAULT_AVATARS, normalize_default_avatar
 from utils.uploads import save_profile_photo
+from utils.safe_logging import log_exception, log_warning
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
@@ -47,7 +48,9 @@ def registro():
     """Página e lógica de registro de usuário."""
     if request.method == 'GET':
         return render_template('auth/registro.html', next_url=request.args.get('next', ''))
-    
+
+    email = None
+    username = None
     try:
         data = request.get_json() if request.is_json else request.form
         
@@ -146,13 +149,33 @@ def registro():
                 flash("Sua conta foi criada. Não conseguimos enviar a confirmação agora, mas você pode pedir um novo envio pelo perfil.", 'info')
             return redirect(redirect_target)
         else:
+            log_warning(
+                current_app.logger,
+                "auth.register",
+                "register_user",
+                payload.get('message', 'cadastro recusado'),
+                email=email,
+                username=username,
+                operation="users.insert",
+            )
             if request.is_json:
                 return jsonify({'success': False, 'message': payload['message']}), 400
             flash(payload['message'], 'error')
             return render_template('auth/registro.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
+        log_exception(
+            current_app.logger,
+            "auth.register",
+            "unexpected",
+            e,
+            email=email,
+            username=username,
+            operation="users.insert",
+        )
         message = "Não conseguimos criar sua conta agora. Tente novamente em instantes."
+        if current_app.config.get("ENVIRONMENT") == "development":
+            message = f"{message} Detalhe local: {e.__class__.__name__}: {e}"
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')
@@ -163,7 +186,8 @@ def login():
     """Página e lógica de login de usuário."""
     if request.method == 'GET':
         return render_template('auth/login.html', next_url=request.args.get('next', ''))
-    
+
+    email = None
     try:
         data = request.get_json() if request.is_json else request.form
         
@@ -203,13 +227,31 @@ def login():
             return redirect(redirect_target)
         else:
             message = payload['message']
+            log_warning(
+                current_app.logger,
+                "auth.login",
+                "authenticate_user",
+                message,
+                email=email,
+                operation="users.authenticate",
+            )
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 401
             flash(message, 'error')
             return render_template('auth/login.html', next_url=request.form.get('next', ''))
             
     except Exception as e:
+        log_exception(
+            current_app.logger,
+            "auth.login",
+            "unexpected",
+            e,
+            email=email,
+            operation="users.authenticate",
+        )
         message = "Não conseguimos entrar agora. Tente novamente em instantes."
+        if current_app.config.get("ENVIRONMENT") == "development":
+            message = f"{message} Detalhe local: {e.__class__.__name__}: {e}"
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
         flash(message, 'error')

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import os
 import re
 import secrets
+import logging
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -25,6 +26,7 @@ except ImportError:
 
 from utils.security import hash_password, verify_password, is_legacy_hash
 from utils.validation import LIMITS, is_valid_email, is_valid_username, trim_text
+from utils.safe_logging import log_exception
 from utils.mood_styles import (
     normalize_default_avatar,
     normalize_emotional_tag,
@@ -41,6 +43,7 @@ if DATABASE_URL.startswith("postgres://"):
 if DATABASE_URL.startswith("postgresql+psycopg://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql://", 1)
 USE_POSTGRES = bool(DATABASE_URL.startswith(("postgresql://", "postgresql+")))
+logger = logging.getLogger("entrelinhas.database")
 
 
 def _as_datetime(value):
@@ -227,11 +230,18 @@ def init_db():
             mensagem TEXT NOT NULL,
             data_postagem TEXT NOT NULL,
             categoria TEXT NOT NULL,
-            visivel INTEGER DEFAULT 1,
+            visivel INTEGER NOT NULL DEFAULT 1,
             status TEXT NOT NULL DEFAULT 'published',
             alias_name TEXT,
             user_id INTEGER,
-            profile_id INTEGER
+            profile_id INTEGER,
+            visibility_mode TEXT NOT NULL DEFAULT 'anonymous',
+            emotional_tag TEXT NOT NULL DEFAULT 'vazio',
+            sensitive_flag INTEGER NOT NULL DEFAULT 0,
+            mood_type TEXT NOT NULL DEFAULT 'vazio',
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            is_deleted INTEGER NOT NULL DEFAULT 0,
+            report_count INTEGER NOT NULL DEFAULT 0
         )
     ''')
     
@@ -452,9 +462,10 @@ def init_db():
     _ensure_column(conn, "reactions", "user_id", "TEXT")
     _ensure_column(conn, "reactions", "profile_id", "INTEGER")
     _ensure_column(conn, "reactions", "data_reacao", "TEXT DEFAULT CURRENT_TIMESTAMP")
-    _ensure_column(conn, "users", "is_admin", "BOOLEAN DEFAULT 0")
+    _ensure_column(conn, "users", "is_active", "BOOLEAN NOT NULL DEFAULT 1")
+    _ensure_column(conn, "users", "is_admin", "BOOLEAN NOT NULL DEFAULT 0")
     _ensure_column(conn, "users", "role", "TEXT NOT NULL DEFAULT 'user'")
-    _ensure_column(conn, "users", "is_verified", "BOOLEAN DEFAULT 0")
+    _ensure_column(conn, "users", "is_verified", "BOOLEAN NOT NULL DEFAULT 0")
     _ensure_column(conn, "users", "email_verified_at", "TIMESTAMP")
     _ensure_column(conn, "users", "display_name", "TEXT")
     _ensure_column(conn, "users", "avatar_url", "TEXT")
@@ -538,6 +549,19 @@ def init_db():
         UPDATE users
         SET updated_at = COALESCE(updated_at, created_at, datetime('now'))
         WHERE updated_at IS NULL
+        """
+    )
+    conn.execute(
+        """
+        UPDATE users
+        SET role = COALESCE(NULLIF(TRIM(role), ''), 'user'),
+            is_active = COALESCE(is_active, 1),
+            is_admin = COALESCE(is_admin, 0),
+            is_verified = COALESCE(is_verified, 0)
+        WHERE role IS NULL OR TRIM(role) = ''
+           OR is_active IS NULL
+           OR is_admin IS NULL
+           OR is_verified IS NULL
         """
     )
     _ensure_unique_index(conn, "idx_users_email_unique", "users", "email")
@@ -852,22 +876,39 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title
         conn.close()
         raise ValueError("Usuário inválido para criação do post.")
     
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO posts (
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO posts (
+                mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
+                emotional_tag, sensitive_flag, mood_type, visivel, is_deleted, report_count, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, datetime('now'))
+        ''', (
             mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
-            emotional_tag, sensitive_flag, mood_type, updated_at
+            emotional_tag, 1 if sensitive_flag else 0, mood_type,
+        ))
+
+        post_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return post_id
+    except Exception as exc:
+        conn.rollback()
+        conn.close()
+        log_exception(
+            logger,
+            "database.create_post",
+            "posts.insert",
+            exc,
+            user_id=user_id,
+            table="posts",
+            operation="insert",
+            status=status,
+            emotional_tag=emotional_tag,
+            category=categoria,
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    ''', (
-        mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
-        emotional_tag, 1 if sensitive_flag else 0, mood_type,
-    ))
-    
-    post_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return post_id
+        raise
 
 def update_post_visibility(post_id, visibility):
     """Atualiza a visibilidade de um post."""
@@ -1804,8 +1845,18 @@ def create_user(username, password, nickname, bio=None, email=None, display_name
         return True, user_id
         
     except Exception as e:
+        log_exception(
+            logger,
+            "database.create_user",
+            "users.insert",
+            e,
+            email=email,
+            username=username,
+            table="users",
+            operation="insert",
+        )
         conn.close()
-        return False, f"Erro ao criar usuário: {str(e)}"
+        return False, "Não foi possível criar sua conta. Tente novamente mais tarde."
 
 def authenticate_user(username, password):
     """Autentica um usuário."""
