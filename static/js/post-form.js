@@ -231,7 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const data = await analysisResponse.json();
-                if (!data || data.risk_level === 'LOW') {
+                const gate = data && data.gate ? data.gate : (data && data.risk_level !== 'LOW' ? 'ack' : 'none');
+                if (!data || gate === 'none') {
                     allowSubmitOnce = true;
                     postForm.requestSubmit(pendingSubmitter);
                     return;

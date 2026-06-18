@@ -14,7 +14,7 @@
 <div class="container mx-auto px-6 py-12 max-w-6xl space-y-8">
   <section class="glass-panel content-band help-emergency section-reading">
     <p class="section-kicker">se houver risco agora</p>
-    <h2 class="text-3xl font-bold mt-2 mb-5">Procure uma pessoa real, agora.</h2>
+    <h2 class="font-display mt-2 mb-5">Procure uma pessoa real, agora.</h2>
     <p>Ligue para o CVV pelo <strong>188</strong>, gratuito e 24 horas no Brasil. Se você está em perigo imediato, acione uma emergência: <strong>192</strong> para atendimento médico ou <strong>190</strong> para risco imediato.</p>
     <p>Se puder, chame alguém de confiança e não fique sozinho enquanto a onda estiver muito alta.</p>
     <div class="flex flex-wrap gap-3 mt-6">
@@ -31,20 +31,20 @@
   <section class="help-grid">
     <article class="help-action-card section-reading">
       <p class="section-kicker">primeiro passo</p>
-      <h2 class="text-2xl font-semibold mt-2 mb-4">Fale com alguém de confiança</h2>
+      <h2 class="font-display mt-2 mb-4">Fale com alguém de confiança</h2>
       <p>Uma mensagem simples já pode abrir uma fresta: “não estou bem e preciso de companhia agora”. Você não precisa explicar tudo para pedir presença.</p>
     </article>
 
     <article class="help-action-card section-reading">
       <p class="section-kicker">cuidado contínuo</p>
-      <h2 class="text-2xl font-semibold mt-2 mb-4">Ajuda profissional importa</h2>
+      <h2 class="font-display mt-2 mb-4">Ajuda profissional importa</h2>
       <p>Escrever pode aliviar, mas algumas dores precisam de cuidado contínuo, acompanhamento e uma rede fora da tela.</p>
     </article>
   </section>
 
   <section class="glass-panel content-band section-reading">
     <p class="section-kicker">contatos cadastrados</p>
-    <h2 class="text-2xl font-semibold mt-2 mb-4">Apoio disponível no EntreLinhas</h2>
+    <h2 class="font-display mt-2 mb-4">Apoio disponível no EntreLinhas</h2>
     {% if volunteers %}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {% for volunteer in volunteers %}
@@ -61,7 +61,7 @@
         {% endfor %}
       </div>
     {% else %}
-      <p>Ainda não há psicólogos ou voluntários verificados cadastrados aqui. Enquanto isso, os recursos emergenciais acima continuam sendo os caminhos mais importantes em momentos de risco.</p>
+      <p style="color:var(--text-faint)">Ainda não há psicólogos ou voluntários verificados cadastrados aqui. Enquanto isso, os recursos emergenciais acima continuam sendo os caminhos mais importantes em momentos de risco.</p>
     {% endif %}
   </section>
 </div>

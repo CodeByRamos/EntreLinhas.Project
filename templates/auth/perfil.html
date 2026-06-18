@@ -18,18 +18,18 @@
 
       <div class="space-y-2 min-w-0">
         <p class="section-kicker">perfil</p>
-        <h1 class="text-3xl md:text-4xl font-bold text-slate-100">{{ user.display_name or user.nickname }}</h1>
-        <p class="text-slate-400">@{{ user.username }}</p>
+        <h1 class="text-3xl md:text-4xl font-display font-bold" style="color:var(--text-main)">{{ user.display_name or user.nickname }}</h1>
+        <p style="color:var(--text-muted)">@{{ user.username }}</p>
         {% if user.bio %}
-          <p class="text-slate-300 max-w-2xl leading-relaxed">{{ user.bio }}</p>
+          <p class="max-w-2xl leading-relaxed" style="color:var(--text)">{{ user.bio }}</p>
         {% else %}
-          <p class="text-slate-400 max-w-2xl leading-relaxed">Ainda sem bio. Um pequeno fragmento pode dizer muito sem entregar demais.</p>
+          <p class="max-w-2xl leading-relaxed" style="color:var(--text-muted)">Ainda sem bio. Um pequeno fragmento pode dizer muito sem entregar demais.</p>
         {% endif %}
-        <div class="flex flex-wrap gap-2 text-xs">
-          <span class="{{ 'text-emerald-300' if user.is_verified else 'text-amber-300' }}">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="status-chip {{ 'status-published' if user.is_verified else 'status-hidden' }}">
             {{ 'E-mail verificado' if user.is_verified else 'E-mail ainda não verificado' }}
           </span>
-          <span class="text-slate-500">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</span>
         </div>
       </div>
     </div>
@@ -46,8 +46,8 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
       <div>
         <p class="section-kicker">preferências</p>
-        <h2 class="text-xl font-semibold mt-2">{{ 'Anônimo por padrão' if user.default_visibility_mode == 'anonymous' else 'Perfil visível por padrão' }}</h2>
-        <p class="text-slate-400 mt-1">Você ainda pode escolher a visibilidade em cada desabafo.</p>
+        <h2 class="text-xl font-display font-semibold mt-2" style="color:var(--text-main)">{{ 'Anônimo por padrão' if user.default_visibility_mode == 'anonymous' else 'Perfil visível por padrão' }}</h2>
+        <p class="mt-1" style="color:var(--text-muted)">Você ainda pode escolher a visibilidade em cada desabafo.</p>
       </div>
       <div class="flex flex-wrap gap-3">
         <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>

@@ -77,10 +77,12 @@ CATEGORIAS = [
     {'valor': 'outros', 'nome': 'Outros'}
 ]
 
+# Reações com ícones de linha (renderizados em SVG pelo front-end, sem emoji).
+# 'valor' é a chave persistida no banco — não mude sem migrar os dados existentes.
 REACOES = [
-    {'valor': 'te_entendo', 'nome': 'Te entendo', 'emoji': '🤝'},
-    {'valor': 'forca', 'nome': 'Força', 'emoji': '✦'},
-    {'valor': 'abraco', 'nome': 'Abraço virtual', 'emoji': '♡'},
-    {'valor': 'coracao', 'nome': 'Coração', 'emoji': '♥'},
-    {'valor': 'inspirador', 'nome': 'Inspirador', 'emoji': '✨'}
+    {'valor': 'te_entendo', 'nome': 'Te entendo', 'icon': 'empathy'},
+    {'valor': 'forca', 'nome': 'Força', 'icon': 'sprout'},
+    {'valor': 'abraco', 'nome': 'Abraço', 'icon': 'embrace'},
+    {'valor': 'coracao', 'nome': 'Carinho', 'icon': 'heart'},
+    {'valor': 'inspirador', 'nome': 'Me inspirou', 'icon': 'spark'}
 ]

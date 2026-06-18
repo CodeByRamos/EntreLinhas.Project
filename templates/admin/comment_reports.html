@@ -4,65 +4,65 @@
 
 {% block content %}
 <div class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Reports de Comentários</h1>
-    <div class="text-sm text-gray-600 dark:text-gray-400">
+  <div class="flex flex-wrap justify-between items-center gap-4">
+    <h1 class="text-3xl font-display" style="color:var(--text-main);">Reports de Comentários</h1>
+    <div class="text-sm" style="color:var(--text-muted);">
       Total de reports: <span id="total-reports">{{ reports|length }}</span>
     </div>
   </div>
-  
+
   <!-- Lista de Reports -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+  <div class="glass-panel overflow-hidden">
     <div class="p-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Reports Pendentes</h2>
-      
+      <h2 class="text-xl font-display mb-4" style="color:var(--text-main);">Reports Pendentes</h2>
+
       <div id="reports-container">
         {% if reports %}
           <div class="space-y-4">
             {% for report in reports %}
-              <div class="report-item border border-gray-200 dark:border-gray-700 rounded-lg p-4" data-report-id="{{ report.id }}">
+              <div class="report-item glass-panel p-4" data-report-id="{{ report.id }}">
                 <div class="flex justify-between items-start mb-3">
                   <div class="flex-grow">
                     <div class="flex items-center gap-2 mb-2">
-                      <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Report #{{ report.id }}</span>
-                      <span class="px-2 py-1 text-xs rounded-full {{ 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' if report.resolved else 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300' }}">
+                      <span class="text-sm font-medium" style="color:var(--text-muted);">Report #{{ report.id }}</span>
+                      <span class="report-status status-chip {{ 'status-published' if report.resolved else 'status-hidden' }}">
                         {{ 'Resolvido' if report.resolved else 'Pendente' }}
                       </span>
                     </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      <strong>Motivo:</strong> {{ report.reason }}
+                    <p class="text-sm mb-2" style="color:var(--text);">
+                      <strong style="color:var(--text-main);">Motivo:</strong> {{ report.reason }}
                     </p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      <strong>Data:</strong> {{ report.data_report }}
+                    <p class="text-sm mb-2" style="color:var(--text);">
+                      <strong style="color:var(--text-main);">Data:</strong> {{ report.data_report }}
                     </p>
                   </div>
-                  
-                  <div class="flex gap-2 ml-4">
+
+                  <div class="flex flex-wrap gap-2 ml-4">
                     {% if not report.resolved %}
-                      <button class="resolve-btn px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition duration-300" data-report-id="{{ report.id }}">
+                      <button class="resolve-btn btn-modern btn-primary text-sm" data-report-id="{{ report.id }}">
                         Resolver
                       </button>
                     {% endif %}
-                    <button class="remove-btn px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition duration-300" data-report-id="{{ report.id }}">
+                    <button class="remove-btn btn-modern btn-danger text-sm" data-report-id="{{ report.id }}">
                       Remover
                     </button>
                   </div>
                 </div>
-                
+
                 <!-- Comentário reportado -->
-                <div class="bg-gray-50 dark:bg-gray-750 p-3 rounded-lg">
-                  <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comentário reportado:</p>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ report.comment_mensagem }}</p>
+                <div class="content-band p-3">
+                  <p class="text-sm font-medium mb-2" style="color:var(--text-main);">Comentário reportado:</p>
+                  <p class="text-sm" style="color:var(--text-muted);">{{ report.comment_mensagem }}</p>
                 </div>
               </div>
             {% endfor %}
           </div>
         {% else %}
           <div class="text-center py-8">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4" style="color:var(--text-muted);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p class="text-gray-500 dark:text-gray-400">Nenhum report de comentário encontrado.</p>
+            <p style="color:var(--text-muted);">Nenhum report de comentário encontrado.</p>
           </div>
         {% endif %}
       </div>
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const reportId = e.target.dataset.reportId;
             resolveReport(reportId);
         }
-        
+
         if (e.target.classList.contains('remove-btn')) {
             const reportId = e.target.dataset.reportId;
             removeReport(reportId);
@@ -98,18 +98,18 @@ function resolveReport(reportId) {
         .then(data => {
             if (data.success) {
                 const reportItem = document.querySelector(`[data-report-id="${reportId}"]`);
-                
+
                 // Atualizar visual
-                const statusBadge = reportItem.querySelector('.px-2.py-1');
-                statusBadge.className = 'px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300';
+                const statusBadge = reportItem.querySelector('.report-status');
+                statusBadge.className = 'report-status status-chip status-published';
                 statusBadge.textContent = 'Resolvido';
-                
+
                 // Remover botão de resolver
                 const resolveBtn = reportItem.querySelector('.resolve-btn');
                 if (resolveBtn) {
                     resolveBtn.remove();
                 }
-                
+
                 alert('Aviso marcado como resolvido.');
             } else {
                 alert(data.message || 'Não conseguimos resolver esse aviso agora.');
@@ -135,7 +135,7 @@ function removeReport(reportId) {
             if (data.success) {
                 const reportItem = document.querySelector(`[data-report-id="${reportId}"]`);
                 reportItem.remove();
-                
+
                 alert('Aviso removido.');
             } else {
                 alert(data.message || 'Não conseguimos remover esse aviso agora.');

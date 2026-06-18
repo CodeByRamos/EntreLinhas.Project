@@ -6,22 +6,29 @@
   <title>{% block title %}EntreLinhas - Painel Administrativo{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          fontFamily: {
+            sans: ['"Hanken Grotesk"', 'system-ui', 'sans-serif'],
+            display: ['Newsreader', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
           colors: {
             primary: {
-              100: '#dbe6ff',
-              300: '#91b9ff',
-              500: '#7c8cff',
-              700: '#8e3bff',
-              900: '#151d33',
+              100: '#c3d8f5',
+              300: '#9bc4ff',
+              500: '#6aa6ff',
+              700: '#3e6fb0',
+              900: '#11161f',
             },
+            cream: '#efe4d6',
           },
         },
       },
@@ -30,7 +37,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}" />
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen text-slate-100 font-sans flex flex-col">
+<body class="min-h-screen font-sans flex flex-col" style="color:var(--text-main)">
   {% set path = request.path %}
 
   <nav class="site-nav" aria-label="Navegação administrativa">
@@ -104,8 +111,8 @@
   <footer class="site-footer mt-auto">
     <div class="container mx-auto px-6">
       <div class="footer-grid">
-        <p class="text-sm text-slate-400">Painel administrativo do EntreLinhas</p>
-        <a href="{{ url_for('main.home') }}" class="text-sm text-slate-300 hover:text-white">Voltar ao site</a>
+        <p class="text-sm" style="color:var(--text-muted)">Painel administrativo do EntreLinhas</p>
+        <a href="{{ url_for('main.home') }}" class="text-sm footer-back-link" style="color:var(--text)">Voltar ao site</a>
       </div>
     </div>
   </footer>

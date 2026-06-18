@@ -5,10 +5,10 @@
 {% block content %}
 <div class="container mx-auto px-6 py-20 max-w-2xl text-center">
   <div class="glass-panel p-8 section-reading">
-    <p class="hero-kicker">500</p>
-    <h1 class="text-3xl font-semibold mb-4">Não conseguimos cuidar disso agora.</h1>
-    <p>Respire um instante e tente de novo. Se o problema continuar, a plataforma precisa de manutencao.</p>
-    <a href="{{ url_for('main.home') }}" class="btn-modern btn-primary mt-6">Voltar ao inicio</a>
+    <p class="eyebrow" style="color:var(--accent)">500</p>
+    <h1 class="font-display text-3xl font-semibold mb-4" style="color:var(--text-main)">Não conseguimos cuidar disso agora.</h1>
+    <p style="color:var(--text-muted)">Respire um instante e tente de novo. Se o problema continuar, a plataforma precisa de manutenção.</p>
+    <a href="{{ url_for('main.home') }}" class="btn-modern btn-primary mt-6">Voltar ao início</a>
   </div>
 </div>
 {% endblock %}

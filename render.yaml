@@ -1,0 +1,71 @@
+# Render Blueprint para o EntreLinhas (web service + PostgreSQL gerenciado).
+# Como usar: no painel da Render → "New +" → "Blueprint" → conecte este repositório.
+# A Render cria o banco e o serviço; preencha os segredos marcados (sync:false)
+# em Environment. O start roda as migrations e sobe o gunicorn.
+#
+# IMPORTANTE: em produção o app exige (ver app.py):
+#   - DATABASE_URL com PostgreSQL  (preenchido automaticamente abaixo)
+#   - STORAGE_PROVIDER != local    (use cloudinary — fotos de perfil persistem)
+#   - SMTP configurado             (Gmail com senha de app)
+# Sem isso o serviço NÃO sobe (falha proposital de segurança).
+
+services:
+  - type: web
+    name: entrelinhas
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /feed
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true            # a Render gera um segredo forte
+      - key: DATABASE_URL
+        fromDatabase:
+          name: entrelinhas-db
+          property: connectionString   # injeta a URL do Postgres abaixo
+      - key: APP_BASE_URL
+        sync: false                     # ex.: https://entrelinhas.onrender.com
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      # Armazenamento persistente das fotos de perfil (Cloudinary — plano grátis)
+      - key: STORAGE_PROVIDER
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # E-mail real (Gmail + senha de app)
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USE_TLS
+        value: "true"
+      - key: MAIL_USE_SSL
+        value: "false"
+      - key: MAIL_USERNAME
+        sync: false                     # seu_email@gmail.com
+      - key: MAIL_PASSWORD
+        sync: false                     # senha de app de 16 dígitos do Google
+      - key: MAIL_DEFAULT_SENDER
+        sync: false                     # "EntreLinhas <seu_email@gmail.com>"
+      - key: MAIL_ALLOW_CONSOLE_FALLBACK
+        value: "false"
+      # Admin inicial (rode `flask create-admin` depois, ou use estes)
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: entrelinhas-db
+    plan: free
+    databaseName: entrelinhas
+    user: entrelinhas

@@ -4,81 +4,74 @@
 
 {% block content %}
 <div class="space-y-8">
-  <div class="flex justify-between items-center">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Gerenciar Desabafos</h1>
-    <div class="flex space-x-2">
-      <a href="{{ url_for('admin.posts', visibility='all') }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'all' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+  <div class="flex flex-wrap justify-between items-center gap-4">
+    <h1 class="text-3xl font-display" style="color:var(--text-main)">Gerenciar Desabafos</h1>
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.posts', visibility='all') }}" class="segmented-link text-sm{% if visibility == 'all' %} active{% endif %}">
         Todos
       </a>
-      <a href="{{ url_for('admin.posts', visibility='visible') }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'visible' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.posts', visibility='visible') }}" class="segmented-link text-sm{% if visibility == 'visible' %} active{% endif %}">
         Visíveis
       </a>
-      <a href="{{ url_for('admin.posts', visibility='hidden') }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'hidden' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.posts', visibility='hidden') }}" class="segmented-link text-sm{% if visibility == 'hidden' %} active{% endif %}">
         Ocultos
       </a>
-      <a href="{{ url_for('admin.posts', visibility='sensitive') }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'sensitive' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.posts', visibility='sensitive') }}" class="segmented-link text-sm{% if visibility == 'sensitive' %} active{% endif %}">
         Sensíveis
       </a>
-      <a href="{{ url_for('admin.posts', visibility='reported') }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'reported' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.posts', visibility='reported') }}" class="segmented-link text-sm{% if visibility == 'reported' %} active{% endif %}">
         Reportados
       </a>
     </div>
   </div>
-  
+
   <!-- Lista de Desabafos -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+  <div class="glass-panel overflow-hidden">
     {% if posts %}
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Conteúdo</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Categoria</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Emoção</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Moderação</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+        <table class="min-w-full" style="border-color:var(--border)">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Conteúdo</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Categoria</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Emoção</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Moderação</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Data</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted)">Ações</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody>
             {% for post in posts %}
-              <tr class="{% if post.visivel == 0 %}bg-red-50 dark:bg-red-900/20{% endif %}">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ post.id }}</td>
-                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-md truncate">{{ post.mensagem }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                  <span class="px-2 py-1 text-xs font-medium rounded-full 
-                    {% if post.categoria == 'estudo' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
-                    {% elif post.categoria == 'família' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
-                    {% elif post.categoria == 'trabalho' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
-                    {% elif post.categoria == 'amizade' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
-                    {% elif post.categoria == 'relacionamento' %}bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300
-                    {% elif post.categoria == 'saúde' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
-                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+              <tr style="border-top:1px solid var(--border);{% if post.visivel == 0 %} background:var(--danger-soft);{% endif %}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color:var(--text-main)">{{ post.id }}</td>
+                <td class="px-6 py-4 text-sm max-w-md truncate" style="color:var(--text-muted)">{{ post.mensagem }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <span class="badge-categoria {{ post.categoria }}">
                     {{ post.categoria }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ post.emotional_tag or 'vazio' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                  {% if post.sensitive_flag %}<span class="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 rounded-full">sensível</span>{% endif %}
-                  {% if post.report_count %}<span class="ml-1 px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full">{{ post.report_count }} report</span>{% endif %}
+                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color:var(--text-muted)">{{ post.emotional_tag or 'vazio' }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color:var(--text-muted)">
+                  {% if post.sensitive_flag %}<span class="status-chip status-hidden">sensível</span>{% endif %}
+                  {% if post.report_count %}<span class="status-chip status-hidden ml-1">{{ post.report_count }} report</span>{% endif %}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ post.data_postagem }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color:var(--text-muted)">{{ post.data_postagem }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                   {% if post.visivel == 1 %}
-                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full">Visível</span>
+                    <span class="status-chip status-published">Visível</span>
                   {% else %}
-                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 rounded-full">Oculto</span>
+                    <span class="status-chip status-hidden">Oculto</span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex space-x-2">
-                    <a href="{{ url_for('admin.comments', post_id=post.id) }}" class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300">
+                  <div class="flex space-x-4">
+                    <a href="{{ url_for('admin.comments', post_id=post.id) }}" style="color:var(--brand)" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--brand)'">
                       Ver comentários
                     </a>
                     <form method="POST" action="{{ url_for('admin.toggle_post_visibility', post_id=post.id) }}" class="inline">
-                      <button type="submit" class="{% if post.visivel == 1 %}text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300{% else %}text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300{% endif %}">
+                      <button type="submit" style="color:{% if post.visivel == 1 %}var(--danger){% else %}var(--brand){% endif %}">
                         {% if post.visivel == 1 %}Ocultar{% else %}Mostrar{% endif %}
                       </button>
                     </form>
@@ -91,7 +84,7 @@
       </div>
     {% else %}
       <div class="p-6 text-center">
-        <p class="text-gray-500 dark:text-gray-400">Nenhum desabafo encontrado.</p>
+        <p style="color:var(--text-muted)">Nenhum desabafo encontrado.</p>
       </div>
     {% endif %}
   </div>

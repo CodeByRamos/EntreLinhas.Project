@@ -6,23 +6,23 @@
 <div class="container mx-auto px-6 py-12 max-w-3xl">
   <div class="glass-panel p-8 space-y-6">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold">Editar post</h1>
+      <h1 class="text-2xl font-display font-bold" style="color:var(--text-main)">Editar post</h1>
       <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Voltar</a>
     </div>
 
     <form method="post" action="{{ url_for('posts.editar_post', post_id=post.id) }}" class="space-y-5">
       <div>
-        <label for="titulo" class="block font-medium text-slate-300 mb-2">Título (opcional)</label>
-        <input id="titulo" name="titulo" type="text" maxlength="120" class="form-input w-full p-3" value="{{ post.title or '' }}" />
+        <label for="titulo" class="block font-medium mb-2" style="color:var(--text-muted)">Título (opcional)</label>
+        <input id="titulo" name="titulo" type="text" maxlength="120" class="input-modern" value="{{ post.title or '' }}" />
       </div>
       <div>
-        <label for="conteudo" class="block font-medium text-slate-300 mb-2">Conteúdo</label>
-        <textarea id="conteudo" name="conteudo" rows="8" required minlength="3" maxlength="2000" class="form-input w-full p-4 resize-y">{{ post.mensagem }}</textarea>
+        <label for="conteudo" class="block font-medium mb-2" style="color:var(--text-muted)">Conteúdo</label>
+        <textarea id="conteudo" name="conteudo" rows="8" required minlength="3" maxlength="2000" class="input-modern resize-y">{{ post.mensagem }}</textarea>
       </div>
 
       <div>
-        <label for="emotional_tag" class="block font-medium text-slate-300 mb-2">Emocao</label>
-        <select id="emotional_tag" name="emotional_tag" required class="form-input w-full p-3">
+        <label for="emotional_tag" class="block font-medium mb-2" style="color:var(--text-muted)">Emoção</label>
+        <select id="emotional_tag" name="emotional_tag" required class="input-modern">
           {% for tag in emotional_tags %}
           <option value="{{ tag.valor }}" {% if (post.emotional_tag or 'vazio') == tag.valor %}selected{% endif %}>{{ tag.nome }}</option>
           {% endfor %}
@@ -30,8 +30,8 @@
       </div>
 
       <div>
-        <label for="categoria" class="block font-medium text-slate-300 mb-2">Categoria</label>
-        <select id="categoria" name="categoria" required class="form-input w-full p-3">
+        <label for="categoria" class="block font-medium mb-2" style="color:var(--text-muted)">Categoria</label>
+        <select id="categoria" name="categoria" required class="input-modern">
           {% for categoria in categorias %}
           <option value="{{ categoria.valor }}" {% if post.categoria == categoria.valor %}selected{% endif %}>{{ categoria.nome }}</option>
           {% endfor %}
@@ -39,15 +39,15 @@
       </div>
 
       <div>
-        <label for="visibility_mode" class="block font-medium text-slate-300 mb-2">Visibilidade</label>
-        <select id="visibility_mode" name="visibility_mode" class="form-input w-full p-3">
+        <label for="visibility_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Visibilidade</label>
+        <select id="visibility_mode" name="visibility_mode" class="input-modern">
           <option value="anonymous" {% if post.visibility_mode != 'profile' %}selected{% endif %}>Anônimo</option>
           <option value="profile" {% if post.visibility_mode == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
         </select>
       </div>
       <div>
-        <label for="status" class="block font-medium text-slate-300 mb-2">Status</label>
-        <select id="status" name="status" class="form-input w-full p-3">
+        <label for="status" class="block font-medium mb-2" style="color:var(--text-muted)">Status</label>
+        <select id="status" name="status" class="input-modern">
           <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Rascunho</option>
           <option value="published" {% if post.status != 'draft' %}selected{% endif %}>Publicado</option>
         </select>

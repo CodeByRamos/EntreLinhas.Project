@@ -1,211 +1,151 @@
-// Arquivo JavaScript para gerenciar reações
+// Reações do EntreLinhas — ícones de linha (sem emoji), no tom calmo da marca.
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Carrega as reações para cada post
-    const reactionContainers = document.querySelectorAll('[data-post-id]');
-    reactionContainers.forEach(container => {
-        if (container.classList.contains('reaction-buttons-container') || 
-            container.querySelector('.reaction-buttons-container')) {
-            const postId = container.dataset.postId;
-            loadReactions(postId);
-        }
-    });
+// Ícones SVG: herdam a cor do botão via currentColor.
+const REACAO_ICONS = {
+  // Empatia — balão de fala com um coração dentro ("te entendo")
+  empathy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/><path d="M15.8 9.2a2.5 2.5 0 0 0-3.5 0l-.3.3-.3-.3a2.5 2.5 0 0 0-3.4 3.6l3.7 3.6 3.8-3.6c1-1 1-2.6 0-3.6z"/></svg>',
+  // Força — broto crescendo ("força pra seguir")
+  sprout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>',
+  // Abraço — mãos amparando um coração ("abraço virtual")
+  embrace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/><path d="M12 5 9 8a2.2 2.2 0 0 0 0 3.1c.8.8 2.1.8 3 0l2-1.9a2.8 2.8 0 0 1 3.8 0l3 2.7"/><path d="m18 15-2-2"/><path d="m15 18-2-2"/></svg>',
+  // Carinho — coração ("carinho")
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>',
+  // Inspiração — brilho ("me inspirou")
+  spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.6 5.3a2 2 0 0 0 1.3 1.3L20 11l-5.1 1.4a2 2 0 0 0-1.3 1.3L12 19l-1.6-5.3a2 2 0 0 0-1.3-1.3L4 11l5.1-1.4a2 2 0 0 0 1.3-1.3z"/><path d="M19 4v3"/><path d="M20.5 5.5h-3"/></svg>'
+};
+
+// Espelha config.py REACOES (mesmas chaves 'valor', persistidas no banco).
+const REACOES_CONFIG = [
+  { valor: 'te_entendo', nome: 'Te entendo', icon: 'empathy' },
+  { valor: 'forca', nome: 'Força', icon: 'sprout' },
+  { valor: 'abraco', nome: 'Abraço', icon: 'embrace' },
+  { valor: 'coracao', nome: 'Carinho', icon: 'heart' },
+  { valor: 'inspirador', nome: 'Me inspirou', icon: 'spark' }
+];
+
+document.addEventListener('DOMContentLoaded', function () {
+  const reactionContainers = document.querySelectorAll('[data-post-id]');
+  reactionContainers.forEach(container => {
+    if (container.classList.contains('reaction-buttons-container') ||
+        container.querySelector('.reaction-buttons-container')) {
+      loadReactions(container.dataset.postId);
+    }
+  });
 });
 
-/**
- * Carrega as reações para um post específico
- * @param {string} postId - ID do post
- */
+/** Carrega as reações de um post. */
 function loadReactions(postId) {
-    fetch(`/api/reactions/${postId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Não conseguimos carregar as reações agora.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            // Obtém as configurações de reações do servidor
-            const reacoes = [
-                { valor: 'te_entendo', nome: 'Te entendo', emoji: '🤝' },
-                { valor: 'forca', nome: 'Força!', emoji: '💪' },
-                { valor: 'abraco', nome: 'Abraço virtual', emoji: '🫂' },
-                { valor: 'coracao', nome: 'Coração', emoji: '❤️' },
-                { valor: 'inspirador', nome: 'Inspirador', emoji: '✨' }
-            ];
-            
-            // Cria os botões de reação
-            reacoes.forEach(reacao => {
-                const count = data.reactions[reacao.valor] || 0;
-                const button = createReactionButton(reacao, count, postId);
-                container.appendChild(button);
-            });
-        })
-        .catch(error => {
-            console.error('Erro ao carregar reações:', error);
-            const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
-            if (container) {
-                container.innerHTML = '<span class="text-sm text-red-500 dark:text-red-400">Não conseguimos carregar as reações agora.</span>';
-            }
-        });
-}
-
-/**
- * Cria um botão de reação
- * @param {Object} reacao - Dados da reação
- * @param {number} count - Contagem atual da reação
- * @param {string} postId - ID do post
- * @returns {HTMLElement} - Elemento button da reação
- */
-function createReactionButton(reacao, count, postId) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'reacao-botao flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full px-3 py-1 transition-all duration-300';
-    button.dataset.reacao = reacao.valor;
-    button.dataset.postId = postId;
-    button.title = reacao.nome;
-    
-    button.innerHTML = `
-        <span class="text-lg">${reacao.emoji}</span>
-        <span class="text-xs font-medium text-gray-700 dark:text-gray-300">${count}</span>
-    `;
-    
-    // Adiciona evento de clique
-    button.addEventListener('click', function() {
-        toggleReaction(postId, reacao.valor);
-        
-        // Efeito visual de clique
-        this.classList.add('ativo');
-        setTimeout(() => {
-            this.classList.remove('ativo');
-        }, 1000);
-    });
-    
-    return button;
-}
-
-/**
- * Adiciona ou remove uma reação de um post (toggle)
- * @param {string} postId - ID do post
- * @param {string} reactionType - Tipo de reação
- */
-function toggleReaction(postId, reactionType) {
-    // Gera um user_id único baseado no localStorage ou cria um novo
-    let userId = localStorage.getItem('user_id');
-    if (!userId) {
-        userId = 'user_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('user_id', userId);
-    }
-    
-    const button = document.querySelector(`button[data-reacao="${reactionType}"][data-post-id="${postId}"]`);
-    if (button) {
-        button.disabled = true;
-        button.style.opacity = '0.7';
-    }
-    
-    fetch(`/api/reactions/${postId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            type: reactionType,
-            user_id: userId
-        }),
+  fetch(`/api/reactions/${postId}`)
+    .then(response => {
+      if (!response.ok) throw new Error('Não conseguimos carregar as reações agora.');
+      return response.json();
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Não conseguimos registrar sua reação agora.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.reactions) {
-                // Atualiza a contagem de reações nos botões
-                Object.entries(data.reactions).forEach(([tipo, contagem]) => {
-                    const btn = document.querySelector(`button[data-reacao="${tipo}"][data-post-id="${postId}"]`);
-                    if (btn) {
-                        const countSpan = btn.querySelector('span:last-child');
-                        if (countSpan) {
-                            const oldCount = parseInt(countSpan.textContent);
-                            const newCount = contagem;
-                            
-                            // Feedback visual baseado na ação
-                            if (data.action === 'added' && tipo === reactionType) {
-                                btn.classList.add('reacao-ativa');
-                                countSpan.classList.add('text-primary-600', 'dark:text-primary-400', 'font-bold');
-                                
-                                // Animação de "pop"
-                                btn.style.transform = 'scale(1.1)';
-                                setTimeout(() => {
-                                    btn.style.transform = 'scale(1)';
-                                }, 200);
-                            } else if (data.action === 'removed' && tipo === reactionType) {
-                                btn.classList.remove('reacao-ativa');
-                                countSpan.classList.remove('text-primary-600', 'dark:text-primary-400', 'font-bold');
-                            }
-                            
-                            countSpan.textContent = newCount;
-                        }
-                    }
-                });
-                
-                // Feedback textual
-                if (data.action === 'added') {
-                    showReactionFeedback(postId, 'Sua reação ficou registrada.');
-                } else {
-                    showReactionFeedback(postId, 'Sua reação foi retirada.');
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao processar reação:', error);
-            showReactionFeedback(postId, 'Não conseguimos acolher sua reação agora. Tente de novo em instantes.', 'error');
-        })
-        .finally(() => {
-            if (button) {
-                button.disabled = false;
-                button.style.opacity = '1';
-            }
-        });
+    .then(data => {
+      const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
+      if (!container) return;
+      container.innerHTML = '';
+      REACOES_CONFIG.forEach(reacao => {
+        const count = (data.reactions && data.reactions[reacao.valor]) || 0;
+        container.appendChild(createReactionButton(reacao, count, postId));
+      });
+    })
+    .catch(error => {
+      console.error('Erro ao carregar reações:', error);
+      const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
+      if (container) {
+        container.innerHTML = '<span class="text-sm" style="color:var(--text-muted)">Não conseguimos carregar as reações agora.</span>';
+      }
+    });
 }
 
-/**
- * Mostra feedback visual para reações
- * @param {string} postId - ID do post
- * @param {string} message - Mensagem a ser exibida
- * @param {string} type - Tipo do feedback ('success' ou 'error')
- */
-function showReactionFeedback(postId, message, type = 'success') {
-    const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
-    if (!container) return;
-    
-    // Remove feedback anterior se existir
-    const existingFeedback = container.querySelector('.reaction-feedback');
-    if (existingFeedback) {
-        existingFeedback.remove();
-    }
-    
-    const feedback = document.createElement('div');
-    feedback.className = `reaction-feedback text-xs mt-2 transition-all duration-300 ${
-        type === 'error' ? 'text-red-500 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-    }`;
-    feedback.textContent = message;
-    
-    container.appendChild(feedback);
-    
-    // Remove o feedback após 3 segundos
-    setTimeout(() => {
-        if (feedback.parentNode) {
-            feedback.style.opacity = '0';
-            setTimeout(() => {
-                feedback.remove();
-            }, 300);
+/** Cria um botão de reação com ícone de linha. */
+function createReactionButton(reacao, count, postId) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'reaction-button reacao-botao';
+  button.dataset.reacao = reacao.valor;
+  button.dataset.postId = postId;
+  button.title = reacao.nome;
+  button.setAttribute('aria-label', `${reacao.nome} (${count})`);
+  button.innerHTML =
+    `<span class="reacao-icon" aria-hidden="true">${REACAO_ICONS[reacao.icon] || ''}</span>` +
+    `<span class="reacao-count">${count}</span>`;
+  button.addEventListener('click', () => toggleReaction(postId, reacao.valor));
+  return button;
+}
+
+/** Alterna (adiciona/remove) uma reação. */
+function toggleReaction(postId, reactionType) {
+  let userId = localStorage.getItem('user_id');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('user_id', userId);
+  }
+
+  const button = document.querySelector(`button[data-reacao="${reactionType}"][data-post-id="${postId}"]`);
+  if (button) {
+    button.disabled = true;
+    button.style.opacity = '0.7';
+  }
+
+  fetch(`/api/reactions/${postId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: reactionType, user_id: userId })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Não conseguimos registrar sua reação agora.');
+      return response.json();
+    })
+    .then(data => {
+      if (!data.reactions) return;
+      Object.entries(data.reactions).forEach(([tipo, contagem]) => {
+        const btn = document.querySelector(`button[data-reacao="${tipo}"][data-post-id="${postId}"]`);
+        if (!btn) return;
+        const countSpan = btn.querySelector('.reacao-count');
+        if (countSpan) countSpan.textContent = contagem;
+        if (tipo === reactionType) {
+          if (data.action === 'added') {
+            btn.classList.add('active');
+            btn.style.transform = 'scale(1.08)';
+            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
+          } else if (data.action === 'removed') {
+            btn.classList.remove('active');
+          }
         }
-    }, 3000);
+      });
+      showReactionFeedback(postId, data.action === 'added' ? 'Sua reação ficou registrada.' : 'Sua reação foi retirada.');
+    })
+    .catch(error => {
+      console.error('Erro ao processar reação:', error);
+      showReactionFeedback(postId, 'Não conseguimos acolher sua reação agora. Tente de novo em instantes.', 'error');
+    })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+        button.style.opacity = '1';
+      }
+    });
+}
+
+/** Feedback breve abaixo das reações. */
+function showReactionFeedback(postId, message, type = 'success') {
+  const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
+  if (!container) return;
+
+  const existingFeedback = container.querySelector('.reaction-feedback');
+  if (existingFeedback) existingFeedback.remove();
+
+  const feedback = document.createElement('div');
+  feedback.className = 'reaction-feedback text-xs mt-2 w-full transition-all duration-300';
+  feedback.style.color = type === 'error' ? 'var(--danger)' : 'var(--accent)';
+  feedback.textContent = message;
+  container.appendChild(feedback);
+
+  setTimeout(() => {
+    if (feedback.parentNode) {
+      feedback.style.opacity = '0';
+      setTimeout(() => feedback.remove(), 300);
+    }
+  }, 3000);
 }

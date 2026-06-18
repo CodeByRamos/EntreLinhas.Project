@@ -16,9 +16,9 @@
   <div class="feed-layout-heading">
     <div>
       <p class="section-kicker">identificação emocional</p>
-      <h2 class="text-2xl font-bold text-slate-100 mt-2">Seus ecos registrados</h2>
+      <h2 class="text-2xl font-display font-bold mt-2" style="color:var(--text-main)">Seus ecos registrados</h2>
     </div>
-    <p class="text-slate-400 text-sm">{{ total_echoes }} {{ 'eco' if total_echoes == 1 else 'ecos' }}</p>
+    <p class="text-sm" style="color:var(--text-muted)">{{ total_echoes }} {{ 'eco' if total_echoes == 1 else 'ecos' }}</p>
   </div>
 
   {% if echoed_posts %}
@@ -33,7 +33,7 @@
       {% if page > 1 %}
         <a class="btn-modern btn-ghost" href="{{ url_for('posts.ecos', page=page-1) }}">Voltar</a>
       {% endif %}
-      <span class="text-sm text-slate-400">Página {{ page }} de {{ total_pages }}</span>
+      <span class="text-sm" style="color:var(--text-muted)">Página {{ page }} de {{ total_pages }}</span>
       {% if page < total_pages %}
         <a class="btn-modern btn-ghost" href="{{ url_for('posts.ecos', page=page+1) }}">Continuar</a>
       {% endif %}
@@ -41,8 +41,8 @@
     {% endif %}
   {% else %}
     <div class="empty-state">
-      <p class="text-slate-100 text-xl font-semibold">Nenhum eco ainda.</p>
-      <p class="text-slate-400 mt-2">Talvez algum desabafo do feed leia você de volta.</p>
+      <p class="text-xl font-display font-semibold" style="color:var(--text-main)">Nenhum eco ainda.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Talvez algum desabafo do feed leia você de volta.</p>
       <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-primary mt-5">Voltar ao feed</a>
     </div>
   {% endif %}

@@ -4,30 +4,30 @@
 
 {% block content %}
 <div class="space-y-8">
-  <div class="flex justify-between items-center">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+  <div class="flex flex-wrap justify-between items-center gap-4">
+    <h1 class="text-3xl font-display" style="color:var(--text-main);">
       {% if post_id %}
         Comentários do Desabafo #{{ post_id }}
       {% else %}
         Gerenciar Comentários
       {% endif %}
     </h1>
-    <div class="flex space-x-2">
-      <a href="{{ url_for('admin.comments', visibility='all', post_id=post_id) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'all' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('admin.comments', visibility='all', post_id=post_id) }}" class="segmented-link text-sm{% if visibility == 'all' %} active{% endif %}">
         Todos
       </a>
-      <a href="{{ url_for('admin.comments', visibility='visible', post_id=post_id) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'visible' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.comments', visibility='visible', post_id=post_id) }}" class="segmented-link text-sm{% if visibility == 'visible' %} active{% endif %}">
         Visíveis
       </a>
-      <a href="{{ url_for('admin.comments', visibility='hidden', post_id=post_id) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if visibility == 'hidden' %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.comments', visibility='hidden', post_id=post_id) }}" class="segmented-link text-sm{% if visibility == 'hidden' %} active{% endif %}">
         Ocultos
       </a>
     </div>
   </div>
-  
+
   {% if post_id %}
     <div class="flex justify-end">
-      <a href="{{ url_for('admin.posts') }}" class="text-primary-600 dark:text-primary-400 hover:underline flex items-center">
+      <a href="{{ url_for('admin.posts') }}" class="hover:underline flex items-center" style="color:var(--brand);">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
@@ -35,49 +35,51 @@
       </a>
     </div>
   {% endif %}
-  
+
   <!-- Lista de Comentários -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+  <div class="glass-panel overflow-hidden">
     {% if comments %}
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700">
+        <table class="min-w-full divide-y" style="border-color:var(--border);">
+          <thead style="background:rgba(159, 180, 212, 0.06);">
             <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">ID</th>
               {% if not post_id %}
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Desabafo ID</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">Desabafo ID</th>
               {% endif %}
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Conteúdo</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">Conteúdo</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">Data</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-mono uppercase tracking-wider" style="color:var(--text-muted);">Ações</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody class="divide-y" style="border-color:var(--border);">
             {% for comment in comments %}
-              <tr class="{% if comment.visivel == 0 %}bg-red-50 dark:bg-red-900/20{% endif %}">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ comment.id }}</td>
+              <tr{% if comment.visivel == 0 %} style="background:rgba(255, 90, 120, 0.06);"{% endif %}>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="color:var(--text-main);">{{ comment.id }}</td>
                 {% if not post_id %}
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    <a href="{{ url_for('admin.comments', post_id=comment.post_id) }}" class="text-primary-600 dark:text-primary-400 hover:underline">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm" style="color:var(--text-muted);">
+                    <a href="{{ url_for('admin.comments', post_id=comment.post_id) }}" class="hover:underline" style="color:var(--brand);">
                       #{{ comment.post_id }}
                     </a>
                   </td>
                 {% endif %}
-                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-md truncate">{{ comment.comment_text }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ comment.data_comentario }}</td>
+                <td class="px-6 py-4 text-sm max-w-md truncate" style="color:var(--text);">{{ comment.comment_text }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm" style="color:var(--text-muted);">{{ comment.data_comentario }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                   {% if comment.visivel == 1 %}
-                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full">Visível</span>
+                    <span class="status-chip status-published">Visível</span>
                   {% else %}
-                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 rounded-full">Oculto</span>
+                    <span class="status-chip status-hidden">Oculto</span>
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <form method="POST" action="{{ url_for('admin.toggle_comment_visibility', comment_id=comment.id) }}" class="inline">
-                    <button type="submit" class="{% if comment.visivel == 1 %}text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300{% else %}text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300{% endif %}">
-                      {% if comment.visivel == 1 %}Ocultar{% else %}Mostrar{% endif %}
-                    </button>
+                    {% if comment.visivel == 1 %}
+                      <button type="submit" class="btn-modern btn-danger text-sm">Ocultar</button>
+                    {% else %}
+                      <button type="submit" class="btn-modern btn-primary text-sm">Mostrar</button>
+                    {% endif %}
                   </form>
                 </td>
               </tr>
@@ -87,10 +89,9 @@
       </div>
     {% else %}
       <div class="p-6 text-center">
-        <p class="text-gray-500 dark:text-gray-400">Nenhum comentário encontrado.</p>
+        <p style="color:var(--text-muted);">Nenhum comentário encontrado.</p>
       </div>
     {% endif %}
   </div>
 </div>
 {% endblock %}
-

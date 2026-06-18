@@ -7,27 +7,27 @@
   <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
       <p class="section-kicker">administração</p>
-      <h1 class="text-3xl font-bold text-slate-100 mt-2">Painel de cuidado</h1>
-      <p class="text-slate-400 mt-1">Acompanhe moderação, reports e sinais sensíveis sem perder o tom humano da plataforma.</p>
+      <h1 class="text-3xl font-display font-bold mt-2" style="color:var(--text-main)">Painel de cuidado</h1>
+      <p class="mt-1" style="color:var(--text-muted)">Acompanhe moderação, reports e sinais sensíveis sem perder o tom humano da plataforma.</p>
     </div>
-    <p class="text-sm text-slate-500">Atualizado em {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p class="text-sm" style="color:var(--text-muted)">Atualizado em {{ now.strftime('%d/%m/%Y %H:%M') }}</p>
   </header>
 
   <section class="profile-metrics">
     <a href="{{ url_for('admin.posts') }}" class="metric-card">
-      <strong>{{ stats.total_posts }}</strong>
+      <strong style="color:var(--brand)">{{ stats.total_posts }}</strong>
       <span>desabafos publicados</span>
     </a>
     <a href="{{ url_for('admin.comments') }}" class="metric-card">
-      <strong>{{ stats.total_comments }}</strong>
+      <strong style="color:var(--brand)">{{ stats.total_comments }}</strong>
       <span>respostas visíveis</span>
     </a>
     <a href="{{ url_for('admin.post_reports') }}" class="metric-card">
-      <strong>{{ stats.pending_reports }}</strong>
+      <strong style="color:var(--brand)">{{ stats.pending_reports }}</strong>
       <span>reports pendentes</span>
     </a>
     <a href="{{ url_for('admin.posts', visibility='sensitive') }}" class="metric-card">
-      <strong>{{ stats.sensitive_posts }}</strong>
+      <strong style="color:var(--brand)">{{ stats.sensitive_posts }}</strong>
       <span>posts sensíveis</span>
     </a>
   </section>
@@ -36,8 +36,8 @@
     <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
       <div>
         <p class="section-kicker">ações rápidas</p>
-        <h2 class="text-2xl font-bold mt-2">Moderação</h2>
-        <p class="text-slate-400 mt-2 max-w-2xl">Priorize reports pendentes, posts sensíveis e conteúdos ocultos. A ideia é cuidar do espaço sem transformar dor em punição.</p>
+        <h2 class="text-2xl font-display font-bold mt-2" style="color:var(--text-main)">Moderação</h2>
+        <p class="mt-2 max-w-2xl" style="color:var(--text-muted)">Priorize reports pendentes, posts sensíveis e conteúdos ocultos. A ideia é cuidar do espaço sem transformar dor em punição.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:max-w-xl">
         <a href="{{ url_for('admin.post_reports') }}" class="filter-link active">Ver reports pendentes</a>

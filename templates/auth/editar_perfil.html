@@ -7,8 +7,8 @@
   <section class="glass-panel content-band">
     <div class="mb-8">
       <p class="section-kicker">perfil</p>
-      <h1 class="text-3xl font-bold mt-2">Editar presença</h1>
-      <p class="text-slate-400 mt-2">Pequenos detalhes para que sua presença tenha um rosto, sem perder o direito ao anonimato.</p>
+      <h1 class="text-3xl font-bold mt-2 font-display" style="color:var(--text-main);">Editar presença</h1>
+      <p class="mt-2" style="color:var(--text-muted);">Pequenos detalhes para que sua presença tenha um rosto, sem perder o direito ao anonimato.</p>
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="space-y-6">
@@ -23,7 +23,7 @@
           {% endif %}
         </div>
         <div class="flex-1">
-          <label class="block text-sm mb-2" for="profile_photo">Foto de perfil</label>
+          <label class="block text-sm mb-2" for="profile_photo" style="color:var(--text-main);">Foto de perfil</label>
           <input id="profile_photo" name="profile_photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="input-modern w-full file-input-soft" />
           <p class="form-helper">JPG, PNG ou WEBP, até 2MB. Se preferir, escolha um avatar padrão abaixo.</p>
         </div>
@@ -31,28 +31,28 @@
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
-          <label class="block text-sm mb-2" for="display_name">Nome público</label>
+          <label class="block text-sm mb-2" for="display_name" style="color:var(--text-main);">Nome público</label>
           <input id="display_name" name="display_name" class="input-modern w-full" value="{{ user.display_name or user.nickname }}" minlength="3" maxlength="30" required />
         </div>
         <div>
-          <label class="block text-sm mb-2" for="username">Nome de usuário</label>
+          <label class="block text-sm mb-2" for="username" style="color:var(--text-main);">Nome de usuário</label>
           <input id="username" name="username" class="input-modern w-full" value="{{ user.username }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.]+" required />
         </div>
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="nickname">Apelido interno</label>
+        <label class="block text-sm mb-2" for="nickname" style="color:var(--text-main);">Apelido interno</label>
         <input id="nickname" name="nickname" class="input-modern w-full" value="{{ user.nickname }}" minlength="3" maxlength="30" required />
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="bio">Bio curta</label>
+        <label class="block text-sm mb-2" for="bio" style="color:var(--text-main);">Bio curta</label>
         <textarea id="bio" name="bio" rows="3" maxlength="240" class="input-modern w-full" placeholder="Um fragmento sobre você, se quiser.">{{ user.bio or '' }}</textarea>
         <p class="form-helper">Até 240 caracteres.</p>
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="default_avatar">Avatar padrão</label>
+        <label class="block text-sm mb-2" for="default_avatar" style="color:var(--text-main);">Avatar padrão</label>
         <select id="default_avatar" name="default_avatar" class="input-modern w-full">
           {% for avatar in default_avatars %}
           <option value="{{ avatar.valor }}" {% if (user.default_avatar or 'vazio') == avatar.valor %}selected{% endif %}>{{ avatar.nome }}</option>
@@ -61,12 +61,12 @@
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="email">E-mail</label>
+        <label class="block text-sm mb-2" for="email" style="color:var(--text-main);">E-mail</label>
         <input id="email" type="email" name="email" maxlength="254" class="input-modern w-full" value="{{ user.email or '' }}" />
       </div>
 
       <div>
-        <label class="block text-sm mb-2" for="default_visibility_mode">Preferência de exibição dos posts</label>
+        <label class="block text-sm mb-2" for="default_visibility_mode" style="color:var(--text-main);">Preferência de exibição dos posts</label>
         <select id="default_visibility_mode" name="default_visibility_mode" class="input-modern w-full">
           <option value="anonymous" {% if (user.default_visibility_mode or 'anonymous') == 'anonymous' %}selected{% endif %}>Anônimo por padrão</option>
           <option value="profile" {% if user.default_visibility_mode == 'profile' %}selected{% endif %}>Mostrar meu perfil por padrão</option>

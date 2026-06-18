@@ -3,7 +3,7 @@ from datetime import datetime
 import database as db
 from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIGH
-from services.sensitive_response import build_sensitive_response
+from services.sensitive_response import build_content_response, resolve_content_gate
 from utils.mood_styles import EMOTIONAL_TAG_LABELS, dominant_mood, is_valid_emotional_tag, normalize_emotional_tag
 from utils.safe_logging import log_exception
 
@@ -117,13 +117,22 @@ def enviar():
         
         sensitivity = evaluate_post_content(conteudo)
         is_sensitive = sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH)
+        is_hate = sensitivity.get('is_hate_speech', False)
         if post_status == 'published':
-            if is_sensitive:
-                sensitive_ack = request.form.get('sensitive_ack') == '1'
-                acknowledged_level = request.form.get('sensitive_risk')
-                if not sensitive_ack or acknowledged_level != sensitivity['risk_level']:
-                    flash('Antes de publicar, leia o aviso de cuidado para esse texto.', 'info')
-                    return redirect(url_for('posts.feed'))
+            # Discurso de ódio com ataque direto: barrado no servidor, sempre.
+            if sensitivity.get('block_publication'):
+                flash(
+                    'Esse desabafo traz uma ofensa que fere outras pessoas e não pode ser '
+                    'publicado assim. O EntreLinhas é pra desabafar a sua dor, não pra atacar '
+                    'ninguém. Edite o texto e tente de novo.',
+                    'error',
+                )
+                return redirect(url_for('posts.feed'))
+            # Risco emocional ou xingamento isolado: exige confirmação consciente.
+            needs_ack = is_sensitive or sensitivity.get('hate_action') == 'warn'
+            if needs_ack and request.form.get('sensitive_ack') != '1':
+                flash('Antes de publicar, leia o aviso de cuidado para esse texto.', 'info')
+                return redirect(url_for('posts.feed'))
 
         # Cria o post no banco de dados (user_id vem apenas da sessão)
         try:
@@ -135,7 +144,7 @@ def enviar():
                 title=titulo,
                 status=post_status,
                 emotional_tag=emotional_tag,
-                sensitive_flag=is_sensitive,
+                sensitive_flag=is_sensitive or is_hate,
             )
             if post_status == 'published' and sensitivity['risk_level'] == RISK_HIGH:
                 db.log_sensitive_post(post_id=post_id, risk_level=RISK_HIGH)
@@ -180,11 +189,15 @@ def analyze_content():
     payload = request.get_json(silent=True) or {}
     text = (payload.get('text') or '').strip()
     analysis = evaluate_post_content(text)
-    response = build_sensitive_response(analysis['risk_level'], should_block=analysis['should_block'])
+    response = build_content_response(analysis)
+    gate = resolve_content_gate(analysis)
 
     return jsonify({
         'risk_level': analysis['risk_level'],
         'should_block': analysis['should_block'],
+        'block_publication': analysis.get('block_publication', False),
+        'hate_action': analysis.get('hate_action', 'none'),
+        'gate': gate,
         'response': response,
     })
 
@@ -338,6 +351,19 @@ def editar_post(post_id):
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
     sensitivity = evaluate_post_content(conteudo)
+    if status == 'published' and sensitivity.get('block_publication'):
+        flash(
+            'Esse desabafo traz uma ofensa que fere outras pessoas e não pode ser publicado '
+            'assim. O EntreLinhas é pra desabafar a sua dor, não pra atacar ninguém. '
+            'Edite o texto e tente de novo.',
+            'error',
+        )
+        return redirect(url_for('posts.editar_post', post_id=post_id))
+
+    flag_sensitive = (
+        sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH)
+        or sensitivity.get('is_hate_speech', False)
+    )
     updated = db.update_post(
         post_id,
         conteudo,
@@ -346,7 +372,7 @@ def editar_post(post_id):
         title=titulo,
         status=status,
         emotional_tag=emotional_tag,
-        sensitive_flag=sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH),
+        sensitive_flag=flag_sensitive,
     )
     if not updated:
         flash('Não conseguimos atualizar seu desabafo agora.', 'error')

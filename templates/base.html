@@ -6,22 +6,29 @@
   <title>{% block title %}EntreLinhas - Desabafos Anônimos{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
 
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          fontFamily: {
+            sans: ['"Hanken Grotesk"', 'system-ui', 'sans-serif'],
+            display: ['Newsreader', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
           colors: {
             primary: {
-              100: '#dbe6ff',
-              300: '#91b9ff',
-              500: '#7c8cff',
-              700: '#8e3bff',
-              900: '#151d33',
+              100: '#c3d8f5',
+              300: '#9bc4ff',
+              500: '#6aa6ff',
+              700: '#3e6fb0',
+              900: '#11161f',
             },
+            cream: '#efe4d6',
           },
         },
       },
@@ -30,7 +37,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}" />
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen text-slate-100 font-sans flex flex-col">
+<body class="min-h-screen font-sans flex flex-col">
   {% set path = request.path %}
   {% set logged_user = current_user if current_user else none %}
 
@@ -38,11 +45,19 @@
     <div class="nav-shell">
       <a href="{{ url_for('posts.feed') }}" class="brand-lockup" aria-label="Ir para o feed do EntreLinhas">
         <span class="brand-mark" aria-hidden="true">
-          <img src="{{ url_for('static', filename='images/logo-entrelinhas-mark.svg') }}" alt="" />
+          <svg viewBox="0 0 100 100" width="36" height="36" role="img" aria-label="Símbolo EntreLinhas">
+            <rect x="20" y="31" width="60" height="4" rx="2" fill="#9fb4d4" />
+            <rect x="20" y="65" width="60" height="4" rx="2" fill="#9fb4d4" />
+            <g class="brand-breath">
+              <circle cx="36" cy="50" r="4" fill="#6aa6ff" />
+              <circle cx="50" cy="50" r="4.6" fill="#9bc4ff" />
+              <circle cx="64" cy="50" r="4" fill="#6aa6ff" />
+            </g>
+          </svg>
         </span>
         <span class="brand-copy">
           <span class="brand-name">EntreLinhas</span>
-          <span class="brand-subtitle">Algumas dores precisam primeiro virar palavras.</span>
+          <span class="brand-subtitle">algumas dores precisam primeiro virar palavras</span>
         </span>
       </a>
 
@@ -123,7 +138,15 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <span class="brand-mark footer-mark" aria-hidden="true">
-            <img src="{{ url_for('static', filename='images/logo-entrelinhas-mark.svg') }}" alt="" />
+            <svg viewBox="0 0 100 100" width="34" height="34" role="img" aria-label="Símbolo EntreLinhas">
+              <rect x="20" y="31" width="60" height="4" rx="2" fill="#9fb4d4" />
+              <rect x="20" y="65" width="60" height="4" rx="2" fill="#9fb4d4" />
+              <g class="brand-breath">
+                <circle cx="36" cy="50" r="4" fill="#6aa6ff" />
+                <circle cx="50" cy="50" r="4.6" fill="#9bc4ff" />
+                <circle cx="64" cy="50" r="4" fill="#6aa6ff" />
+              </g>
+            </svg>
           </span>
           <div>
             <p class="footer-title">EntreLinhas</p>

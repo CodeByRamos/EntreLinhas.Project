@@ -13,14 +13,14 @@
             <span class="post-author-avatar avatar-default avatar-{{ (post.author_default_avatar if 'author_default_avatar' in post.keys() and post.author_default_avatar else 'vazio') }}"></span>
           {% endif %}
           <div class="min-w-0">
-            <p class="text-sm text-primary-200 truncate">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}</p>
-            <p class="text-xs text-slate-500">perfil visível</p>
+            <p class="text-sm truncate" style="color:var(--text-main)">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}</p>
+            <p class="text-xs" style="color:var(--text-muted)">perfil visível</p>
           </div>
         {% else %}
           <span class="post-author-avatar avatar-default avatar-noite"></span>
           <div>
-            <p class="text-sm text-slate-300">alguém escreveu</p>
-            <p class="text-xs text-slate-500">uma voz entre as linhas</p>
+            <p class="text-sm" style="color:var(--text)">alguém escreveu</p>
+            <p class="text-xs" style="color:var(--text-muted)">uma voz entre as linhas</p>
           </div>
         {% endif %}
       </div>
@@ -28,10 +28,10 @@
     </div>
 
     {% if post.title %}
-      <h3 class="text-xl font-semibold text-slate-100 mb-3">{{ post.title }}</h3>
+      <h3 class="text-xl font-semibold font-display mb-3" style="color:var(--text-main)">{{ post.title }}</h3>
     {% endif %}
-    <p class="text-gray-100 whitespace-pre-line text-lg leading-relaxed mb-5">{{ post.mensagem }}</p>
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm text-slate-400 font-medium">
+    <p class="whitespace-pre-line text-lg leading-relaxed mb-5" style="color:var(--text)">{{ post.mensagem }}</p>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm font-medium" style="color:var(--text-muted)">
       <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
       <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 sm:justify-end">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -42,11 +42,11 @@
     </div>
   </div>
 
-  <div class="border-t border-slate-800/70 bg-slate-950/50 px-6 py-3">
+  <div class="border-t px-6 py-3" style="border-color:var(--border); background:rgba(5,10,20,0.45)">
     <div class="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
       <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
         <div class="flex items-center gap-2 reaction-buttons-container">
-          <span class="text-sm text-slate-400">Preparando reações...</span>
+          <span class="text-sm" style="color:var(--text-muted)">Preparando reações...</span>
         </div>
       </div>
 
@@ -64,7 +64,10 @@
 
         {% if show_report %}
         <button
-          class="report-button text-slate-400 hover:text-fuchsia-300 text-sm flex items-center transition duration-300"
+          class="report-button text-sm flex items-center transition duration-300"
+          style="color:var(--text-muted)"
+          onmouseover="this.style.color='var(--accent)'"
+          onmouseout="this.style.color='var(--text-muted)'"
           data-post-id="{{ post.id }}"
           title="Avisar a moderação sobre este desabafo"
         >
@@ -78,11 +81,11 @@
     </div>
   </div>
 
-  <div class="border-t border-slate-800/70">
+  <div class="border-t" style="border-color:var(--border)">
     <div class="p-6 space-y-4">
-      <h3 class="text-lg font-semibold text-slate-100">Respostas</h3>
+      <h3 class="text-lg font-semibold font-display" style="color:var(--text-main)">Respostas</h3>
       <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
-        <p class="text-slate-400 text-sm">Abrindo espaço para respostas...</p>
+        <p class="text-sm" style="color:var(--text-muted)">Abrindo espaço para respostas...</p>
       </div>
 
       <form class="mt-6 comment-form" data-post-id="{{ post.id }}">

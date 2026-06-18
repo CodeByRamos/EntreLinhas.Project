@@ -13,3 +13,7 @@ env/
 
 # SQLite temp files
 *.db-journal
+
+# Logs locais
+server.log
+*.log

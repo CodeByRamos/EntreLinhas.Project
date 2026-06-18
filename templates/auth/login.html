@@ -6,35 +6,35 @@
 <div class="auth-shell">
   <section class="auth-intro">
     <p class="auth-kicker">voltar ao silêncio seguro</p>
-    <h1 class="auth-title">Entre no seu espaço entre as linhas.</h1>
+    <h1 class="auth-title font-display">Entre no seu espaço entre as linhas.</h1>
     <p class="auth-copy">Sua conta ajuda a guardar seus rascunhos, seus ecos e suas escolhas de perfil sem quebrar a promessa de anonimato.</p>
   </section>
 
   <section class="glass-panel auth-card">
-    <h2 class="text-2xl font-bold mb-2">Entrar</h2>
-    <p class="text-sm text-slate-300 mb-6">Use seu e-mail e senha para continuar de onde parou.</p>
+    <h2 class="text-2xl font-bold mb-2 font-display" style="color:var(--text-main);">Entrar</h2>
+    <p class="text-sm mb-6" style="color:var(--text-muted);">Use seu e-mail e senha para continuar de onde parou.</p>
 
     <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
       <input type="hidden" name="next" value="{{ next_url or '' }}" />
       <div>
-        <label for="email" class="block text-sm mb-2">E-mail</label>
+        <label for="email" class="block text-sm mb-2" style="color:var(--text-main);">E-mail</label>
         <input id="email" name="email" type="email" required autocomplete="email" class="input-modern w-full" placeholder="seu@email.com" />
       </div>
       <div>
-        <label for="password" class="block text-sm mb-2">Senha</label>
+        <label for="password" class="block text-sm mb-2" style="color:var(--text-main);">Senha</label>
         <input id="password" name="password" type="password" required autocomplete="current-password" class="input-modern w-full" placeholder="Sua senha" />
       </div>
       <button type="submit" class="btn-modern btn-primary w-full">Entrar com cuidado</button>
     </form>
 
-    <div class="mt-5 grid gap-2 text-sm text-slate-300">
+    <div class="mt-5 grid gap-2 text-sm" style="color:var(--text-muted);">
       <p>
         Esqueceu sua senha?
-        <a href="{{ url_for('auth.esqueci_senha') }}" class="text-primary-300 hover:underline">Recuperar acesso</a>
+        <a href="{{ url_for('auth.esqueci_senha') }}" class="hover:underline" style="color:var(--brand);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--brand)'">Recuperar acesso</a>
       </p>
       <p>
         Ainda não tem conta?
-        <a href="{{ url_for('auth.registro') }}" class="text-primary-300 hover:underline">Criar conta</a>
+        <a href="{{ url_for('auth.registro') }}" class="hover:underline" style="color:var(--brand);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--brand)'">Criar conta</a>
       </p>
     </div>
   </section>

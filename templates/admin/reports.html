@@ -5,56 +5,65 @@
 {% block content %}
 <div class="space-y-8">
   <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Reports de desabafos</h1>
+    <div>
+      <p class="eyebrow text-xs mb-2" style="color:var(--accent)">Moderação</p>
+      <h1 class="font-display text-3xl" style="color:var(--text-main)">Reports de desabafos</h1>
+    </div>
     <div class="flex flex-wrap gap-2">
       {% for item in [('pending', 'Pendentes'), ('resolved', 'Resolvidos'), ('dismissed', 'Descartados'), ('all', 'Todos')] %}
-      <a href="{{ url_for('admin.post_reports', status=item[0]) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-300 {% if status == item[0] %}bg-primary-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600{% endif %}">
+      <a href="{{ url_for('admin.post_reports', status=item[0]) }}" class="segmented-link text-sm font-medium {% if status == item[0] %}active{% endif %}">
         {{ item[1] }}
       </a>
       {% endfor %}
     </div>
   </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+  <div class="glass-panel overflow-hidden">
     {% if reports %}
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead class="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Post</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Motivo</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trecho</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acoes</th>
+        <table class="min-w-full">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider font-mono" style="color:var(--text-muted)">Post</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider font-mono" style="color:var(--text-muted)">Motivo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider font-mono" style="color:var(--text-muted)">Trecho</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider font-mono" style="color:var(--text-muted)">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider font-mono" style="color:var(--text-muted)">Ações</th>
             </tr>
           </thead>
-          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody>
             {% for report in reports %}
-            <tr>
-              <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+            <tr style="border-top:1px solid var(--border)">
+              <td class="px-6 py-4 text-sm" style="color:var(--text)">
                 #{{ report.post_id }}
-                {% if report.total_reports %}<span class="ml-2 text-xs text-red-500">{{ report.total_reports }} pendente(s)</span>{% endif %}
-                {% if report.sensitive_flag %}<span class="ml-2 text-xs text-amber-500">sensivel</span>{% endif %}
+                {% if report.total_reports %}<span class="status-chip status-hidden ml-2">{{ report.total_reports }} pendente(s)</span>{% endif %}
+                {% if report.sensitive_flag %}<span class="status-chip status-hidden ml-2">sensível</span>{% endif %}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+              <td class="px-6 py-4 text-sm" style="color:var(--text)">
                 {{ report.reason or 'outro' }}
-                {% if report.details %}<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ report.details }}</p>{% endif %}
+                {% if report.details %}<p class="text-xs mt-1" style="color:var(--text-muted)">{{ report.details }}</p>{% endif %}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-md">{{ report.mensagem[:180] if report.mensagem else '-' }}</td>
-              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">{{ report.status }}</td>
+              <td class="px-6 py-4 text-sm max-w-md" style="color:var(--text-muted)">{{ report.mensagem[:180] if report.mensagem else '-' }}</td>
+              <td class="px-6 py-4 text-sm">
+                {% if report.status == 'pending' %}
+                <span class="status-chip status-published">{{ report.status }}</span>
+                {% else %}
+                <span class="status-chip status-hidden">{{ report.status }}</span>
+                {% endif %}
+              </td>
               <td class="px-6 py-4 text-sm">
                 <div class="flex flex-wrap gap-2">
                   <form method="post" action="{{ url_for('admin.toggle_post_visibility', post_id=report.post_id) }}">
-                    <button class="text-red-600 dark:text-red-400 hover:underline" type="submit">{{ 'Restaurar' if report.visivel == 0 else 'Ocultar' }}</button>
+                    <button class="btn-modern btn-danger text-sm" type="submit">{{ 'Restaurar' if report.visivel == 0 else 'Ocultar' }}</button>
                   </form>
                   {% if report.status == 'pending' %}
                   <form method="post" action="{{ url_for('admin.resolve_post_report', report_id=report.id) }}">
                     <input type="hidden" name="action" value="resolved">
-                    <button class="text-green-600 dark:text-green-400 hover:underline" type="submit">Resolver</button>
+                    <button class="btn-modern btn-primary text-sm" type="submit">Resolver</button>
                   </form>
                   <form method="post" action="{{ url_for('admin.resolve_post_report', report_id=report.id) }}">
                     <input type="hidden" name="action" value="dismissed">
-                    <button class="text-gray-600 dark:text-gray-300 hover:underline" type="submit">Descartar</button>
+                    <button class="btn-modern btn-ghost text-sm" type="submit">Descartar</button>
                   </form>
                   {% endif %}
                 </div>
@@ -65,7 +74,7 @@
         </table>
       </div>
     {% else %}
-      <div class="p-8 text-center text-gray-500 dark:text-gray-400">Nenhum aviso nessa fila.</div>
+      <div class="p-8 text-center" style="color:var(--text-muted)">Nenhum aviso nessa fila.</div>
     {% endif %}
   </div>
 </div>
