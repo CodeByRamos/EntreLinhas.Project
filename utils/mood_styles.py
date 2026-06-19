@@ -8,14 +8,14 @@ EMOTIONAL_TAGS = [
     {"valor": "amor", "nome": "Amor", "mood_class": "mood-amor"},
     {"valor": "culpa", "nome": "Culpa", "mood_class": "mood-culpa"},
     {"valor": "medo", "nome": "Medo", "mood_class": "mood-medo"},
-    {"valor": "esperanca", "nome": "Esperanca", "mood_class": "mood-esperanca"},
-    {"valor": "confusao", "nome": "Confusao", "mood_class": "mood-confusao"},
-    {"valor": "cansaco", "nome": "Cansaco", "mood_class": "mood-cansaco"},
+    {"valor": "esperanca", "nome": "Esperança", "mood_class": "mood-esperanca"},
+    {"valor": "confusao", "nome": "Confusão", "mood_class": "mood-confusao"},
+    {"valor": "cansaco", "nome": "Cansaço", "mood_class": "mood-cansaco"},
     {"valor": "ansiedade", "nome": "Ansiedade", "mood_class": "mood-ansiedade"},
-    {"valor": "gratidao", "nome": "Gratidao", "mood_class": "mood-gratidao"},
-    {"valor": "solidao", "nome": "Solidao", "mood_class": "mood-solidao"},
+    {"valor": "gratidao", "nome": "Gratidão", "mood_class": "mood-gratidao"},
+    {"valor": "solidao", "nome": "Solidão", "mood_class": "mood-solidao"},
     {"valor": "luto", "nome": "Luto", "mood_class": "mood-luto"},
-    {"valor": "recomeco", "nome": "Recomeco", "mood_class": "mood-recomeco"},
+    {"valor": "recomeco", "nome": "Recomeço", "mood_class": "mood-recomeco"},
 ]
 
 EMOTIONAL_TAG_VALUES = {tag["valor"] for tag in EMOTIONAL_TAGS}
@@ -26,7 +26,7 @@ DEFAULT_AVATARS = [
     {"valor": "vazio", "nome": "Vazio"},
     {"valor": "eco", "nome": "Eco"},
     {"valor": "noite", "nome": "Noite"},
-    {"valor": "mare", "nome": "Mare"},
+    {"valor": "mare", "nome": "Maré"},
     {"valor": "neblina", "nome": "Neblina"},
     {"valor": "carta", "nome": "Carta"},
 ]
