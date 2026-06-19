@@ -12,7 +12,7 @@
 
   <section class="glass-panel auth-card">
     <h2 class="text-2xl font-bold mb-2 font-display" style="color:var(--text-main);">Criar conta</h2>
-    <p class="text-sm mb-6" style="color:var(--text-muted);">Escolha como quer ser chamado dentro do EntreLinhas.</p>
+    <p class="text-sm mb-6" style="color:var(--text-muted);">Só o essencial — leva menos de um minuto. O resto você ajusta depois, no perfil.</p>
 
     <form method="POST" class="space-y-5">
       <input type="hidden" name="next" value="{{ next_url or '' }}">
@@ -22,45 +22,20 @@
         <input type="email" id="email" name="email" required autocomplete="email" class="input-modern w-full" placeholder="seu@email.com">
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="username" class="block text-sm mb-2" style="color:var(--text-main);">Nome de usuário (opcional)</label>
-          <input type="text" id="username" name="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_\.]+" class="input-modern w-full" placeholder="entrelinhas">
-          <p class="form-helper">Use letras, números, ponto ou underline.</p>
-        </div>
-        <div>
-          <label for="display_name" class="block text-sm mb-2" style="color:var(--text-main);">Nome público</label>
-          <input type="text" id="display_name" name="display_name" minlength="3" maxlength="30" class="input-modern w-full" placeholder="Como quer aparecer no perfil">
-        </div>
-      </div>
-
       <div>
-        <label for="nickname" class="block text-sm mb-2" style="color:var(--text-main);">Apelido</label>
-        <input type="text" id="nickname" name="nickname" minlength="3" maxlength="30" class="input-modern w-full" placeholder="Um nome para ser chamado por aqui">
-      </div>
-
-      <div>
-        <label for="bio" class="block text-sm mb-2" style="color:var(--text-main);">Bio curta (opcional)</label>
-        <textarea id="bio" name="bio" rows="3" maxlength="240" class="input-modern w-full" placeholder="Um fragmento sobre você, se quiser."></textarea>
-        <p class="form-helper">Até 240 caracteres.</p>
-      </div>
-
-      <div>
-        <label for="default_visibility_mode" class="block text-sm mb-2" style="color:var(--text-main);">Preferência de exibição</label>
-        <select id="default_visibility_mode" name="default_visibility_mode" class="input-modern w-full">
-          <option value="anonymous" selected>Anônimo por padrão</option>
-          <option value="profile">Mostrar meu perfil por padrão</option>
-        </select>
+        <label for="nickname" class="block text-sm mb-2" style="color:var(--text-main);">Como quer ser chamado <span style="color:var(--text-faint);">(opcional)</span></label>
+        <input type="text" id="nickname" name="nickname" minlength="3" maxlength="30" autocomplete="nickname" class="input-modern w-full" placeholder="Um nome ou apelido">
+        <p class="form-helper">Só aparece em saudações. Você continua anônimo no feed.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label for="password" class="block text-sm mb-2" style="color:var(--text-main);">Senha</label>
-          <input type="password" id="password" name="password" required minlength="8" maxlength="128" class="input-modern w-full" placeholder="Mínimo 8 caracteres">
+          <input type="password" id="password" name="password" required minlength="8" maxlength="128" autocomplete="new-password" class="input-modern w-full" placeholder="Mínimo 8 caracteres">
         </div>
         <div>
           <label for="confirm_password" class="block text-sm mb-2" style="color:var(--text-main);">Confirmar senha</label>
-          <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="128" class="input-modern w-full" placeholder="Repita a senha">
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="8" maxlength="128" autocomplete="new-password" class="input-modern w-full" placeholder="Repita a senha">
         </div>
       </div>
 

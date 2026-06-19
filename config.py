@@ -79,10 +79,11 @@ CATEGORIAS = [
 
 # Reações com ícones de linha (renderizados em SVG pelo front-end, sem emoji).
 # 'valor' é a chave persistida no banco — não mude sem migrar os dados existentes.
+# Conjunto enxuto: cada reação é uma resposta distinta a um desabafo
+# (identificar-se / encorajar / acolher / ser tocado), sem sobreposição.
 REACOES = [
     {'valor': 'te_entendo', 'nome': 'Te entendo', 'icon': 'empathy'},
     {'valor': 'forca', 'nome': 'Força', 'icon': 'sprout'},
     {'valor': 'abraco', 'nome': 'Abraço', 'icon': 'embrace'},
-    {'valor': 'coracao', 'nome': 'Carinho', 'icon': 'heart'},
     {'valor': 'inspirador', 'nome': 'Me inspirou', 'icon': 'spark'}
 ]
