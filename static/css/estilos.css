@@ -595,6 +595,13 @@ main {
   font-size: 0.95rem;
 }
 
+/* No perfil o avatar mostra a inicial real (texto), então não somamos a letra
+   do avatar padrão por cima. Os avatares de post (.post-author-avatar) seguem
+   usando a letra do ::after normalmente. */
+.avatar-placeholder.avatar-default::after {
+  content: none;
+}
+
 .avatar-vazio { background: linear-gradient(135deg, var(--bg-0), var(--bg-2)); }
 .avatar-vazio::after { content: "V"; }
 .avatar-eco { background: linear-gradient(135deg, var(--brand-strong), var(--bg-2)); }

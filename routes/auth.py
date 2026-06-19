@@ -9,6 +9,7 @@ from services.auth_service import (
 )
 from services.email_service import send_password_reset_email, send_email_verification
 from utils.validation import LIMITS, is_valid_username
+from utils.sensitive_content import contains_hate_speech
 from utils.mood_styles import DEFAULT_AVATARS, normalize_default_avatar
 from utils.uploads import save_profile_photo
 from utils.safe_logging import log_exception, log_warning
@@ -109,6 +110,14 @@ def registro():
 
         if default_visibility_mode not in ('anonymous', 'profile'):
             default_visibility_mode = 'anonymous'
+
+        # Nome, apelido e bio não podem carregar discurso de ódio.
+        if any(contains_hate_speech(v) for v in (nickname, username, bio) if v):
+            message = "Esse nome ou bio carrega uma expressão que fere outras pessoas. Escolha algo que respeite todo mundo para continuar."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
         if not display_name:
             display_name = nickname or username or email.split('@')[0]
@@ -308,13 +317,6 @@ def editar_perfil():
         default_avatar = normalize_default_avatar(data.get('default_avatar'))
         default_visibility_mode = data.get('default_visibility_mode', 'anonymous').strip().lower()
         
-        if not nickname:
-            message = "Escolha um apelido para continuar."
-            if request.is_json:
-                return jsonify({'success': False, 'message': message}), 400
-            flash(message, 'error')
-            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
-        
         if not display_name:
             message = "Escolha um nome público para o perfil."
             if request.is_json:
@@ -330,6 +332,18 @@ def editar_perfil():
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
         if email and not is_valid_email(email):
             message = "Esse e-mail não parece válido."
+            if request.is_json:
+                return jsonify({'success': False, 'message': message}), 400
+            flash(message, 'error')
+            return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
+
+        # O apelido (usado em saudações) acompanha o nome público — sem campo separado.
+        if not nickname:
+            nickname = display_name
+
+        # Nome público, @usuário, apelido e bio não podem carregar discurso de ódio.
+        if any(contains_hate_speech(v) for v in (display_name, username, nickname, bio) if v):
+            message = "Esse nome ou bio carrega uma expressão que fere outras pessoas. Escolha algo que respeite todo mundo para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')

@@ -19,7 +19,7 @@
           {% elif user.avatar_url %}
             <img src="{{ user.avatar_url }}" alt="Foto de perfil atual" class="avatar-image" />
           {% else %}
-            <div class="avatar-placeholder avatar-default avatar-{{ user.default_avatar or 'vazio' }}"></div>
+            <div class="avatar-placeholder avatar-default avatar-{{ user.default_avatar or 'vazio' }}">{{ (user.display_name or user.nickname or user.username)[0]|upper }}</div>
           {% endif %}
         </div>
         <div class="flex-1">
@@ -37,12 +37,8 @@
         <div>
           <label class="block text-sm mb-2" for="username" style="color:var(--text-main);">Nome de usuário</label>
           <input id="username" name="username" class="input-modern w-full" value="{{ user.username }}" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.]+" required />
+          <p class="form-helper">Seu @ público, em posts não anônimos.</p>
         </div>
-      </div>
-
-      <div>
-        <label class="block text-sm mb-2" for="nickname" style="color:var(--text-main);">Apelido interno</label>
-        <input id="nickname" name="nickname" class="input-modern w-full" value="{{ user.nickname }}" minlength="3" maxlength="30" required />
       </div>
 
       <div>

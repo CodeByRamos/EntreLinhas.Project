@@ -396,3 +396,19 @@ def evaluate_sensitive_content(text):
     result.update(hate)
     result["block_publication"] = hate["hate_action"] == HATE_ACTION_BLOCK
     return result
+
+
+def contains_hate_speech(text):
+    """True se o texto carrega qualquer discurso de ódio.
+
+    Para campos de IDENTIDADE (nome, apelido, @username, bio) não existe o
+    contexto de desabafo/vítima que existe num post — ninguém "relata uma
+    agressão sofrida" no próprio nome. Então aqui qualquer termo de ódio
+    (inclusive ofuscado) é barrado, independente de ataque ou não.
+    """
+    if not text or not text.strip():
+        return False
+    spaced_text = normalize_spaced(text)
+    condensed_text = normalize_condensed(text)
+    clean_text = _strip_accents(text).lower()
+    return evaluate_hate_speech(text, spaced_text, condensed_text, clean_text=clean_text)["is_hate_speech"]
