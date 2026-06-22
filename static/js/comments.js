@@ -73,24 +73,25 @@ function submitComment(postId, commentText, textarea) {
     const originalPlaceholder = textarea.placeholder;
     textarea.placeholder = 'Enviando resposta...';
     
+    const payload = { text: commentText };
     fetch(`/api/comments/${postId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: commentText }),
+        body: JSON.stringify(payload),
     })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Não conseguimos enviar sua resposta agora.');
+        .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.error) {
+                const err = new Error(data.error || 'Não conseguimos enviar sua resposta agora.');
+                err.detail = data.detail; err.context = data.context; err.status = response.status;
+                throw err;
             }
-            return response.json();
+            return data;
         })
         .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
+
             if (data.comment) {
                 const container = document.querySelector(`.comments-container[data-post-id="${postId}"]`);
                 
@@ -118,8 +119,16 @@ function submitComment(postId, commentText, textarea) {
             }
         })
         .catch(error => {
-            console.error('Erro ao enviar comentário:', error);
-            alert(error.message || 'Não conseguimos enviar sua resposta agora. Tente de novo em instantes.');
+            // Log de debug detalhado pra achar a causa raiz (remover quando estável).
+            console.error('COMMENT_ERROR', {
+                postId: postId,
+                payload: payload,
+                status: error.status,
+                serverError: error.message,
+                detail: error.detail,
+                context: error.context
+            });
+            alert(error.detail ? ('Erro real: ' + error.detail) : (error.message || 'Não conseguimos enviar sua resposta agora. Tente de novo em instantes.'));
         })
         .finally(() => {
             // Reabilita o textarea

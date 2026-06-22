@@ -89,14 +89,20 @@ function toggleReaction(postId, reactionType) {
     button.style.opacity = '0.7';
   }
 
+  const payload = { type: reactionType, user_id: userId };
   fetch(`/api/reactions/${postId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: reactionType, user_id: userId })
+    body: JSON.stringify(payload)
   })
-    .then(response => {
-      if (!response.ok) throw new Error('Não conseguimos registrar sua reação agora.');
-      return response.json();
+    .then(async response => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const err = new Error(data.error || 'Não conseguimos registrar sua reação agora.');
+        err.detail = data.detail; err.context = data.context; err.status = response.status;
+        throw err;
+      }
+      return data;
     })
     .then(data => {
       if (!data.reactions) return;
@@ -118,8 +124,18 @@ function toggleReaction(postId, reactionType) {
       showReactionFeedback(postId, data.action === 'added' ? 'Sua reação ficou registrada.' : 'Sua reação foi retirada.');
     })
     .catch(error => {
-      console.error('Erro ao processar reação:', error);
-      showReactionFeedback(postId, 'Não conseguimos acolher sua reação agora. Tente de novo em instantes.', 'error');
+      // Log de debug detalhado pra achar a causa raiz (remover quando estável).
+      console.error('REACTION_ERROR', {
+        postId: postId,
+        reactionType: reactionType,
+        userId: userId,
+        payload: payload,
+        status: error.status,
+        serverError: error.message,
+        detail: error.detail,
+        context: error.context
+      });
+      showReactionFeedback(postId, error.detail ? ('Erro real: ' + error.detail) : (error.message || 'Não conseguimos acolher sua reação agora.'), 'error');
     })
     .finally(() => {
       if (button) {

@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 import database as db
 from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content
+from utils.api_errors import api_error
 
 # Criação do Blueprint para as rotas de comentários
 comments = Blueprint('comments', __name__)
@@ -27,9 +28,9 @@ def get_comments(post_id):
             })
         
         return jsonify({'comments': comments_data})
-    except Exception as e:
-        print(f"Erro ao carregar comentários do post {post_id}: {e}")
-        return jsonify({'error': 'Não conseguimos carregar as respostas agora.'}), 500
+    except Exception as exc:
+        current_app.logger.exception("COMMENT_LOAD_ERROR post_id=%s", post_id)
+        return jsonify(api_error("Não conseguimos carregar as respostas agora.", exc, post_id=post_id)), 500
 
 @comments.route('/api/comments/<int:post_id>', methods=['POST'])
 def add_comment(post_id):
@@ -81,6 +82,7 @@ def add_comment(post_id):
         else:
             return jsonify({'error': 'Sua resposta foi enviada, mas não conseguimos mostrá-la agora.'}), 500
             
-    except Exception as e:
-        print(f"Erro ao adicionar comentário ao post {post_id}: {e}")
-        return jsonify({'error': 'Não conseguimos enviar sua resposta agora.'}), 500
+    except Exception as exc:
+        # NÃO mascara: traceback completo no log + erro real em modo debug.
+        current_app.logger.exception("COMMENT_ERROR post_id=%s", post_id)
+        return jsonify(api_error("Não conseguimos enviar sua resposta agora.", exc, post_id=post_id)), 500

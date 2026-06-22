@@ -4,6 +4,7 @@ import os
 import re
 import secrets
 import logging
+import time
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -214,9 +215,22 @@ def _sanitize_user_row(user_row):
     return user_dict
 
 def get_db_connection():
-    """Estabelece e retorna uma conexão com o banco de dados."""
+    """Estabelece e retorna uma conexão com o banco de dados.
+
+    No Postgres (Neon), a primeira conexão após inatividade pode falhar enquanto
+    o banco "acorda". Tentamos algumas vezes antes de desistir — isso mata boa
+    parte dos erros intermitentes ("falhou, tente de novo").
+    """
     if USE_POSTGRES:
-        return _PostgresConnection(DATABASE_URL)
+        last_exc = None
+        for attempt in range(4):
+            try:
+                return _PostgresConnection(DATABASE_URL)
+            except Exception as exc:
+                last_exc = exc
+                logger.warning("Falha ao conectar no Postgres (tentativa %s/4): %s", attempt + 1, exc)
+                time.sleep(0.4 * (attempt + 1))
+        raise last_exc
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # Para acessar colunas pelo nome
     return conn
@@ -1061,12 +1075,12 @@ def create_comment(post_id, comment_text):
         
         comment_id = cursor.lastrowid
         conn.commit()
-        print(f"Comentário criado com ID {comment_id} para o post {post_id}")
         return comment_id
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao criar comentário: {e}")
-        return None
+        log_exception(logger, "database.create_comment", "comments.insert", e,
+                      post_id=post_id, table="comments", operation="insert")
+        raise  # deixa a rota mostrar o erro REAL
     finally:
         conn.close()
 
@@ -1122,7 +1136,7 @@ def add_reaction(post_id, reaction_type, user_id='anonymous'):
         conn.rollback()
         log_exception(logger, "database.add_reaction", "reactions.insert", e,
                       post_id=post_id, reaction_type=reaction_type, table="reactions", operation="insert")
-        return False
+        raise  # deixa a rota mostrar o erro REAL, sem mascarar
     finally:
         conn.close()
 
@@ -2592,7 +2606,7 @@ def remove_reaction(post_id, reaction_type, user_id):
         conn.rollback()
         log_exception(logger, "database.remove_reaction", "reactions.delete", e,
                       post_id=post_id, reaction_type=reaction_type, table="reactions", operation="delete")
-        return False
+        raise  # deixa a rota mostrar o erro REAL, sem mascarar
     finally:
         conn.close()
 

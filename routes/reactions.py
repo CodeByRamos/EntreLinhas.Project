@@ -1,82 +1,65 @@
 from flask import Blueprint, request, jsonify, current_app, session
 import database as db
+from utils.api_errors import api_error
 
 # Criação do Blueprint para as rotas de reações
 reactions = Blueprint('reactions', __name__)
 
+def _all_reaction_counts(post_id):
+    counts = db.get_reaction_counts(post_id)
+    return {r['valor']: counts.get(r['valor'], 0) for r in current_app.config['REACOES']}
+
+
 @reactions.route('/api/reactions/<int:post_id>', methods=['GET'])
 def get_reactions(post_id):
-    """API para obter contagem de reações de um post específico."""
-    # Verifica se o post existe
-    post = db.get_post(post_id)
-    if not post:
-        return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
-    
-    reaction_counts = db.get_reaction_counts(post_id)
-    
-    # Adiciona tipos de reação que ainda não têm contagem
-    all_reactions = {}
-    for reaction in current_app.config['REACOES']:
-        reaction_type = reaction['valor']
-        all_reactions[reaction_type] = reaction_counts.get(reaction_type, 0)
-    
-    return jsonify({'reactions': all_reactions})
+    """Contagem de reações de um post."""
+    try:
+        if not db.get_post(post_id):
+            return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
+        return jsonify({'reactions': _all_reaction_counts(post_id)})
+    except Exception as exc:
+        current_app.logger.exception("REACTION_GET_ERROR post_id=%s", post_id)
+        return jsonify(api_error("Não conseguimos carregar as reações agora.", exc, post_id=post_id)), 500
+
 
 @reactions.route('/api/reactions/<int:post_id>', methods=['POST'])
 def toggle_reaction(post_id):
-    """API para adicionar ou remover uma reação de um post (toggle)."""
-    data = request.json
-    
-    if not data or 'type' not in data:
+    """Adiciona ou remove a reação de um usuário (toggle)."""
+    data = request.get_json(silent=True) or {}
+    if 'type' not in data:
         return jsonify({'error': 'Escolha uma reação antes de continuar.'}), 400
-    
+
     reaction_type = data['type']
-    user_id = data.get('user_id', 'anonymous')  # Para identificar o usuário
-    
-    # Verifica se o post existe
-    post = db.get_post(post_id)
-    if not post:
-        return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
-    
-    # Verifica se o tipo de reação é válido
-    valid_reaction = False
-    for reaction in current_app.config['REACOES']:
-        if reaction['valor'] == reaction_type:
-            valid_reaction = True
-            break
-    
-    if not valid_reaction:
+    user_id = (data.get('user_id') or 'anonymous')
+
+    if not any(r['valor'] == reaction_type for r in current_app.config['REACOES']):
         return jsonify({'error': 'Essa reação não está disponível agora.'}), 400
-    
-    # Verifica se o usuário já reagiu com este tipo
-    existing_reaction = db.get_user_reaction(post_id, reaction_type, user_id)
-    
-    if existing_reaction:
-        # Remove a reação (toggle off)
-        success = db.remove_reaction(post_id, reaction_type, user_id)
-        action = 'removed' if success else 'error'
-    else:
-        # Adiciona a reação (toggle on)
-        success = db.add_reaction(post_id, reaction_type, user_id)
-        action = 'added' if success else 'error'
-    
-    if not success:
-        return jsonify({'error': 'Não conseguimos acolher sua reação agora.'}), 500
-    
-    # Obtém a contagem atualizada de reações
-    reaction_counts = db.get_reaction_counts(post_id)
-    
-    # Adiciona tipos de reação que ainda não têm contagem
-    all_reactions = {}
-    for reaction in current_app.config['REACOES']:
-        reaction_type_key = reaction['valor']
-        all_reactions[reaction_type_key] = reaction_counts.get(reaction_type_key, 0)
-    
-    return jsonify({
-        'reactions': all_reactions,
-        'action': action,
-        'reaction_type': reaction_type
-    })
+
+    try:
+        if not db.get_post(post_id):
+            return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
+
+        if db.get_user_reaction(post_id, reaction_type, user_id):
+            db.remove_reaction(post_id, reaction_type, user_id)
+            action = 'removed'
+        else:
+            db.add_reaction(post_id, reaction_type, user_id)
+            action = 'added'
+
+        return jsonify({
+            'reactions': _all_reaction_counts(post_id),
+            'action': action,
+            'reaction_type': reaction_type,
+        })
+    except Exception as exc:
+        # NÃO mascara: loga o traceback completo e devolve o erro real em modo debug.
+        current_app.logger.exception(
+            "REACTION_ERROR post_id=%s type=%s user_id=%s", post_id, reaction_type, user_id
+        )
+        return jsonify(api_error(
+            "Não conseguimos acolher sua reação agora.", exc,
+            post_id=post_id, reaction_type=reaction_type, user_id=user_id,
+        )), 500
 
 
 @reactions.route('/api/echo/<int:post_id>', methods=['GET'])
