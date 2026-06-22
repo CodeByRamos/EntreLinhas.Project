@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Cartas para o futuro - EntreLinhas{% endblock %}
+
+{% block content %}
+{% set kicker = 'ritual' %}
+{% set title = 'Cartas para o meu eu do futuro' %}
+{% set description = 'Escreva hoje. Lacre. Reencontre essas palavras quando a data chegar.' %}
+{% set actions %}
+  <a href="{{ url_for('cartas.nova_carta') }}" class="btn-modern btn-primary">Escrever uma carta</a>
+{% endset %}
+{% include 'components/hero.html' %}
+
+<div class="container mx-auto px-6 py-10 max-w-4xl">
+  {% set disponiveis = letters | selectattr('current_status','equalto','AVAILABLE') | list %}
+  {% if disponiveis %}
+    <div class="glass-panel content-band mb-8" style="border-color:rgba(106,166,255,0.4)">
+      <p class="section-kicker">chegou a hora</p>
+      <h2 class="text-2xl font-display mt-2" style="color:var(--text-main)">{{ disponiveis|length }} carta(s) esperando por você</h2>
+      <p class="mt-1" style="color:var(--text-muted)">A data chegou. Quando quiser, abra com calma.</p>
+    </div>
+  {% endif %}
+
+  {% if letters %}
+    <div class="space-y-5">
+      {% for c in letters %}
+      <article class="glass-panel p-6">
+        {% if c.current_status == 'SEALED' %}
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="section-kicker">lacrada</p>
+              <h3 class="text-xl font-display mt-1" style="color:var(--text-main)">{{ c.title or 'Carta sem título' }}</h3>
+              <p class="mt-2" style="color:var(--text-muted)">Sua carta está guardada. Você poderá reencontrá-la em <strong style="color:var(--accent)">{{ c.days_remaining }} dia(s)</strong>, em {{ c.open_at_label }}.</p>
+            </div>
+            <span class="reacao-icon" aria-hidden="true" style="color:var(--accent-line)">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+          </div>
+        {% elif c.current_status == 'AVAILABLE' %}
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="section-kicker" style="color:var(--accent)">pode abrir</p>
+              <h3 class="text-xl font-display mt-1" style="color:var(--text-main)">{{ c.title or 'Carta sem título' }}</h3>
+              <p class="mt-2" style="color:var(--text-muted)">A data chegou. Respire e abra quando se sentir pronto.</p>
+            </div>
+            <form method="post" action="{{ url_for('cartas.abrir_carta', letter_id=c.id) }}">
+              <button class="btn-modern btn-primary">Abrir carta</button>
+            </form>
+          </div>
+        {% else %}
+          <p class="section-kicker">aberta</p>
+          <h3 class="text-xl font-display mt-1 mb-3" style="color:var(--text-main)">{{ c.title or 'Carta sem título' }}</h3>
+          <p class="whitespace-pre-line leading-relaxed" style="color:var(--text)">{{ c.content }}</p>
+          <p class="text-xs mt-4" style="color:var(--text-faint)">Escrita em {{ (c.created_at|string)[:10] }} · aberta em {{ (c.opened_at|string)[:10] if c.opened_at else '-' }}</p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p class="text-xl font-display" style="color:var(--text-main)">Você ainda não guardou nenhuma carta.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Que tal escrever algumas palavras para quem você vai ser?</p>
+      <a href="{{ url_for('cartas.nova_carta') }}" class="btn-modern btn-primary mt-4">Escrever a primeira</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

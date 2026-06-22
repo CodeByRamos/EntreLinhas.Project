@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Cadastro de psicólogo - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-3xl">
+  <section class="glass-panel content-band">
+    <div class="mb-8">
+      <p class="section-kicker">voluntariado</p>
+      <h1 class="text-3xl font-display mt-2" style="color:var(--text-main)">Quero ajudar como psicólogo(a)</h1>
+      <p class="mt-2" style="color:var(--text-muted)">Seu cadastro passa por uma revisão antes de aparecer publicamente. Obrigado por estender a mão. 💙</p>
+    </div>
+
+    <form method="POST" class="space-y-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label for="name" class="block text-sm mb-2" style="color:var(--text-main)">Nome completo</label>
+          <input id="name" name="name" class="input-modern w-full" required value="{{ form.get('name','') if form else '' }}" />
+        </div>
+        <div>
+          <label for="crp" class="block text-sm mb-2" style="color:var(--text-main)">CRP</label>
+          <input id="crp" name="crp" class="input-modern w-full" required placeholder="Ex.: 06/123456" value="{{ form.get('crp','') if form else '' }}" />
+        </div>
+      </div>
+
+      <div>
+        <label for="contact_email" class="block text-sm mb-2" style="color:var(--text-main)">E-mail profissional</label>
+        <input id="contact_email" type="email" name="contact_email" class="input-modern w-full" required value="{{ form.get('contact_email','') if form else '' }}" />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div>
+          <label for="estado" class="block text-sm mb-2" style="color:var(--text-main)">Estado</label>
+          <select id="estado" name="estado" class="input-modern w-full" required>
+            <option value="">UF</option>
+            {% for uf in estados %}<option value="{{ uf }}" {% if form and form.get('estado')==uf %}selected{% endif %}>{{ uf }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="cidade" class="block text-sm mb-2" style="color:var(--text-main)">Cidade</label>
+          <input id="cidade" name="cidade" class="input-modern w-full" value="{{ form.get('cidade','') if form else '' }}" />
+        </div>
+        <div>
+          <label for="modalidade" class="block text-sm mb-2" style="color:var(--text-main)">Modalidade</label>
+          <select id="modalidade" name="modalidade" class="input-modern w-full">
+            <option value="ambos">Online e presencial</option>
+            <option value="online">Só online</option>
+            <option value="presencial">Só presencial</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-2" style="color:var(--text-main)">Especialidades</label>
+        <div class="flex flex-wrap gap-3">
+          {% for esp in especialidades %}
+          <label class="flex items-center gap-2 text-sm" style="color:var(--text)">
+            <input type="checkbox" name="especialidades" value="{{ esp }}"> {{ esp }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <label for="bio" class="block text-sm mb-2" style="color:var(--text-main)">Bio / como você atua</label>
+        <textarea id="bio" name="bio" rows="4" class="input-modern w-full" required minlength="20" placeholder="Conte um pouco da sua abordagem e de como pode acolher quem chega.">{{ form.get('bio','') if form else '' }}</textarea>
+      </div>
+
+      <div>
+        <label for="contact_link" class="block text-sm mb-2" style="color:var(--text-main)">Link de contato (opcional)</label>
+        <input id="contact_link" name="contact_link" class="input-modern w-full" placeholder="WhatsApp, agenda, site..." value="{{ form.get('contact_link','') if form else '' }}" />
+        <p class="form-helper">Pode ser WhatsApp (https://wa.me/55...), um site ou agenda online.</p>
+      </div>
+
+      <div>
+        <label for="photo_url" class="block text-sm mb-2" style="color:var(--text-main)">Foto (URL, opcional)</label>
+        <input id="photo_url" name="photo_url" class="input-modern w-full" placeholder="https://..." value="{{ form.get('photo_url','') if form else '' }}" />
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button type="submit" class="btn-modern btn-primary">Enviar cadastro</button>
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="btn-modern btn-ghost">Voltar</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

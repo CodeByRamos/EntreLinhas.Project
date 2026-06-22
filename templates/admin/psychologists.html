@@ -1,0 +1,81 @@
+{% extends 'admin/base.html' %}
+{% block title %}Psicólogos - Admin EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div>
+    <p class="section-kicker">moderação</p>
+    <h1 class="text-3xl font-display" style="color:var(--text-main)">Psicólogos voluntários</h1>
+  </div>
+
+  <section class="glass-panel content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Aguardando aprovação ({{ pendentes|length }})</h2>
+    {% if pendentes %}
+      <div class="space-y-4">
+        {% for p in pendentes %}
+        <div class="glass-panel p-5">
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-lg font-display" style="color:var(--text-main)">{{ p.name }} <span class="text-sm" style="color:var(--text-muted)">· CRP {{ p.crp }}</span></p>
+              <p class="text-sm" style="color:var(--text-muted)">{{ p.contact_email }} · {{ p.cidade ~ '/' if p.cidade }}{{ p.estado }} · {{ p.modalidade }}</p>
+              {% if p.especialidades %}<p class="text-xs mt-1" style="color:var(--text-faint)">{{ p.especialidades }}</p>{% endif %}
+              {% if p.bio %}<p class="mt-2" style="color:var(--text)">{{ p.bio }}</p>{% endif %}
+              {% if p.contact_link %}<p class="text-sm mt-1"><a href="{{ p.contact_link }}" target="_blank" rel="noopener" style="color:var(--brand)">{{ p.contact_link }}</a></p>{% endif %}
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='aprovar') }}">
+                <button class="btn-modern btn-primary">Aprovar</button>
+              </form>
+              <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='rejeitar') }}">
+                <button class="btn-modern btn-danger">Rejeitar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted)">Nenhum cadastro pendente.</p>
+    {% endif %}
+  </section>
+
+  <section class="glass-panel content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Todos os cadastros</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="color:var(--text-muted)" class="text-left">
+            <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Nome</th>
+            <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Local</th>
+            <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Status</th>
+            <th class="py-2 font-mono uppercase tracking-wider text-xs">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in todos %}
+          <tr style="border-top:1px solid var(--border)">
+            <td class="py-3 pr-4" style="color:var(--text-main)">{{ p.name }}</td>
+            <td class="py-3 pr-4" style="color:var(--text-muted)">{{ p.estado }}</td>
+            <td class="py-3 pr-4">
+              <span class="status-chip {{ 'status-published' if p.status == 'approved' else 'status-hidden' }}">{{ p.status }}</span>
+            </td>
+            <td class="py-3">
+              {% if p.status != 'approved' %}
+              <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='aprovar') }}" class="inline">
+                <button class="text-xs" style="color:var(--brand)">aprovar</button>
+              </form>
+              {% endif %}
+              {% if p.status != 'rejected' %}
+              <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='rejeitar') }}" class="inline ml-2">
+                <button class="text-xs" style="color:var(--danger)">rejeitar</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

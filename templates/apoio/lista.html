@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Apoio psicológico - EntreLinhas{% endblock %}
+
+{% block content %}
+{% set kicker = 'rede de apoio' %}
+{% set title = 'Apoio psicológico' %}
+{% set description = 'Psicólogos voluntários dispostos a estender a mão. Cuidar de si também é coragem.' %}
+{% set actions %}
+  <a href="{{ url_for('apoio.voluntario') }}" class="btn-modern btn-ghost">Sou psicólogo(a) e quero ajudar</a>
+{% endset %}
+{% include 'components/hero.html' %}
+
+<div class="container mx-auto px-6 py-10 max-w-6xl">
+  <form method="get" class="glass-panel content-band mb-8">
+    <p class="section-kicker">filtrar</p>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+      <select name="especialidade" class="input-modern">
+        <option value="">Todas as especialidades</option>
+        {% for esp in especialidades %}
+          <option value="{{ esp }}" {% if f_especialidade == esp %}selected{% endif %}>{{ esp }}</option>
+        {% endfor %}
+      </select>
+      <select name="estado" class="input-modern">
+        <option value="">Todos os estados</option>
+        {% for uf in estados_ativos %}
+          <option value="{{ uf }}" {% if f_estado == uf %}selected{% endif %}>{{ uf }}</option>
+        {% endfor %}
+      </select>
+      <select name="modalidade" class="input-modern">
+        <option value="">Online e presencial</option>
+        <option value="online" {% if f_modalidade == 'online' %}selected{% endif %}>Online</option>
+        <option value="presencial" {% if f_modalidade == 'presencial' %}selected{% endif %}>Presencial</option>
+      </select>
+      <button type="submit" class="btn-modern btn-primary">Filtrar</button>
+    </div>
+  </form>
+
+  {% if psicologos %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {% for p in psicologos %}
+      <article class="glass-panel p-6 flex flex-col gap-4">
+        <div class="flex items-center gap-4">
+          <div class="avatar-shell" style="width:64px;height:64px;flex:0 0 auto;">
+            {% if p.photo_url %}
+              <img src="{{ p.photo_url }}" alt="" class="avatar-image" />
+            {% else %}
+              <div class="avatar-placeholder avatar-default avatar-mare">{{ (p.name or '?')[0]|upper }}</div>
+            {% endif %}
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-xl font-display" style="color:var(--text-main)">{{ p.name }}</h3>
+            <p class="text-sm" style="color:var(--text-muted)">
+              {{ p.professional_title or 'Psicólogo(a)' }} · CRP {{ p.crp }}
+            </p>
+            <p class="text-xs" style="color:var(--text-faint)">
+              {{ p.cidade ~ '/' if p.cidade }}{{ p.estado }} ·
+              {% if p.modalidade == 'ambos' %}online e presencial{% else %}{{ p.modalidade }}{% endif %}
+            </p>
+          </div>
+        </div>
+        {% if p.especialidades %}
+        <div class="flex flex-wrap gap-2">
+          {% for esp in p.especialidades.split(',') %}
+            <span class="badge-categoria outros">{{ esp.strip() }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if p.bio %}<p class="leading-relaxed" style="color:var(--text)">{{ p.bio }}</p>{% endif %}
+        <div class="flex flex-wrap gap-3 pt-1 mt-auto">
+          {% if p.contact_link %}
+            <a href="{{ p.contact_link }}" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Entrar em contato</a>
+          {% endif %}
+          {% if p.contact_email %}
+            <a href="mailto:{{ p.contact_email }}" class="btn-modern btn-ghost">E-mail</a>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p class="text-xl font-display" style="color:var(--text-main)">Ainda não há psicólogos aprovados por aqui.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Em uma emergência, ligue <strong>188 (CVV)</strong> — 24h, gratuito.</p>
+      <a href="{{ url_for('support.ajuda') }}" class="btn-modern btn-ghost mt-4">Outros caminhos de ajuda</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

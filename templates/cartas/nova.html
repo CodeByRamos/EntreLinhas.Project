@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Nova carta - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-3xl">
+  <section class="glass-panel content-band">
+    <div class="mb-8">
+      <p class="section-kicker">carta para o futuro</p>
+      <h1 class="text-3xl font-display mt-2" style="color:var(--text-main)">Escreva para o seu eu do futuro</h1>
+      <p class="mt-2" style="color:var(--text-muted)">Ninguém vê essa carta — nem você — até a data que você escolher. Fala com calma com quem você vai ser.</p>
+    </div>
+
+    <form method="POST" class="space-y-6">
+      <div>
+        <label for="title" class="block text-sm mb-2" style="color:var(--text-main)">Título (opcional)</label>
+        <input id="title" name="title" maxlength="120" class="input-modern w-full" placeholder="Um nome para esse momento" value="{{ form.get('title','') if form else '' }}" />
+      </div>
+
+      <div>
+        <label for="content" class="block text-sm mb-2" style="color:var(--text-main)">Sua carta</label>
+        <textarea id="content" name="content" rows="9" required minlength="10" class="input-modern w-full resize-y" placeholder="Querido eu do futuro...">{{ form.get('content','') if form else '' }}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-2" style="color:var(--text-main)">Quando essa carta deve abrir?</label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {% set prazos = [('30','30 dias'),('90','3 meses'),('180','6 meses'),('365','1 ano')] %}
+          {% for valor, rotulo in prazos %}
+          <label class="segmented-link text-center cursor-pointer">
+            <input type="radio" name="prazo" value="{{ valor }}" class="sr-only prazo-radio" {% if form and form.get('prazo')==valor %}checked{% endif %}>
+            {{ rotulo }}
+          </label>
+          {% endfor %}
+        </div>
+        <label class="flex items-center gap-3 mt-3 text-sm" style="color:var(--text)">
+          <input type="radio" name="prazo" value="custom" class="prazo-radio" {% if form and form.get('prazo')=='custom' %}checked{% endif %}>
+          Escolher uma data específica:
+          <input type="date" name="data_custom" id="data_custom" class="input-modern" style="max-width:200px" value="{{ form.get('data_custom','') if form else '' }}">
+        </label>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <button type="submit" class="btn-modern btn-primary">Lacrar e guardar</button>
+        <a href="{{ url_for('cartas.minhas_cartas') }}" class="btn-modern btn-ghost">Cancelar</a>
+      </div>
+    </form>
+  </section>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var radios = document.querySelectorAll('.prazo-radio');
+    function syncActive() {
+      document.querySelectorAll('label.segmented-link').forEach(function (l) {
+        var r = l.querySelector('input');
+        l.classList.toggle('active', r && r.checked);
+      });
+    }
+    radios.forEach(function (r) { r.addEventListener('change', syncActive); });
+    document.getElementById('data_custom').addEventListener('focus', function () {
+      var c = document.querySelector('input[name="prazo"][value="custom"]');
+      if (c) { c.checked = true; syncActive(); }
+    });
+    syncActive();
+  });
+</script>
+{% endblock %}

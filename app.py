@@ -21,6 +21,8 @@ from routes.karma import karma
 from routes.auth import auth
 from routes.notifications import notifications
 from routes.help import support
+from routes.psychologists import apoio
+from routes.letters import cartas
 from services.auth_service import get_current_user
 from datetime import datetime
 from datetime import timedelta
@@ -65,6 +67,19 @@ def create_app():
     # Inicializa o banco SQLite apenas em desenvolvimento local.
     if not app.config.get('USE_POSTGRES'):
         db.init_db()
+
+    # Cria tabelas novas das features (future_letters) nos dois bancos e garante
+    # as colunas extras de psychologists. Idempotente.
+    with app.app_context():
+        try:
+            sqlalchemy_db.create_all()
+        except Exception as exc:
+            app.logger.warning("create_all (features): %s", exc)
+    try:
+        import db_features
+        db_features.ensure_features_schema()
+    except Exception as exc:
+        app.logger.warning("ensure_features_schema: %s", exc)
     
     # Registra os blueprints
     app.register_blueprint(main)
@@ -80,6 +95,8 @@ def create_app():
     app.register_blueprint(auth)
     app.register_blueprint(notifications)
     app.register_blueprint(support)
+    app.register_blueprint(apoio)
+    app.register_blueprint(cartas)
 
     @app.errorhandler(404)
     def not_found(error):

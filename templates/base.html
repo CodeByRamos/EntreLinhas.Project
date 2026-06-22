@@ -67,8 +67,10 @@
           <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
           <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
           <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
+          <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
         {% endif %}
         <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') else '' }}">Apoio</a>
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
@@ -99,10 +101,12 @@
           <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
           <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
           <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
+          <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
           <a href="{{ url_for('posts.meus_posts') }}" class="nav-pill {{ 'active' if path.startswith('/meus-posts') else '' }}">Meus rastros</a>
           <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações</a>
         {% endif %}
         <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') else '' }}">Apoio</a>
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>

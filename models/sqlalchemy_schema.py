@@ -195,9 +195,28 @@ class Psychologist(db.Model):
     contact_email = db.Column(db.String(254))
     contact_link = db.Column(db.Text)
     bio = db.Column(db.Text)
+    estado = db.Column(db.String(2))
+    cidade = db.Column(db.String(80))
+    especialidades = db.Column(db.Text)
+    modalidade = db.Column(db.String(20), default="ambos", server_default="ambos", nullable=False)
+    photo_url = db.Column(db.Text)
+    status = db.Column(db.String(20), default="pending", server_default="pending", nullable=False)
     is_verified = db.Column(db.Integer, default=0, server_default="0", nullable=False)
     is_active = db.Column(db.Integer, default=1, server_default="1", nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), nullable=False)
+
+
+class FutureLetter(db.Model):
+    __tablename__ = "future_letters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(120))
+    content = db.Column(db.Text, nullable=False)
+    open_at = db.Column(db.DateTime, nullable=False)
+    opened_at = db.Column(db.DateTime)
+    status = db.Column(db.String(20), default="SEALED", server_default="SEALED", nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), nullable=False)
 
 
 class DailyText(db.Model):
