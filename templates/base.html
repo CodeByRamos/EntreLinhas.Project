@@ -62,16 +62,12 @@
       </a>
 
       <div class="nav-desktop-links">
-        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path.startswith('/feed') else '' }}">Feed</a>
+        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
-          <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
-          <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
-          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
+          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') or path.startswith('/meus-posts') or path.startswith('/ecos') else '' }}">Perfil</a>
         {% endif %}
-        <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
-        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') else '' }}">Apoio</a>
-        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
         {% endif %}
@@ -79,6 +75,9 @@
 
       <div class="nav-actions">
         {% if logged_user %}
+          <button type="button" class="btn-modern btn-primary nav-cta composer-trigger" aria-haspopup="dialog">
+            <span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar</span>
+          </button>
           <form method="post" action="{{ url_for('auth.logout') }}">
             <button type="submit" class="nav-pill nav-exit">Sair</button>
           </form>
@@ -96,17 +95,18 @@
 
     <div id="mobile-menu" class="mobile-nav-panel" hidden>
       <div class="mobile-nav-links">
-        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path.startswith('/feed') else '' }}">Feed</a>
         {% if logged_user %}
-          <a href="{{ url_for('posts.feed') }}#formulario-de-envio" class="nav-pill">Novo desabafo</a>
-          <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
-          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
+          <button type="button" class="btn-modern btn-primary w-full composer-trigger"><span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span></button>
+        {% endif %}
+        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
+        {% if logged_user %}
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
+          <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
           <a href="{{ url_for('posts.meus_posts') }}" class="nav-pill {{ 'active' if path.startswith('/meus-posts') else '' }}">Meus rastros</a>
+          <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
           <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações</a>
         {% endif %}
-        <a href="{{ url_for('support.ajuda') }}" class="nav-pill {{ 'active' if path.startswith('/ajuda') else '' }}">Ajuda</a>
-        <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') else '' }}">Apoio</a>
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
@@ -122,6 +122,18 @@
       </div>
     </div>
   </nav>
+
+  {% block composer_drawer %}
+  {% if logged_user %}
+  <div id="composer-drawer" class="composer-drawer" hidden>
+    <div class="composer-backdrop" data-composer-close></div>
+    <aside class="composer-panel" role="dialog" aria-modal="true" aria-label="Compartilhar desabafo">
+      <button type="button" class="composer-close" data-composer-close aria-label="Fechar">&times;</button>
+      {% include 'components/composer.html' %}
+    </aside>
+  </div>
+  {% endif %}
+  {% endblock %}
 
   <main class="flex-grow">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -158,8 +170,8 @@
           </div>
         </div>
         <div class="footer-links">
-          <a href="{{ url_for('posts.feed') }}">Feed</a>
-          <a href="{{ url_for('support.ajuda') }}">Ajuda</a>
+          <a href="{{ url_for('posts.feed') }}">Início</a>
+          <a href="{{ url_for('apoio.apoio_publico') }}">Apoio</a>
           <a href="{{ url_for('main.about') }}">Sobre</a>
           <a href="{{ url_for('main.privacy') }}">Privacidade</a>
           <a href="{{ url_for('main.terms') }}">Termos</a>
@@ -190,6 +202,39 @@
       }
     });
   </script>
+  {% if logged_user %}
+  <script src="{{ url_for('static', filename='js/post-form.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var drawer = document.getElementById('composer-drawer');
+      if (!drawer) return;
+      function openComposer() {
+        drawer.hidden = false;
+        document.body.classList.add('composer-open');
+        requestAnimationFrame(function () { drawer.classList.add('is-open'); });
+        var ta = document.getElementById('conteudo');
+        if (ta) setTimeout(function () { ta.focus(); }, 260);
+      }
+      function closeComposer() {
+        drawer.classList.remove('is-open');
+        document.body.classList.remove('composer-open');
+        setTimeout(function () { drawer.hidden = true; }, 260);
+      }
+      document.querySelectorAll('.composer-trigger').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var mm = document.getElementById('mobile-menu');
+          if (mm) { mm.hidden = true; }
+          openComposer();
+        });
+      });
+      drawer.querySelectorAll('[data-composer-close]').forEach(function (b) { b.addEventListener('click', closeComposer); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeComposer(); });
+      window.openComposer = openComposer;
+      // Abre automaticamente se vier de um link ?compor=1
+      if (new URLSearchParams(window.location.search).get('compor') === '1') openComposer();
+    });
+  </script>
+  {% endif %}
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

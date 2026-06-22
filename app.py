@@ -111,7 +111,9 @@ def create_app():
     def inject_now():
         return {
             'now': datetime.now(),
-            'current_user': get_current_user(session)
+            'current_user': get_current_user(session),
+            'categorias': app.config.get('CATEGORIAS', []),
+            'emotional_tags': app.config.get('TAGS_EMOCIONAIS', []),
         }
 
     @app.cli.command("create-admin")

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 import db_features as dbf
-from utils.sensitive_content import contains_hate_speech
+from utils.sensitive_content import evaluate_post_content
 
 cartas = Blueprint('cartas', __name__)
 
@@ -42,8 +42,10 @@ def nova_carta():
     if len(content) < 10:
         flash('Escreva pelo menos algumas linhas pra sua carta.', 'error')
         return render_template('cartas/nova.html', form=f)
-    if contains_hate_speech(content) or (title and contains_hate_speech(title)):
-        flash('Esse texto traz expressões que não podemos guardar. Reescreva com cuidado.', 'error')
+    # Mesma camada de moderação dos desabafos: ataque de ódio é barrado antes de salvar.
+    if evaluate_post_content((title + ' ' + content) if title else content).get('block_publication'):
+        flash('Essa carta traz uma ofensa que fere outras pessoas e não pode ser guardada assim. '
+              'O EntreLinhas é um espaço de cuidado — reescreva com respeito para continuar.', 'error')
         return render_template('cartas/nova.html', form=f)
 
     now = datetime.utcnow()

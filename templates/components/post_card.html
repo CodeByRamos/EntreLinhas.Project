@@ -46,7 +46,7 @@
     <div class="flex flex-col gap-3 lg:flex-row lg:justify-between lg:items-center">
       <div class="flex flex-wrap gap-2" data-post-id="{{ post.id }}">
         <div class="flex items-center gap-2 reaction-buttons-container">
-          <span class="text-sm" style="color:var(--text-muted)">Preparando reações...</span>
+          <span class="skeleton skeleton-chip"></span><span class="skeleton skeleton-chip"></span><span class="skeleton skeleton-chip"></span><span class="skeleton skeleton-chip"></span>
         </div>
       </div>
 
@@ -85,7 +85,7 @@
     <div class="p-6 space-y-4">
       <h3 class="text-lg font-semibold font-display" style="color:var(--text-main)">Respostas</h3>
       <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
-        <p class="text-sm" style="color:var(--text-muted)">Abrindo espaço para respostas...</p>
+        <div><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line w-60"></span></div>
       </div>
 
       <form class="mt-6 comment-form" data-post-id="{{ post.id }}">

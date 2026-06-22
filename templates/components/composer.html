@@ -1,0 +1,89 @@
+{# Composer global de desabafo — usado num drawer aberto pela CTA da navbar.
+   Só é incluído para usuários logados. #}
+<div class="composer-inner">
+  <div class="post-composer-header mb-5">
+    <p class="section-kicker">escrever</p>
+    <h2 class="text-2xl font-display mt-1" style="color:var(--text-main)">Compartilhar desabafo</h2>
+    <p class="post-composer-note mt-1">Seu texto pode aparecer sem revelar quem você é. Você escolhe o quanto quer se mostrar.</p>
+  </div>
+
+  <div id="form-error" class="flash-message flash-error hidden mb-4 text-sm"></div>
+
+  <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo">
+    <input type="hidden" id="sensitive_ack" name="sensitive_ack" value="0">
+    <input type="hidden" id="sensitive_risk" name="sensitive_risk" value="">
+
+    <div>
+      <label for="titulo" class="block font-medium mb-2" style="color:var(--text-muted)">Título (opcional)</label>
+      <input id="titulo" name="titulo" type="text" maxlength="120" placeholder="Dê um nome breve a esse sentimento" class="input-modern" />
+    </div>
+
+    <div>
+      <label for="conteudo" class="block font-medium mb-2" style="color:var(--text-muted)">Seu desabafo</label>
+      <textarea id="conteudo" name="conteudo" required minlength="3" maxlength="2000" placeholder="Escreva com calma. Este espaço não exige pressa." rows="6" class="input-modern resize-y"></textarea>
+      <div class="flex justify-between gap-3 text-xs mt-1" style="color:var(--text-muted)">
+        <span>Mínimo: 3 caracteres</span>
+        <span><span id="char-count">0</span>/<span id="max-chars">2000</span> (<span id="remaining-chars">2000</span> restantes)</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label for="categoria" class="block font-medium mb-2" style="color:var(--text-muted)">Assunto</label>
+        <select id="categoria" name="categoria" required class="input-modern" aria-label="Selecione o assunto do desabafo">
+          <option value="" disabled selected>Escolha um assunto</option>
+          {% for categoria in categorias %}
+          <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="emotional_tag" class="block font-medium mb-2" style="color:var(--text-muted)">Como esse desabafo se sente?</label>
+        <select id="emotional_tag" name="emotional_tag" required class="input-modern" aria-label="Selecione a emoção do desabafo">
+          {% for tag in emotional_tags %}
+          <option value="{{ tag.valor }}" {% if tag.valor == 'vazio' %}selected{% endif %}>{{ tag.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="visibility_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Como exibir este desabafo?</label>
+      <select id="visibility_mode" name="visibility_mode" class="input-modern">
+        {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
+        <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
+        <option value="profile" {% if visibility_preference == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
+      </select>
+    </div>
+
+    <div class="flex flex-wrap gap-3 pt-1">
+      <button id="submit-button" type="submit" name="action" value="publish" class="btn-modern btn-primary self-start">
+        <span>Compartilhar</span>
+      </button>
+      <button type="submit" name="action" value="draft" class="btn-modern btn-ghost self-start">
+        <span>Salvar rascunho</span>
+      </button>
+    </div>
+  </form>
+
+  <div id="sensitive-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
+    <div class="modal-backdrop absolute inset-0"></div>
+    <div class="sensitive-modal-card relative w-full max-w-lg p-6 md:p-8">
+      <div class="sensitive-modal-icon" aria-hidden="true">EL</div>
+      <h3 id="sensitive-modal-title" class="text-xl font-semibold mt-4 mb-3" style="color:var(--text-main)"></h3>
+      <p id="sensitive-modal-message" class="leading-relaxed" style="color:var(--text)"></p>
+      <p id="sensitive-modal-support" class="hidden mt-3 leading-relaxed" style="color:var(--text)"></p>
+      <div id="sensitive-help" class="hidden mt-4 rounded-xl p-4">
+        <p class="font-medium mb-1" style="color:var(--text-main)">Centro de Valorização da Vida (CVV)</p>
+        <p class="text-sm" style="color:var(--text)">Telefone: 188 (24h, gratuito)</p>
+        <p class="text-sm" style="color:var(--text)">Chat: <a class="underline decoration-dotted" style="color:var(--brand)" href="https://cvv.org.br" target="_blank" rel="noopener noreferrer">https://cvv.org.br</a></p>
+      </div>
+      <p id="sensitive-block-reason" class="hidden mt-4 text-sm" style="color:var(--accent)"></p>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="{{ url_for('apoio.apoio_publico') }}" class="btn-modern btn-ghost">Ver caminhos de apoio</a>
+        <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar escrevendo</button>
+        <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar meu desabafo</button>
+      </div>
+    </div>
+  </div>
+</div>

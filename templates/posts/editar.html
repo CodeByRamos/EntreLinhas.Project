@@ -2,6 +2,9 @@
 
 {% block title %}Editar Post - Entre Linhas{% endblock %}
 
+{# Esta página tem seu próprio formulário com os mesmos ids; suprime o composer global. #}
+{% block composer_drawer %}{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-6 py-12 max-w-3xl">
   <div class="glass-panel p-8 space-y-6">

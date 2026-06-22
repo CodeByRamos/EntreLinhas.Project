@@ -1,10 +1,9 @@
-from flask import Blueprint, render_template
-import database as db
+from flask import Blueprint, redirect, url_for
 
 support = Blueprint('support', __name__)
 
 
 @support.route('/ajuda')
 def ajuda():
-    volunteers = db.get_active_help_volunteers()
-    return render_template('help.html', volunteers=volunteers)
+    """Rota antiga: Ajuda foi unificada com Apoio. Mantida só para não quebrar links."""
+    return redirect(url_for('apoio.apoio_publico'), code=301)

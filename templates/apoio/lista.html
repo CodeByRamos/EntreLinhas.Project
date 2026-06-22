@@ -1,88 +1,120 @@
 {% extends 'base.html' %}
-{% block title %}Apoio psicológico - EntreLinhas{% endblock %}
+{% block title %}Apoio - EntreLinhas{% endblock %}
 
 {% block content %}
 {% set kicker = 'rede de apoio' %}
-{% set title = 'Apoio psicológico' %}
-{% set description = 'Psicólogos voluntários dispostos a estender a mão. Cuidar de si também é coragem.' %}
-{% set actions %}
-  <a href="{{ url_for('apoio.voluntario') }}" class="btn-modern btn-ghost">Sou psicólogo(a) e quero ajudar</a>
-{% endset %}
+{% set title = 'Você não atravessa isso sozinho' %}
+{% set description = 'Recursos de emergência e psicólogos voluntários, no mesmo lugar. Cuidar de si também é coragem.' %}
 {% include 'components/hero.html' %}
 
-<div class="container mx-auto px-6 py-10 max-w-6xl">
-  <form method="get" class="glass-panel content-band mb-8">
-    <p class="section-kicker">filtrar</p>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
-      <select name="especialidade" class="input-modern">
-        <option value="">Todas as especialidades</option>
-        {% for esp in especialidades %}
-          <option value="{{ esp }}" {% if f_especialidade == esp %}selected{% endif %}>{{ esp }}</option>
-        {% endfor %}
-      </select>
-      <select name="estado" class="input-modern">
-        <option value="">Todos os estados</option>
-        {% for uf in estados_ativos %}
-          <option value="{{ uf }}" {% if f_estado == uf %}selected{% endif %}>{{ uf }}</option>
-        {% endfor %}
-      </select>
-      <select name="modalidade" class="input-modern">
-        <option value="">Online e presencial</option>
-        <option value="online" {% if f_modalidade == 'online' %}selected{% endif %}>Online</option>
-        <option value="presencial" {% if f_modalidade == 'presencial' %}selected{% endif %}>Presencial</option>
-      </select>
-      <button type="submit" class="btn-modern btn-primary">Filtrar</button>
-    </div>
-  </form>
+<div class="container mx-auto px-6 py-10 max-w-6xl space-y-12">
 
-  {% if psicologos %}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {% for p in psicologos %}
-      <article class="glass-panel p-6 flex flex-col gap-4">
-        <div class="flex items-center gap-4">
-          <div class="avatar-shell" style="width:64px;height:64px;flex:0 0 auto;">
-            {% if p.photo_url %}
-              <img src="{{ p.photo_url }}" alt="" class="avatar-image" />
-            {% else %}
-              <div class="avatar-placeholder avatar-default avatar-mare">{{ (p.name or '?')[0]|upper }}</div>
-            {% endif %}
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-xl font-display" style="color:var(--text-main)">{{ p.name }}</h3>
-            <p class="text-sm" style="color:var(--text-muted)">
-              {{ p.professional_title or 'Psicólogo(a)' }} · CRP {{ p.crp }}
-            </p>
-            <p class="text-xs" style="color:var(--text-faint)">
-              {{ p.cidade ~ '/' if p.cidade }}{{ p.estado }} ·
-              {% if p.modalidade == 'ambos' %}online e presencial{% else %}{{ p.modalidade }}{% endif %}
-            </p>
-          </div>
-        </div>
-        {% if p.especialidades %}
-        <div class="flex flex-wrap gap-2">
-          {% for esp in p.especialidades.split(',') %}
-            <span class="badge-categoria outros">{{ esp.strip() }}</span>
-          {% endfor %}
-        </div>
-        {% endif %}
-        {% if p.bio %}<p class="leading-relaxed" style="color:var(--text)">{{ p.bio }}</p>{% endif %}
-        <div class="flex flex-wrap gap-3 pt-1 mt-auto">
-          {% if p.contact_link %}
-            <a href="{{ p.contact_link }}" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Entrar em contato</a>
-          {% endif %}
-          {% if p.contact_email %}
-            <a href="mailto:{{ p.contact_email }}" class="btn-modern btn-ghost">E-mail</a>
-          {% endif %}
-        </div>
+  <!-- ===== Apoio imediato ===== -->
+  <section>
+    <div class="section-head mb-5">
+      <p class="section-kicker">apoio imediato</p>
+      <h2 class="text-2xl md:text-3xl font-display" style="color:var(--text-main)">Se houver risco agora</h2>
+      <p class="mt-1" style="color:var(--text-muted)">Em um momento de crise, procure uma pessoa real. Esses caminhos são gratuitos e 24h.</p>
+    </div>
+
+    <div class="glass-panel content-band help-emergency section-reading">
+      <p>Ligue para o CVV pelo <strong>188</strong> (gratuito, 24h no Brasil). Em perigo imediato, acione <strong>192</strong> (atendimento médico) ou <strong>190</strong> (risco imediato). Se puder, chame alguém de confiança e não fique sozinho enquanto a onda estiver alta.</p>
+      <div class="flex flex-wrap gap-3 mt-6">
+        <span class="emergency-number">CVV 188</span>
+        <span class="emergency-number">SAMU 192</span>
+        <span class="emergency-number">Emergência 190</span>
+      </div>
+      <div class="flex flex-wrap gap-3 mt-6">
+        <a href="https://cvv.org.br/" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Abrir o chat do CVV</a>
+        <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost">Voltar ao EntreLinhas</a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <article class="glass-panel p-6 section-reading">
+        <p class="section-kicker">primeiro passo</p>
+        <h3 class="font-display mt-2 mb-3" style="color:var(--text-main)">Fale com alguém de confiança</h3>
+        <p>Uma mensagem simples já abre uma fresta: "não estou bem e preciso de companhia agora". Você não precisa explicar tudo para pedir presença.</p>
       </article>
-      {% endfor %}
+      <article class="glass-panel p-6 section-reading">
+        <p class="section-kicker">cuidado contínuo</p>
+        <h3 class="font-display mt-2 mb-3" style="color:var(--text-main)">Ajuda profissional importa</h3>
+        <p>Escrever alivia, mas algumas dores pedem cuidado contínuo, acompanhamento e uma rede fora da tela.</p>
+      </article>
     </div>
-  {% else %}
-    <div class="empty-state">
-      <p class="text-xl font-display" style="color:var(--text-main)">Ainda não há psicólogos aprovados por aqui.</p>
-      <p class="mt-2" style="color:var(--text-muted)">Em uma emergência, ligue <strong>188 (CVV)</strong> — 24h, gratuito.</p>
-      <a href="{{ url_for('support.ajuda') }}" class="btn-modern btn-ghost mt-4">Outros caminhos de ajuda</a>
+  </section>
+
+  <!-- ===== Rede de apoio (psicólogos) ===== -->
+  <section>
+    <div class="section-head mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div>
+        <p class="section-kicker">rede de apoio</p>
+        <h2 class="text-2xl md:text-3xl font-display" style="color:var(--text-main)">Psicólogos voluntários</h2>
+        <p class="mt-1" style="color:var(--text-muted)">Profissionais dispostos a estender a mão, verificados pela nossa equipe.</p>
+      </div>
+      <a href="{{ url_for('apoio.voluntario') }}" class="btn-modern btn-ghost flex-shrink-0">Sou psicólogo(a) e quero ajudar</a>
     </div>
-  {% endif %}
+
+    <form method="get" class="glass-panel p-5 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <select name="especialidade" class="input-modern">
+          <option value="">Todas as especialidades</option>
+          {% for esp in especialidades %}
+            <option value="{{ esp }}" {% if f_especialidade == esp %}selected{% endif %}>{{ esp }}</option>
+          {% endfor %}
+        </select>
+        <select name="estado" class="input-modern">
+          <option value="">Todos os estados</option>
+          {% for uf in estados_ativos %}
+            <option value="{{ uf }}" {% if f_estado == uf %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+        <select name="modalidade" class="input-modern">
+          <option value="">Online e presencial</option>
+          <option value="online" {% if f_modalidade == 'online' %}selected{% endif %}>Online</option>
+          <option value="presencial" {% if f_modalidade == 'presencial' %}selected{% endif %}>Presencial</option>
+        </select>
+        <button type="submit" class="btn-modern btn-primary">Filtrar</button>
+      </div>
+    </form>
+
+    {% if psicologos %}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for p in psicologos %}
+        <article class="glass-panel p-6 flex flex-col gap-4">
+          <div class="flex items-center gap-4">
+            <div class="avatar-shell" style="width:64px;height:64px;flex:0 0 auto;">
+              {% if p.photo_url %}
+                <img src="{{ p.photo_url }}" alt="" class="avatar-image" />
+              {% else %}
+                <div class="avatar-placeholder avatar-default avatar-mare">{{ (p.name or '?')[0]|upper }}</div>
+              {% endif %}
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-xl font-display" style="color:var(--text-main)">{{ p.name }}</h3>
+              <p class="text-sm" style="color:var(--text-muted)">{{ p.professional_title or 'Psicólogo(a)' }} · CRP {{ p.crp }}</p>
+              <p class="text-xs" style="color:var(--text-faint)">{{ p.cidade ~ '/' if p.cidade }}{{ p.estado }} · {% if p.modalidade == 'ambos' %}online e presencial{% else %}{{ p.modalidade }}{% endif %}</p>
+            </div>
+          </div>
+          {% if p.especialidades %}
+          <div class="flex flex-wrap gap-2">
+            {% for esp in p.especialidades.split(',') %}<span class="badge-categoria outros">{{ esp.strip() }}</span>{% endfor %}
+          </div>
+          {% endif %}
+          {% if p.bio %}<p class="leading-relaxed" style="color:var(--text)">{{ p.bio }}</p>{% endif %}
+          <div class="flex flex-wrap gap-3 pt-1 mt-auto">
+            {% if p.contact_link %}<a href="{{ p.contact_link }}" target="_blank" rel="noopener noreferrer" class="btn-modern btn-primary">Entrar em contato</a>{% endif %}
+            {% if p.contact_email %}<a href="mailto:{{ p.contact_email }}" class="btn-modern btn-ghost">E-mail</a>{% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p class="text-xl font-display" style="color:var(--text-main)">Ainda não há psicólogos aprovados por aqui.</p>
+        <p class="mt-2" style="color:var(--text-muted)">Enquanto isso, os recursos de emergência acima são os caminhos mais importantes em momentos de risco.</p>
+      </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

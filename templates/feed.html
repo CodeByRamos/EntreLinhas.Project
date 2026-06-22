@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% from 'components/post_card.html' import render_post with context %}
 
-{% block title %}Feed - EntreLinhas{% endblock %}
+{% block title %}Início - EntreLinhas{% endblock %}
 
 {% block content %}
 {% set title = 'Desabafos da comunidade' %}
@@ -20,109 +20,29 @@
   </section>
   {% endif %}
 
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8">
-    <div class="md:col-span-1 lg:col-span-1">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="md:col-span-1">
       <div class="sticky top-24 space-y-6">
-        <section id="formulario-de-envio" class="glass-panel feed-sidebar-card p-6">
-          <div class="post-composer-header">
-            <p class="section-kicker">escrever</p>
-            <h2 class="text-2xl font-bold">Escrever entrelinhas</h2>
-            <p class="post-composer-note">Seu texto pode aparecer sem revelar quem você é. Você escolhe o quanto quer se mostrar.</p>
-          </div>
-
+        <section class="glass-panel feed-sidebar-card p-6">
+          <p class="section-kicker">escrever</p>
+          <h2 class="text-2xl font-display mt-1" style="color:var(--text-main)">Tem algo no peito?</h2>
+          <p class="post-composer-note mt-1">Coloque em palavras, no seu tempo. Anônimo, se quiser.</p>
           {% if session.get('user_id') %}
-            <div id="form-error" class="flash-message flash-error hidden mb-4 text-sm"></div>
-
-            <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo">
-              <input type="hidden" id="sensitive_ack" name="sensitive_ack" value="0">
-              <input type="hidden" id="sensitive_risk" name="sensitive_risk" value="">
-
-              <div>
-                <label for="titulo" class="block font-medium mb-2" style="color:var(--text-muted)">Título (opcional)</label>
-                <input id="titulo" name="titulo" type="text" maxlength="120" placeholder="Dê um nome breve a esse sentimento" class="input-modern" />
-              </div>
-
-              <div>
-                <label for="conteudo" class="block font-medium mb-2" style="color:var(--text-muted)">Seu desabafo</label>
-                <textarea id="conteudo" name="conteudo" required minlength="3" maxlength="2000" placeholder="Escreva com calma. Este espaço não exige pressa." rows="7" class="input-modern resize-y"></textarea>
-                <div class="flex justify-between gap-3 text-xs mt-1" style="color:var(--text-muted)">
-                  <span>Mínimo: 3 caracteres</span>
-                  <span><span id="char-count">0</span>/<span id="max-chars">2000</span> (<span id="remaining-chars">2000</span> restantes)</span>
-                </div>
-              </div>
-
-              <div>
-                <label for="categoria" class="block font-medium mb-2" style="color:var(--text-muted)">Assunto</label>
-                <select id="categoria" name="categoria" required class="input-modern" aria-label="Selecione o assunto do desabafo">
-                  <option value="" disabled selected>Escolha um assunto</option>
-                  {% for categoria in categorias %}
-                  <option value="{{ categoria.valor }}">{{ categoria.nome }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div>
-                <label for="emotional_tag" class="block font-medium mb-2" style="color:var(--text-muted)">Como esse desabafo se sente?</label>
-                <select id="emotional_tag" name="emotional_tag" required class="input-modern" aria-label="Selecione a emoção do desabafo">
-                  {% for tag in emotional_tags %}
-                  <option value="{{ tag.valor }}" {% if tag.valor == 'vazio' %}selected{% endif %}>{{ tag.nome }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div>
-                <label for="visibility_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Como exibir este desabafo?</label>
-                <select id="visibility_mode" name="visibility_mode" class="input-modern">
-                  {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
-                  <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
-                  <option value="profile" {% if visibility_preference == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
-                </select>
-              </div>
-
-              <div class="flex flex-wrap gap-3">
-                <button id="submit-button" type="submit" name="action" value="publish" class="btn-modern btn-primary self-start" title="Enviar desabafo">
-                  <span>Guardar no feed</span>
-                </button>
-                <button type="submit" name="action" value="draft" class="btn-modern btn-ghost self-start" title="Salvar rascunho">
-                  <span>Salvar rascunho</span>
-                </button>
-              </div>
-            </form>
-
-            <div id="sensitive-modal" class="hidden fixed inset-0 z-50 items-center justify-center p-4">
-              <div class="modal-backdrop absolute inset-0"></div>
-              <div class="sensitive-modal-card relative w-full max-w-lg p-6 md:p-8">
-                <div class="sensitive-modal-icon" aria-hidden="true">EL</div>
-                <h3 id="sensitive-modal-title" class="text-xl font-semibold mt-4 mb-3" style="color:var(--text-main)"></h3>
-                <p id="sensitive-modal-message" class="leading-relaxed" style="color:var(--text)"></p>
-                <p id="sensitive-modal-support" class="hidden mt-3 leading-relaxed" style="color:var(--text)"></p>
-                <div id="sensitive-help" class="hidden mt-4 rounded-xl p-4">
-                  <p class="font-medium mb-1" style="color:var(--text-main)">Centro de Valorização da Vida (CVV)</p>
-                  <p class="text-sm" style="color:var(--text)">Telefone: 188 (24h, gratuito)</p>
-                  <p class="text-sm" style="color:var(--text)">Chat: <a class="underline decoration-dotted" style="color:var(--brand)" href="https://cvv.org.br" target="_blank" rel="noopener noreferrer">https://cvv.org.br</a></p>
-                </div>
-                <p id="sensitive-block-reason" class="hidden mt-4 text-sm" style="color:var(--accent)"></p>
-                <div class="mt-6 flex flex-wrap gap-3">
-                  <a href="{{ url_for('support.ajuda') }}" class="btn-modern btn-ghost">Ver caminhos de ajuda</a>
-                  <button id="sensitive-continue" type="button" class="btn-modern btn-primary">Continuar escrevendo</button>
-                  <button id="sensitive-edit" type="button" class="btn-modern btn-ghost">Editar meu desabafo</button>
-                </div>
-              </div>
-            </div>
+            <button type="button" class="btn-modern btn-primary w-full mt-4 composer-trigger">
+              <span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span>
+            </button>
           {% else %}
-            <div class="space-y-4">
-              <p style="color:var(--text)">Para escrever com segurança, entre na sua conta ou crie uma nova.</p>
-              <div class="flex flex-wrap gap-3">
-                <a href="{{ url_for('auth.login', next=url_for('posts.feed')) }}" class="btn-modern btn-primary">Entrar</a>
-                <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="btn-modern btn-ghost">Criar conta</a>
-              </div>
+            <p class="mt-4 mb-3 text-sm" style="color:var(--text-muted)">Para escrever com segurança, entre na sua conta ou crie uma.</p>
+            <div class="flex flex-wrap gap-3">
+              <a href="{{ url_for('auth.login', next=url_for('posts.feed')) }}" class="btn-modern btn-primary">Entrar</a>
+              <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="btn-modern btn-ghost">Criar conta</a>
             </div>
           {% endif %}
         </section>
 
         <section class="glass-panel feed-sidebar-card p-6">
           <p class="section-kicker">encontrar</p>
-          <h2 class="text-xl font-bold mt-2 mb-4">Filtrar por assunto</h2>
+          <h2 class="text-xl font-display mt-2 mb-4" style="color:var(--text-main)">Filtrar por assunto</h2>
           <div class="filter-list">
             <a href="{{ url_for('posts.feed') }}" class="filter-link {% if not categoria_atual %}active{% endif %}">Todas as categorias</a>
             {% for categoria in categorias %}
@@ -133,11 +53,11 @@
       </div>
     </div>
 
-    <div class="md:col-span-2 lg:col-span-2">
+    <div class="md:col-span-2">
       <div class="feed-layout-heading">
         <div>
           <p class="section-kicker">diário coletivo</p>
-          <h2 class="text-2xl font-bold mt-2">
+          <h2 class="text-2xl font-display mt-2" style="color:var(--text-main)">
             {% if categoria_atual %}Entre {{ categoria_atual }} e silêncio{% else %}Desabafos recentes{% endif %}
           </h2>
         </div>
@@ -151,8 +71,11 @@
         </div>
       {% else %}
         <div class="empty-state">
-          <p class="text-xl font-semibold" style="color:var(--text-main)">Ainda está quieto por aqui.</p>
+          <p class="text-xl font-display" style="color:var(--text-main)">Ainda está quieto por aqui.</p>
           <p class="mt-2" style="color:var(--text-muted)">Seja a primeira voz entre as linhas.</p>
+          {% if session.get('user_id') %}
+            <button type="button" class="btn-modern btn-primary mt-4 composer-trigger"><span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span></button>
+          {% endif %}
         </div>
       {% endif %}
     </div>
@@ -164,7 +87,6 @@
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
 <script src="{{ url_for('static', filename='js/echo.js') }}"></script>
-<script src="{{ url_for('static', filename='js/post-form.js') }}"></script>
 <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
 <script src="{{ url_for('static', filename='js/karma.js') }}"></script>
 {% endblock %}
