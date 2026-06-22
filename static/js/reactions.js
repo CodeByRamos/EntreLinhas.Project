@@ -69,6 +69,7 @@ function createReactionButton(reacao, count, postId) {
   button.setAttribute('aria-label', `${reacao.nome} (${count})`);
   button.innerHTML =
     `<span class="reacao-icon" aria-hidden="true">${REACAO_ICONS[reacao.icon] || ''}</span>` +
+    `<span class="reacao-label">${reacao.nome}</span>` +
     `<span class="reacao-count">${count}</span>`;
   button.addEventListener('click', () => toggleReaction(postId, reacao.valor));
   return button;

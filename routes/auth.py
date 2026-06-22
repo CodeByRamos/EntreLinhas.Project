@@ -140,8 +140,17 @@ def registro():
             user_email = _row_value(user, 'email')
             delivery = {}
             if user_email:
-                token = db.create_email_verification_token(user['id'])
-                delivery = send_email_verification(user_email, token)
+                # O envio do e-mail NUNCA pode derrubar a criação da conta:
+                # a conta já existe aqui. Se o SMTP falhar, seguimos com aviso suave.
+                try:
+                    token = db.create_email_verification_token(user['id'])
+                    delivery = send_email_verification(user_email, token)
+                except Exception as mail_exc:
+                    log_warning(
+                        current_app.logger, "auth.register", "verification_email",
+                        str(mail_exc), email=user_email,
+                    )
+                    delivery = {}
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['nickname'] = user['nickname']

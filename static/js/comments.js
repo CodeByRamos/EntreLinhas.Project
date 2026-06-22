@@ -51,13 +51,13 @@ function loadComments(postId) {
                     container.appendChild(createCommentElement(comment));
                 });
             } else {
-                container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Nenhuma resposta ainda. Talvez a sua seja a primeira.</p>';
+                container.innerHTML = '<p class="text-sm" style="color:var(--text-muted)">Nenhuma resposta ainda. Talvez a sua seja a primeira.</p>';
             }
         })
         .catch(error => {
             console.error('Erro ao carregar comentários:', error);
             const container = document.querySelector(`.comments-container[data-post-id="${postId}"]`);
-            container.innerHTML = '<p class="text-red-500 dark:text-red-400 text-sm">Não conseguimos carregar as respostas agora. Tente de novo em instantes.</p>';
+            container.innerHTML = '<p class="text-sm" style="color:var(--danger)">Não conseguimos carregar as respostas agora. Tente de novo em instantes.</p>';
         });
 }
 
@@ -110,11 +110,11 @@ function submitComment(postId, commentText, textarea) {
                 // Scroll para o novo comentário
                 commentElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 
-                // Feedback visual de sucesso
-                commentElement.style.backgroundColor = '#dcfce7'; // verde claro
+                // Feedback visual de sucesso (no tom da marca)
+                commentElement.style.boxShadow = '0 0 0 1px rgba(106,166,255,0.4)';
                 setTimeout(() => {
-                    commentElement.style.backgroundColor = '';
-                }, 2000);
+                    commentElement.style.boxShadow = '';
+                }, 1800);
             }
         })
         .catch(error => {
@@ -135,24 +135,27 @@ function submitComment(postId, commentText, textarea) {
  */
 function createCommentElement(comment) {
     const div = document.createElement('div');
-    div.className = 'comentario-container bg-gray-50 dark:bg-gray-750 p-4 rounded-lg';
+    div.className = 'comentario-container';
     div.dataset.commentId = comment.id;
-    
+    div.style.cssText = 'border:1px solid var(--border);background:rgba(159,180,212,0.04);border-radius:14px;padding:0.9rem 1rem;';
+
     div.innerHTML = `
-        <div class="flex justify-between items-start">
-            <div class="flex-grow">
-                <p class="text-gray-800 dark:text-gray-200 text-sm">${escapeHTML(comment.mensagem || comment.text)}</p>
-                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">${comment.data_comentario || comment.date}</div>
+        <div class="flex justify-between items-start gap-3">
+            <div class="flex-grow min-w-0">
+                <p class="text-sm" style="color:var(--text)">${escapeHTML(comment.mensagem || comment.text)}</p>
+                <div class="mt-2 text-xs" style="color:var(--text-faint)">${comment.data_comentario || comment.date}</div>
             </div>
-            <button 
-                class="report-comment-button text-gray-400 hover:text-red-600 dark:hover:text-red-400 text-xs flex items-center transition duration-300 ml-2"
+            <button
+                class="report-comment-button text-xs flex items-center transition duration-300 flex-shrink-0"
+                style="color:var(--text-muted)"
+                onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'"
                 data-comment-id="${comment.id}"
-                title="Avisar a moderação sobre esta resposta"
+                title="Denunciar esta resposta à moderação"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd" />
                 </svg>
-                Avisar
+                Denunciar
             </button>
         </div>
     `;
@@ -186,7 +189,7 @@ function escapeHTML(unsafe) {
  * @param {string} commentId - ID do comentário
  */
 function reportComment(commentId) {
-    if (confirm('Quer avisar a moderação sobre esta resposta?')) {
+    if (confirm('Denunciar esta resposta à moderação?')) {
         fetch(`/api/report_comment/${commentId}`, {
             method: 'POST',
             headers: {
@@ -197,13 +200,13 @@ function reportComment(commentId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('A moderação recebeu seu aviso e vai olhar com cuidado.');
-                    
-                    // Desabilita o botão de report para evitar múltiplos reports
+                    alert('Denúncia enviada. A moderação vai olhar com cuidado.');
+
+                    // Desabilita o botão para evitar denúncias repetidas
                     const reportButton = document.querySelector(`[data-comment-id="${commentId}"] .report-comment-button`);
                     if (reportButton) {
                         reportButton.disabled = true;
-                        reportButton.textContent = 'Avisado';
+                        reportButton.textContent = 'Denunciado';
                         reportButton.classList.add('opacity-50', 'cursor-not-allowed');
                     }
                 } else {

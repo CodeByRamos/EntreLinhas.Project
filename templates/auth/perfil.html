@@ -29,7 +29,7 @@
           <span class="status-chip {{ 'status-published' if user.is_verified else 'status-hidden' }}">
             {{ 'E-mail verificado' if user.is_verified else 'E-mail ainda não verificado' }}
           </span>
-          <span class="text-xs" style="color:var(--text-faint)">Conta criada em {{ user.created_at[:10] if user.created_at else '-' }}</span>
+          <span class="text-xs" style="color:var(--text-faint)">Conta criada em {{ (user.created_at|string)[:10] if user.created_at else '-' }}</span>
         </div>
       </div>
     </div>

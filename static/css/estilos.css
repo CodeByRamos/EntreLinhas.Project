@@ -480,11 +480,28 @@ main {
   display: block;
 }
 
+.reacao-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .reacao-count {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   min-width: 0.7rem;
   text-align: center;
+  padding-left: 0.1rem;
+  color: var(--text-muted);
+}
+
+.reaction-button.active .reacao-count {
+  color: var(--accent);
+}
+
+/* Em telas estreitas, mantém o rótulo mas reduz o respiro */
+@media (max-width: 520px) {
+  .reaction-button { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+  .reacao-label { font-size: 0.78rem; }
 }
 
 .footer-back-link {
