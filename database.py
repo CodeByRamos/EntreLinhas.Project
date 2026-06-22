@@ -82,7 +82,11 @@ class _PostgresCursor:
         self._lastrowid = None
 
     def execute(self, sql, params=()):
-        self._cursor.execute(_translate_sql_for_postgres(sql), params or ())
+        # Postgres é estritamente tipado: um bool do Python (True/False) não entra
+        # numa coluna INTEGER. Convertendo aqui, evitamos 500 em inserts com flags
+        # (sensitive_flag, is_active, visivel, etc.) que no SQLite passavam batido.
+        coerced = tuple(int(p) if isinstance(p, bool) else p for p in (params or ()))
+        self._cursor.execute(_translate_sql_for_postgres(sql), coerced)
         if sql.lstrip().lower().startswith("insert"):
             self._lastrowid = self._read_last_insert_id()
         return self
@@ -1096,67 +1100,50 @@ def get_hidden_comment_count():
 # Funções para reações
 
 def add_reaction(post_id, reaction_type, user_id='anonymous'):
-    """Adiciona uma reação a um post e atualiza a contagem."""
+    """Registra a reação de um usuário (no máx. 1 por tipo). Contagem é ao vivo."""
     conn = get_db_connection()
-    
     cursor = conn.cursor()
     try:
-        # Primeiro verifica se o usuário já reagiu com este tipo
-        existing_user_reaction = cursor.execute('''
-            SELECT id FROM reactions 
+        # Evita reação duplicada do mesmo usuário no mesmo tipo.
+        existing = cursor.execute('''
+            SELECT id FROM reactions
             WHERE post_id = ? AND reaction_type = ? AND user_id = ?
         ''', (post_id, reaction_type, user_id)).fetchone()
-        
-        if existing_user_reaction:
-            # Usuário já reagiu, não adiciona novamente
-            conn.close()
+        if existing:
             return False
-        
-        # Registra a reação individual
+
         cursor.execute('''
             INSERT INTO reactions (post_id, reaction_type, user_id)
             VALUES (?, ?, ?)
         ''', (post_id, reaction_type, user_id))
-        
-        # Atualiza ou cria a contagem de reações usando INSERT OR REPLACE
-        if USE_POSTGRES:
-            cursor.execute('''
-                INSERT INTO reaction_counts (post_id, reaction_type, count)
-                VALUES (?, ?, 1)
-                ON CONFLICT (post_id, reaction_type)
-                DO UPDATE SET count = reaction_counts.count + 1
-            ''', (post_id, reaction_type))
-        else:
-            cursor.execute('''
-                INSERT OR REPLACE INTO reaction_counts (post_id, reaction_type, count)
-                VALUES (?, ?, COALESCE((SELECT count FROM reaction_counts WHERE post_id = ? AND reaction_type = ?), 0) + 1)
-            ''', (post_id, reaction_type, post_id, reaction_type))
-        
         conn.commit()
-        print(f"Reação '{reaction_type}' adicionada e contagem atualizada para o post {post_id}.")
         return True
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao adicionar reação ou atualizar contagem: {e}")
+        log_exception(logger, "database.add_reaction", "reactions.insert", e,
+                      post_id=post_id, reaction_type=reaction_type, table="reactions", operation="insert")
         return False
     finally:
         conn.close()
 
 def get_reaction_counts(post_id):
-    """Retorna a contagem de cada tipo de reação para um post."""
+    """Contagem de cada tipo de reação, calculada AO VIVO a partir de `reactions`.
+
+    Fonte única de verdade = a própria tabela de reações. Sem tabela denormalizada
+    pra dessincronizar e sem upsert frágil. Sempre correto após refresh.
+    """
     conn = get_db_connection()
-    reaction_counts = conn.execute('''
-        SELECT reaction_type, count 
-        FROM reaction_counts 
+    rows = conn.execute('''
+        SELECT reaction_type, COUNT(*) AS total
+        FROM reactions
         WHERE post_id = ?
+        GROUP BY reaction_type
     ''', (post_id,)).fetchall()
     conn.close()
-    
-    # Converte para um dicionário para facilitar o uso
+
     counts = {}
-    for row in reaction_counts:
-        counts[row['reaction_type']] = row['count']
-    
+    for row in rows:
+        counts[row['reaction_type']] = row['total']
     return counts
 
 def get_reaction_count():
@@ -2590,48 +2577,21 @@ def get_user_reaction(post_id, reaction_type, user_id):
     return reaction
 
 def remove_reaction(post_id, reaction_type, user_id):
-    """Remove uma reação específica de um usuário e atualiza a contagem."""
+    """Remove a reação do usuário. Contagem é calculada ao vivo (sem denormalização)."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     try:
-        # Remove a reação individual
         cursor.execute('''
-            DELETE FROM reactions 
+            DELETE FROM reactions
             WHERE post_id = ? AND reaction_type = ? AND user_id = ?
         ''', (post_id, reaction_type, user_id))
-        
-        # Verifica se alguma linha foi afetada
-        if cursor.rowcount == 0:
-            conn.close()
-            return False
-        
-        # Atualiza a contagem de reações
-        current_count = cursor.execute('''
-            SELECT count FROM reaction_counts 
-            WHERE post_id = ? AND reaction_type = ?
-        ''', (post_id, reaction_type)).fetchone()
-        
-        if current_count and current_count[0] > 1:
-            # Decrementa a contagem
-            cursor.execute('''
-                UPDATE reaction_counts 
-                SET count = count - 1 
-                WHERE post_id = ? AND reaction_type = ?
-            ''', (post_id, reaction_type))
-        else:
-            # Remove a entrada se a contagem chegou a zero ou menos
-            cursor.execute('''
-                DELETE FROM reaction_counts 
-                WHERE post_id = ? AND reaction_type = ?
-            ''', (post_id, reaction_type))
-        
+        affected = cursor.rowcount
         conn.commit()
-        print(f"Reação '{reaction_type}' removida e contagem atualizada para o post {post_id}.")
-        return True
+        return affected > 0
     except Exception as e:
         conn.rollback()
-        print(f"Erro ao remover reação ou atualizar contagem: {e}")
+        log_exception(logger, "database.remove_reaction", "reactions.delete", e,
+                      post_id=post_id, reaction_type=reaction_type, table="reactions", operation="delete")
         return False
     finally:
         conn.close()

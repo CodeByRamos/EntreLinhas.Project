@@ -1,23 +1,31 @@
 """Serviços de autenticação para uso incremental no backend."""
 
+import secrets
+
 import database as db
 from utils.validation import LIMITS, is_valid_email, is_valid_username
 
+# Palavras suaves, no tom do EntreLinhas, para compor @usernames internos.
+_USERNAME_WORDS = (
+    "nevoa", "lunar", "eco", "brisa", "aurora", "sereno", "vento", "mare",
+    "luz", "noite", "orvalho", "silencio", "abrigo", "raiz", "onda", "verso",
+    "limiar", "prisma", "cais", "horizonte", "refugio", "respiro", "vagalume",
+    "constelacao", "elo", "alvorada", "recanto", "semente",
+)
 
-def generate_username_from_email(email):
+
+def generate_random_username():
+    """Gera um @username interno ALEATÓRIO e único (ex.: nevoa8421, eco9147).
+
+    Nunca é derivado do e-mail — isso protege a privacidade do usuário. A
+    unicidade é garantida por construção: tenta combinações palavra+número e,
+    no caso improvável de esgotar, cai num token aleatório.
     """
-    Gera username único a partir do e-mail quando o usuário não informar um.
-    Mantém compatibilidade com banco atual que exige username único.
-    """
-    local_part = (email.split("@", 1)[0] if email else "").strip().lower()
-    import re
-    base = re.sub(r"[^a-z0-9_]+", "_", local_part).strip("_") or "usuario"
-    candidate = base[:30]
-    suffix = 0
-    while db.get_user_by_username(candidate):
-        suffix += 1
-        candidate = f"{base[:24]}_{suffix}"
-    return candidate
+    for _ in range(50):
+        candidate = f"{secrets.choice(_USERNAME_WORDS)}{secrets.randbelow(9000) + 1000}"
+        if not db.get_user_by_username(candidate):
+            return candidate
+    return f"eco{secrets.token_hex(5)}"
 
 
 def register_user(username, password, nickname, bio=None, email=None, display_name=None, avatar_url=None, default_visibility_mode='anonymous'):
@@ -48,7 +56,7 @@ def register_user(username, password, nickname, bio=None, email=None, display_na
         return False, {'message': 'Nome de usuário já existe.'}
 
     if not username:
-        username = generate_username_from_email(email)
+        username = generate_random_username()
 
     if not nickname:
         nickname = username
