@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import database as db
 from utils.validation import LIMITS
+from utils.sensitive_content import evaluate_post_content
 
 # Criação do Blueprint para as rotas de comentários
 comments = Blueprint('comments', __name__)
@@ -42,7 +43,12 @@ def add_comment(post_id):
         comment_text = data['text'].strip()
         if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
             return jsonify({'error': f'Sua resposta precisa ter entre {LIMITS["comment_content_min"]} e {LIMITS["comment_content_max"]} caracteres.'}), 400
-        
+
+        # Discurso de ódio com ataque direto não pode ser enviado (mesmo crivo dos posts;
+        # respeita quem relata a própria experiência, bloqueia ofensa a terceiros).
+        if evaluate_post_content(comment_text).get('block_publication'):
+            return jsonify({'error': 'Essa resposta traz uma ofensa que fere outras pessoas e não pode ser enviada assim. Reescreva com respeito para continuar.'}), 400
+
         # Verifica se o post existe
         post = db.get_post(post_id)
         if not post:

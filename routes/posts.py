@@ -115,7 +115,7 @@ def enviar():
             flash('Não conseguimos entender como exibir esse desabafo.', 'error')
             return redirect(url_for('posts.feed'))
         
-        sensitivity = evaluate_post_content(conteudo)
+        sensitivity = evaluate_post_content(f"{titulo} {conteudo}" if titulo else conteudo)
         is_sensitive = sensitivity['risk_level'] in (RISK_MEDIUM, RISK_HIGH)
         is_hate = sensitivity.get('is_hate_speech', False)
         if post_status == 'published':
@@ -350,7 +350,7 @@ def editar_post(post_id):
         flash('Não conseguimos entender como exibir esse desabafo.', 'error')
         return redirect(url_for('posts.editar_post', post_id=post_id))
 
-    sensitivity = evaluate_post_content(conteudo)
+    sensitivity = evaluate_post_content(f"{titulo} {conteudo}" if titulo else conteudo)
     if status == 'published' and sensitivity.get('block_publication'):
         flash(
             'Esse desabafo traz uma ofensa que fere outras pessoas e não pode ser publicado '
