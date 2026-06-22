@@ -1584,11 +1584,13 @@ def create_report(post_id, profile_id=None, user_id=None, reason="outro", detail
             conn.close()
             return False, "Voce ja avisou a moderacao sobre esse desabafo."
     
-    # Criar o report
+    # Criar o report. ATENÇÃO: a coluna `data` é String(20) — no Postgres ela NÃO
+    # aceita um timestamp (datetime('now')), só texto. Por isso gravamos uma string.
+    data_label = datetime.now().strftime("%d/%m/%Y %H:%M")
     conn.execute('''
         INSERT INTO reports (post_id, profile_id, user_id, reason, details, status, data, created_at)
-        VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'), datetime('now'))
-    ''', (post_id, profile_id, user_id, reason, details))
+        VALUES (?, ?, ?, ?, ?, 'pending', ?, datetime('now'))
+    ''', (post_id, profile_id, user_id, reason, details, data_label))
     
     # Verificar quantos reports o post tem
     report_count = conn.execute('''
