@@ -946,8 +946,8 @@ def log_sensitive_post(post_id, risk_level):
     conn = get_db_connection()
     conn.execute(
         '''
-        INSERT INTO sensitive_post_logs (post_id, risk_level)
-        VALUES (?, ?)
+        INSERT INTO sensitive_post_logs (post_id, risk_level, timestamp)
+        VALUES (?, ?, datetime('now'))
         ''',
         (post_id, risk_level),
     )
@@ -1069,8 +1069,8 @@ def create_comment(post_id, comment_text):
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT INTO comments (post_id, mensagem, data_comentario)
-            VALUES (?, ?, ?)
+            INSERT INTO comments (post_id, mensagem, data_comentario, visivel)
+            VALUES (?, ?, ?, 1)
         ''', (post_id, comment_text, data_comentario))
         
         comment_id = cursor.lastrowid
@@ -1127,8 +1127,8 @@ def add_reaction(post_id, reaction_type, user_id='anonymous'):
             return False
 
         cursor.execute('''
-            INSERT INTO reactions (post_id, reaction_type, user_id)
-            VALUES (?, ?, ?)
+            INSERT INTO reactions (post_id, reaction_type, user_id, data_reacao)
+            VALUES (?, ?, ?, datetime('now'))
         ''', (post_id, reaction_type, user_id))
         conn.commit()
         return True
@@ -1651,31 +1651,38 @@ def get_all_reports(limit=50, offset=0):
 
 
 def add_comment_karma(comment_id, profile_id, karma_type):
-    """Adiciona ou atualiza o karma de um comentário."""
+    """Adiciona ou atualiza o karma de um comentário (compatível com Postgres).
+
+    Antes dependia de capturar sqlite3.IntegrityError e fazer UPDATE depois — no
+    Postgres isso quebra (exceção diferente + transação abortada). Agora checamos
+    a existência antes, sem controle de fluxo por exceção.
+    """
     conn = get_db_connection()
-    
     try:
-        # Tentar inserir novo karma
-        conn.execute('''
-            INSERT INTO comment_karma (comment_id, profile_id, karma_type, data)
-            VALUES (?, ?, ?, datetime('now'))
-        ''', (comment_id, profile_id, karma_type))
-        
+        existing = conn.execute(
+            "SELECT id FROM comment_karma WHERE comment_id = ? AND profile_id = ?",
+            (comment_id, profile_id),
+        ).fetchone()
+        if existing:
+            conn.execute(
+                "UPDATE comment_karma SET karma_type = ?, data = datetime('now') WHERE comment_id = ? AND profile_id = ?",
+                (karma_type, comment_id, profile_id),
+            )
+            message = "Karma atualizado com sucesso."
+        else:
+            conn.execute(
+                "INSERT INTO comment_karma (comment_id, profile_id, karma_type, data) VALUES (?, ?, ?, datetime('now'))",
+                (comment_id, profile_id, karma_type),
+            )
+            message = "Karma adicionado com sucesso."
         conn.commit()
+        return True, message
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.add_comment_karma", "comment_karma.upsert", e, comment_id=comment_id)
+        return False, "Não conseguimos registrar isso agora."
+    finally:
         conn.close()
-        return True, "Karma adicionado com sucesso."
-        
-    except sqlite3.IntegrityError:
-        # Se já existe, atualizar
-        conn.execute('''
-            UPDATE comment_karma 
-            SET karma_type = ?, data = datetime('now')
-            WHERE comment_id = ? AND profile_id = ?
-        ''', (karma_type, comment_id, profile_id))
-        
-        conn.commit()
-        conn.close()
-        return True, "Karma atualizado com sucesso."
 
 def remove_comment_karma(comment_id, profile_id):
     """Remove o karma de um comentário."""
@@ -2092,7 +2099,7 @@ def create_password_reset_token(user_id, hours_valid=1):
     token = secrets.token_urlsafe(32)
     expires_at = (datetime.utcnow() + timedelta(hours=hours_valid)).strftime("%Y-%m-%d %H:%M:%S")
     conn.execute(
-        "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+        "INSERT INTO password_reset_tokens (user_id, token, expires_at, created_at) VALUES (?, ?, ?, datetime('now'))",
         (user_id, token, expires_at),
     )
     conn.commit()
@@ -2135,7 +2142,7 @@ def create_email_verification_token(user_id, hours_valid=48):
     token = secrets.token_urlsafe(32)
     expires_at = (datetime.utcnow() + timedelta(hours=hours_valid)).strftime("%Y-%m-%d %H:%M:%S")
     conn.execute(
-        "INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES (?, ?, ?)",
+        "INSERT INTO email_verification_tokens (user_id, token, expires_at, created_at) VALUES (?, ?, ?, datetime('now'))",
         (user_id, token, expires_at),
     )
     conn.commit()
@@ -2189,8 +2196,8 @@ def create_notification(user_id, notification_type, title, message, reference_id
     conn = get_db_connection()
     conn.execute(
         """
-        INSERT INTO notifications (user_id, type, title, message, reference_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO notifications (user_id, type, title, message, reference_id, is_read, created_at)
+        VALUES (?, ?, ?, ?, ?, 0, datetime('now'))
         """,
         (user_id, trim_text(notification_type)[:30], title, message, reference_id),
     )
@@ -2621,8 +2628,8 @@ def report_comment(comment_id, reason):
     data_report = datetime.now().strftime("%d/%m/%Y %H:%M")
     try:
         cursor.execute("""
-            INSERT INTO reports_comments (comment_id, reason, data_report)
-            VALUES (?, ?, ?)
+            INSERT INTO reports_comments (comment_id, reason, data_report, resolved)
+            VALUES (?, ?, ?, 0)
         """, (comment_id, reason, data_report))
         conn.commit()
         return True
