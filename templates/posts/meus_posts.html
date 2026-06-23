@@ -36,6 +36,7 @@
           <div class="flex flex-col sm:flex-row gap-2">
             <a class="btn-modern btn-ghost" href="{{ url_for('posts.editar_post', post_id=post.id) }}">Editar</a>
             <form method="post" action="{{ url_for('posts.excluir_post', post_id=post.id) }}" onsubmit="return confirm('Excluir este post permanentemente?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="btn-modern btn-danger">Excluir</button>
             </form>
           </div>

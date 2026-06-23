@@ -15,6 +15,7 @@
     <p class="text-sm mb-6" style="color:var(--text-muted);">Só o essencial — leva menos de um minuto. O resto você ajusta depois, no perfil.</p>
 
     <form method="POST" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="next" value="{{ next_url or '' }}">
 
       <div>

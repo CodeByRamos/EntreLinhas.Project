@@ -6,6 +6,7 @@ from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIG
 from services.sensitive_response import build_content_response, resolve_content_gate
 from utils.mood_styles import EMOTIONAL_TAG_LABELS, dominant_mood, is_valid_emotional_tag, normalize_emotional_tag
 from utils.safe_logging import log_exception
+from extensions import limiter
 
 # Criação do Blueprint para as rotas de posts (desabafos)
 posts = Blueprint('posts', __name__)
@@ -21,7 +22,9 @@ def _can_manage_post(post, current_user):
         return False
     if post['user_id'] == current_user['id']:
         return True
-    return bool(current_user['is_admin'] or current_user['role'] == 'admin')
+    # Poder de moderação vem APENAS de is_admin. O cargo (role) é só selo
+    # cosmético — não concede direito de editar/excluir posts de terceiros.
+    return bool(current_user['is_admin'])
 
 @posts.route('/feed')
 def feed():
@@ -79,6 +82,7 @@ def filtrar_categoria(categoria):
     return redirect(url_for('posts.feed', categoria=categoria, page=page))
 
 @posts.route('/enviar', methods=['POST'])
+@limiter.limit('20 per minute; 120 per hour')
 def enviar():
     """Rota para enviar um novo desabafo."""
     if request.method == 'POST':

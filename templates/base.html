@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   <title>{% block title %}EntreLinhas - Desabafos Anônimos{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
 
@@ -80,6 +81,7 @@
             <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
           </button>
           <form method="post" action="{{ url_for('auth.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <button type="submit" class="nav-pill nav-exit">Sair</button>
           </form>
         {% else %}
@@ -114,6 +116,7 @@
         {% endif %}
         {% if logged_user %}
           <form method="post" action="{{ url_for('auth.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <button type="submit" class="nav-pill nav-exit w-full">Sair</button>
           </form>
         {% else %}
@@ -139,10 +142,11 @@
   <main class="flex-grow">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="container mx-auto px-6 pt-6 space-y-3">
+        <div class="container mx-auto px-6 pt-6 space-y-3" aria-live="polite">
           {% for category, message in messages %}
             {% set alert_class = 'flash-success' if category == 'success' else 'flash-info' if category == 'info' else 'flash-error' %}
-            <div class="flash-message {{ alert_class }}">{{ message }}</div>
+            {% set alert_role = 'alert' if category not in ('success', 'info') else 'status' %}
+            <div class="flash-message {{ alert_class }}" role="{{ alert_role }}">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}

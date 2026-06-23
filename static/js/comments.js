@@ -124,16 +124,7 @@ function submitComment(postId, commentText, textarea) {
             }
         })
         .catch(error => {
-            // Log de debug detalhado pra achar a causa raiz (remover quando estável).
-            console.error('COMMENT_ERROR', {
-                postId: postId,
-                payload: payload,
-                status: error.status,
-                serverError: error.message,
-                detail: error.detail,
-                context: error.context
-            });
-            alert(error.detail ? ('Erro real: ' + error.detail) : (error.message || 'Não conseguimos enviar sua resposta agora. Tente de novo em instantes.'));
+            alert(error.message || 'Não conseguimos enviar sua resposta agora. Tente de novo em instantes.');
         })
         .finally(() => {
             // Reabilita o textarea

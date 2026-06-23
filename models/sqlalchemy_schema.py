@@ -125,6 +125,7 @@ class CommentReport(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     comment_id = db.Column(db.Integer, db.ForeignKey("comments.id"), nullable=False)
+    user_id = db.Column(db.Integer, nullable=True)
     reason = db.Column(db.String(120), nullable=False)
     data_report = db.Column(db.String(20), nullable=False)
     resolved = db.Column(db.Integer, default=0, nullable=False)

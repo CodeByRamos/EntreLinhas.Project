@@ -55,6 +55,24 @@ SESSION_COOKIE_SECURE = os.environ.get(
 TEMPLATES_AUTO_RELOAD = not IS_PRODUCTION
 PERMANENT_SESSION_LIFETIME_HOURS = int(os.environ.get('PERMANENT_SESSION_LIFETIME_HOURS', '24'))
 
+# --- Segurança: CSRF (Flask-WTF) ---
+# Token válido pela vida da sessão (evita expirar enquanto a pessoa escreve um desabafo longo).
+WTF_CSRF_TIME_LIMIT = None
+WTF_CSRF_ENABLED = os.environ.get('WTF_CSRF_ENABLED', 'true').lower() == 'true'
+
+# --- Segurança: Rate limiting (Flask-Limiter) ---
+# memory:// basta no Render single-instance; use redis://... em multi-instância.
+RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
+RATELIMIT_HEADERS_ENABLED = True
+# Permite desligar via env caso necessário (ex.: testes de carga internos).
+RATELIMIT_ENABLED = os.environ.get('RATELIMIT_ENABLED', 'true').lower() == 'true'
+
+# --- hCaptcha (proteção anti-bot em cadastro/recuperação) ---
+# Sem chaves configuradas, o captcha é simplesmente ignorado (no-op) — não quebra o fluxo.
+HCAPTCHA_SITEKEY = os.environ.get('HCAPTCHA_SITEKEY', '')
+HCAPTCHA_SECRET = os.environ.get('HCAPTCHA_SECRET', '')
+HCAPTCHA_ENABLED = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
+
 TAGS_EMOCIONAIS = EMOTIONAL_TAGS
 
 REPORT_REASONS = [

@@ -15,6 +15,7 @@
     <p class="text-sm mb-6" style="color:var(--text-muted);">Use seu e-mail e senha para continuar de onde parou.</p>
 
     <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" name="next" value="{{ next_url or '' }}" />
       <div>
         <label for="email" class="block text-sm mb-2" style="color:var(--text-main);">E-mail</label>

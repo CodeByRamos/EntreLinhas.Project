@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app, session
 import database as db
 from utils.api_errors import api_error
+from extensions import limiter
 
 # Criação do Blueprint para as rotas de reações
 reactions = Blueprint('reactions', __name__)
@@ -23,6 +24,7 @@ def get_reactions(post_id):
 
 
 @reactions.route('/api/reactions/<int:post_id>', methods=['POST'])
+@limiter.limit('60 per minute; 400 per hour')
 def toggle_reaction(post_id):
     """Adiciona ou remove a reação de um usuário (toggle)."""
     # Exige login antes de qualquer validação (guest sempre recebe o convite de entrar).
@@ -76,6 +78,7 @@ def get_echo(post_id):
 
 
 @reactions.route('/api/echo/<int:post_id>', methods=['POST'])
+@limiter.limit('60 per minute; 400 per hour')
 def toggle_echo(post_id):
     if 'user_id' not in session:
         return jsonify({

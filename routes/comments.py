@@ -4,6 +4,7 @@ from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content
 from utils.api_errors import api_error
 from utils.roles import get_role_badge
+from extensions import limiter
 
 # Criação do Blueprint para as rotas de comentários
 comments = Blueprint('comments', __name__)
@@ -51,16 +52,18 @@ def get_comments(post_id):
         return jsonify(api_error("Não conseguimos carregar as respostas agora.", exc, post_id=post_id)), 500
 
 @comments.route('/api/comments/<int:post_id>', methods=['POST'])
+@limiter.limit('30 per minute; 200 per hour')
 def add_comment(post_id):
     """API para adicionar um comentário a um post. Exige login (validação no backend)."""
     if 'user_id' not in session:
         return jsonify({'error': 'Entre ou crie uma conta para responder com cuidado.', 'auth_required': True}), 401
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
 
-        if not data or 'text' not in data or not data['text'].strip():
+        # Aceita só string em 'text' (evita 500 quando vem número/objeto).
+        if not isinstance(data.get('text'), str) or not data['text'].strip():
             return jsonify({'error': 'Escreva uma resposta antes de enviar.'}), 400
-        
+
         comment_text = data['text'].strip()
         if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
             return jsonify({'error': f'Sua resposta precisa ter entre {LIMITS["comment_content_min"]} e {LIMITS["comment_content_max"]} caracteres.'}), 400

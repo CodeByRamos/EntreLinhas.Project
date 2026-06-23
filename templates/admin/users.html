@@ -46,6 +46,7 @@
           </td>
           <td>
             <form method="post" action="{{ url_for('admin.set_user_role', user_id=u.id, q=search) }}" class="flex gap-2 justify-end items-center">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               {% if u.id == session.get('admin_user_id') %}<span class="text-xs" style="color:var(--text-faint)">você</span>{% endif %}
               <select name="role" class="input-modern" style="min-width:9rem">
                 {% for r in role_order %}

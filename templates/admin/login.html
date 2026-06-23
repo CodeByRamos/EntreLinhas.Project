@@ -15,6 +15,7 @@
     <p class="text-sm mb-6" style="color:var(--text-muted)">Entre com suas credenciais para acompanhar reports e posts sensíveis.</p>
 
     <form method="POST" action="{{ url_for('admin.login') }}" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div>
         <label for="username" class="block text-sm mb-2" style="color:var(--text)">Usuário</label>
         <input type="text" id="username" name="username" required class="input-modern w-full" autocomplete="username">

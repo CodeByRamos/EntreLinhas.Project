@@ -24,9 +24,11 @@
             </div>
             <div class="flex gap-2 flex-shrink-0">
               <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='aprovar') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn-modern btn-primary">Aprovar</button>
               </form>
               <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='rejeitar') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="btn-modern btn-danger">Rejeitar</button>
               </form>
             </div>
@@ -62,11 +64,13 @@
             <td class="py-3">
               {% if p.status != 'approved' %}
               <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='aprovar') }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="text-xs" style="color:var(--brand)">aprovar</button>
               </form>
               {% endif %}
               {% if p.status != 'rejected' %}
               <form method="post" action="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='rejeitar') }}" class="inline ml-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <button class="text-xs" style="color:var(--danger)">rejeitar</button>
               </form>
               {% endif %}

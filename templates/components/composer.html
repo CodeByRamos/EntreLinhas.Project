@@ -10,6 +10,7 @@
   <div id="form-error" class="flash-message flash-error hidden mb-4 text-sm"></div>
 
   <form id="post-form" method="POST" action="{{ url_for('posts.enviar') }}" class="flex flex-col gap-5" aria-label="Formulário para envio de desabafo">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <input type="hidden" id="sensitive_ack" name="sensitive_ack" value="0">
     <input type="hidden" id="sensitive_risk" name="sensitive_risk" value="">
 

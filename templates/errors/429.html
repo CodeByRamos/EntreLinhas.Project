@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Muitas tentativas - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-20 max-w-2xl text-center">
+  <div class="glass-panel p-8 section-reading">
+    <p class="eyebrow" style="color:var(--accent)">pausa</p>
+    <h1 class="font-display text-3xl font-semibold mb-4" style="color:var(--text-main)">Respire fundo por um instante.</h1>
+    <p style="color:var(--text-muted)">Foram muitas tentativas em pouco tempo. Espere alguns segundos e tente de novo com calma — é só uma proteção para manter o espaço seguro.</p>
+    <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-primary mt-6">Voltar ao feed</a>
+  </div>
+</div>
+{% endblock %}

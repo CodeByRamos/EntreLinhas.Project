@@ -19,6 +19,7 @@
             </div>
             {% if not item.is_read %}
             <form method="post" action="{{ url_for('notifications.mark_as_read', notification_id=item.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button type="submit" class="btn-modern btn-ghost text-xs flex-shrink-0">Marcar como lida</button>
             </form>
             {% endif %}

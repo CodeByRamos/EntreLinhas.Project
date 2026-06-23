@@ -4,9 +4,9 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, request, jsonify
 import database as db
-from extensions import db as sqlalchemy_db, migrate
+from extensions import db as sqlalchemy_db, migrate, csrf, limiter
 from models import sqlalchemy_schema  # noqa: F401
 from routes.main import main
 from routes.posts import posts
@@ -63,6 +63,13 @@ def create_app():
 
     sqlalchemy_db.init_app(app)
     migrate.init_app(app, sqlalchemy_db)
+
+    # Proteção CSRF em todos os POST/PUT/PATCH/DELETE. Endpoints JSON enviam o
+    # token via header X-CSRFToken (ver patch global de fetch em main.js).
+    csrf.init_app(app)
+    # Rate limiting por IP (limites declarados por rota com @limiter.limit).
+    if app.config.get('RATELIMIT_ENABLED', True):
+        limiter.init_app(app)
     
     # Inicializa o banco SQLite apenas em desenvolvimento local.
     if not app.config.get('USE_POSTGRES'):
@@ -80,6 +87,13 @@ def create_app():
         db_features.ensure_features_schema()
     except Exception as exc:
         app.logger.warning("ensure_features_schema: %s", exc)
+    # Garante a coluna reports_comments.user_id e os índices de FK no Postgres
+    # (o init_db raw só roda em SQLite). Idempotente.
+    try:
+        db.ensure_reports_comments_user_id()
+        db.ensure_performance_indexes()
+    except Exception as exc:
+        app.logger.warning("ensure indexes/columns: %s", exc)
     
     # Registra os blueprints
     app.register_blueprint(main)
@@ -105,6 +119,33 @@ def create_app():
     @app.errorhandler(500)
     def server_error(error):
         return render_template('errors/500.html'), 500
+
+    def _wants_json():
+        return request.path.startswith('/api/') or request.accept_mimetypes.best == 'application/json'
+
+    from flask_wtf.csrf import CSRFError
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        # Token ausente/expirado: peça para recarregar (em vez de erro cru).
+        if _wants_json():
+            return jsonify({
+                'success': False,
+                'error': 'Sua sessão expirou. Recarregue a página e tente de novo.',
+                'csrf': True,
+            }), 400
+        return render_template('errors/csrf.html', reason=error.description), 400
+
+    @app.errorhandler(429)
+    def ratelimit_handler(error):
+        # Excesso de tentativas: mensagem acolhedora, sem expor detalhes.
+        if _wants_json():
+            return jsonify({
+                'success': False,
+                'error': 'Muitas tentativas em pouco tempo. Respire e tente de novo daqui a pouco.',
+                'rate_limited': True,
+            }), 429
+        return render_template('errors/429.html', limit=str(error.description)), 429
     
     # Contexto global para templates
     from utils.roles import get_role_badge

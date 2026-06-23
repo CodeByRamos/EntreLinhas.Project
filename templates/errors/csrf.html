@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Sessão expirada - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-20 max-w-2xl text-center">
+  <div class="glass-panel p-8 section-reading">
+    <p class="eyebrow" style="color:var(--accent)">sessão</p>
+    <h1 class="font-display text-3xl font-semibold mb-4" style="color:var(--text-main)">Sua sessão descansou um pouco.</h1>
+    <p style="color:var(--text-muted)">Por segurança, o tempo desta página expirou antes do envio. Volte, recarregue e tente de novo — o que você escreveu continua com você.</p>
+    <a href="{{ request.referrer or url_for('posts.feed') }}" class="btn-modern btn-primary mt-6">Voltar e tentar de novo</a>
+  </div>
+</div>
+{% endblock %}

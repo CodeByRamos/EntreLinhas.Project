@@ -43,6 +43,7 @@
               <p class="mt-2" style="color:var(--text-muted)">A data chegou. Respire e abra quando se sentir pronto.</p>
             </div>
             <form method="post" action="{{ url_for('cartas.abrir_carta', letter_id=c.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
               <button class="btn-modern btn-primary">Abrir carta</button>
             </form>
           </div>

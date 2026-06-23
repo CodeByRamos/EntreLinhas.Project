@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 import database as db
 import functools
 from utils.roles import ROLE_ORDER, ROLE_LABELS, normalize_role
+from extensions import limiter
 
 # Criação do Blueprint para as rotas administrativas
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -25,6 +26,7 @@ def admin_required(view):
     return wrapped_view
 
 @admin.route('/login', methods=['GET', 'POST'])
+@limiter.limit('5 per minute; 20 per hour', methods=['POST'])
 def login():
     """Rota para login administrativo."""
     if session.get('admin_logged_in'):

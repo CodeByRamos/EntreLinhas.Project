@@ -14,6 +14,7 @@
     </div>
 
     <form method="post" action="{{ url_for('posts.editar_post', post_id=post.id) }}" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div>
         <label for="titulo" class="block font-medium mb-2" style="color:var(--text-muted)">Título (opcional)</label>
         <input id="titulo" name="titulo" type="text" maxlength="120" class="input-modern" value="{{ post.title or '' }}" />

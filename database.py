@@ -306,6 +306,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS reports_comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             comment_id INTEGER NOT NULL,
+            user_id INTEGER,
             reason TEXT NOT NULL,
             data_report TEXT NOT NULL,
             resolved INTEGER DEFAULT 0,
@@ -496,6 +497,7 @@ def init_db():
     _ensure_column(conn, "reports", "details", "TEXT")
     _ensure_column(conn, "reports", "status", "TEXT DEFAULT 'pending'")
     _ensure_column(conn, "reports", "created_at", "TIMESTAMP")
+    _ensure_column(conn, "reports_comments", "user_id", "INTEGER")
     if "updated_at" not in _get_table_columns(conn, "users"):
         conn.execute("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP")
         conn.execute(
@@ -588,9 +590,60 @@ def init_db():
     conn.execute("CREATE INDEX IF NOT EXISTS idx_posts_report_count ON posts (report_count)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_echoes_post_id ON echoes (post_id)")
-    
+
     conn.commit()
     conn.close()
+
+
+# Índices de performance que valem para os DOIS bancos (SQLite e Postgres).
+# Cobrem as colunas mais joinadas/filtradas (FKs lógicas) que faltavam — sem
+# elas, cada listagem do feed e da moderação vira full scan no Postgres.
+_PERF_INDEXES = [
+    ("idx_comments_post_id", "comments", "(post_id)"),
+    ("idx_reactions_post_id", "reactions", "(post_id)"),
+    ("idx_reactions_lookup", "reactions", "(post_id, reaction_type, user_id)"),
+    ("idx_comment_karma_comment_id", "comment_karma", "(comment_id)"),
+    ("idx_reports_post_id", "reports", "(post_id)"),
+    ("idx_reports_comments_comment_id", "reports_comments", "(comment_id)"),
+    ("idx_reports_comments_user_id", "reports_comments", "(user_id)"),
+    ("idx_posts_user_id", "posts", "(user_id)"),
+    ("idx_posts_feed", "posts", "(visivel, status)"),
+]
+
+
+def ensure_performance_indexes():
+    """Cria índices ausentes nas FKs lógicas. Idempotente; roda em SQLite e Postgres."""
+    conn = get_db_connection()
+    try:
+        for name, table, cols in _PERF_INDEXES:
+            try:
+                conn.execute(f"CREATE INDEX IF NOT EXISTS {name} ON {table} {cols}")
+            except Exception as exc:
+                logger.warning("ensure_performance_indexes %s: %s", name, exc)
+        conn.commit()
+    except Exception as exc:
+        logger.warning("ensure_performance_indexes falhou: %s", exc)
+    finally:
+        conn.close()
+
+
+def ensure_reports_comments_user_id():
+    """Garante a coluna reports_comments.user_id em bancos já existentes.
+
+    No Postgres o create_all() não altera tabela existente; aqui aplicamos o
+    ALTER idempotente. No SQLite usa o mesmo _ensure_column do init_db.
+    """
+    conn = get_db_connection()
+    try:
+        if USE_POSTGRES:
+            conn.execute("ALTER TABLE reports_comments ADD COLUMN IF NOT EXISTS user_id INTEGER")
+        else:
+            _ensure_column(conn, "reports_comments", "user_id", "INTEGER")
+        conn.commit()
+    except Exception as exc:
+        logger.warning("ensure_reports_comments_user_id: %s", exc)
+    finally:
+        conn.close()
 
 # Funções para posts (desabafos)
 
@@ -2695,21 +2748,30 @@ def remove_reaction(post_id, reaction_type, user_id):
 
 # Funções para reports de comentários
 
-def report_comment(comment_id, reason):
-    """Registra um report para um comentário."""
+def report_comment(comment_id, reason, user_id=None):
+    """Registra um report para um comentário. Deduplica por usuário logado."""
     conn = get_db_connection()
     cursor = conn.cursor()
     data_report = datetime.now().strftime("%d/%m/%Y %H:%M")
     try:
+        # Um mesmo usuário não avisa duas vezes sobre a mesma resposta.
+        if user_id is not None:
+            existing = cursor.execute(
+                "SELECT id FROM reports_comments WHERE comment_id = ? AND user_id = ?",
+                (comment_id, user_id),
+            ).fetchone()
+            if existing:
+                return False
         cursor.execute("""
-            INSERT INTO reports_comments (comment_id, reason, data_report, resolved)
-            VALUES (?, ?, ?, 0)
-        """, (comment_id, reason, data_report))
+            INSERT INTO reports_comments (comment_id, user_id, reason, data_report, resolved)
+            VALUES (?, ?, ?, ?, 0)
+        """, (comment_id, user_id, reason, data_report))
         conn.commit()
         return True
     except Exception as e:
-        print(f"Erro ao reportar comentário: {e}")
         conn.rollback()
+        log_exception(logger, "database.report_comment", "reports_comments.insert", e,
+                      comment_id=comment_id, table="reports_comments", operation="insert")
         return False
     finally:
         conn.close()

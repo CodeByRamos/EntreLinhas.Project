@@ -71,6 +71,7 @@
                       Ver comentários
                     </a>
                     <form method="POST" action="{{ url_for('admin.toggle_post_visibility', post_id=post.id) }}" class="inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                       <button type="submit" style="color:{% if post.visivel == 1 %}var(--danger){% else %}var(--brand){% endif %}">
                         {% if post.visivel == 1 %}Ocultar{% else %}Mostrar{% endif %}
                       </button>

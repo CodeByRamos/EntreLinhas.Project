@@ -54,14 +54,17 @@
               <td class="px-6 py-4 text-sm">
                 <div class="flex flex-wrap gap-2">
                   <form method="post" action="{{ url_for('admin.toggle_post_visibility', post_id=report.post_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button class="btn-modern btn-danger text-sm" type="submit">{{ 'Restaurar' if report.visivel == 0 else 'Ocultar' }}</button>
                   </form>
                   {% if report.status == 'pending' %}
                   <form method="post" action="{{ url_for('admin.resolve_post_report', report_id=report.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <input type="hidden" name="action" value="resolved">
                     <button class="btn-modern btn-primary text-sm" type="submit">Resolver</button>
                   </form>
                   <form method="post" action="{{ url_for('admin.resolve_post_report', report_id=report.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <input type="hidden" name="action" value="dismissed">
                     <button class="btn-modern btn-ghost text-sm" type="submit">Descartar</button>
                   </form>

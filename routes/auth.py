@@ -13,6 +13,7 @@ from utils.sensitive_content import contains_hate_speech
 from utils.mood_styles import DEFAULT_AVATARS, normalize_default_avatar
 from utils.uploads import save_profile_photo
 from utils.safe_logging import log_exception, log_warning
+from extensions import limiter
 
 # Criação do Blueprint para as rotas de autenticação
 auth = Blueprint('auth', __name__)
@@ -45,6 +46,7 @@ def _row_value(row, key, default=None):
     return default
 
 @auth.route('/registro', methods=['GET', 'POST'])
+@limiter.limit('6 per minute; 20 per hour', methods=['POST'])
 def registro():
     """Página e lógica de registro de usuário."""
     if request.method == 'GET':
@@ -200,6 +202,7 @@ def registro():
         return render_template('auth/registro.html', next_url=request.form.get('next', ''))
 
 @auth.route('/login', methods=['GET', 'POST'])
+@limiter.limit('10 per minute; 40 per hour', methods=['POST'])
 def login():
     """Página e lógica de login de usuário."""
     if request.method == 'GET':
@@ -477,6 +480,7 @@ def alterar_senha():
 
 
 @auth.route('/esqueci-senha', methods=['GET', 'POST'])
+@limiter.limit('4 per minute; 15 per hour', methods=['POST'])
 def esqueci_senha():
     if request.method == 'GET':
         return render_template('auth/esqueci_senha.html')
@@ -504,6 +508,7 @@ def esqueci_senha():
 
 @auth.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
 @auth.route('/redefinir-senha', methods=['GET', 'POST'])
+@limiter.limit('8 per minute; 30 per hour', methods=['POST'])
 def redefinir_senha(token=None):
     token = (token or request.args.get('token') or request.form.get('token') or '').strip()
     if request.method == 'GET':

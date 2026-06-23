@@ -75,6 +75,7 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <form method="POST" action="{{ url_for('admin.toggle_comment_visibility', comment_id=comment.id) }}" class="inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     {% if comment.visivel == 1 %}
                       <button type="submit" class="btn-modern btn-danger text-sm">Ocultar</button>
                     {% else %}

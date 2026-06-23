@@ -8,6 +8,7 @@
     <h1 class="text-2xl font-bold mb-3 font-display" style="color:var(--text-main);">Esqueci minha senha</h1>
     <p class="text-sm mb-6" style="color:var(--text-muted);">Informe seu e-mail. Se ele estiver cadastrado, enviaremos um caminho seguro para criar uma nova senha.</p>
     <form method="POST" class="space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div>
         <label for="email" class="block text-sm mb-2" style="color:var(--text-main);">E-mail</label>
         <input id="email" name="email" type="email" required maxlength="254" class="input-modern w-full" />

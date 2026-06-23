@@ -12,6 +12,7 @@
     </div>
 
     <form method="POST" enctype="multipart/form-data" class="space-y-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <div class="profile-photo-editor">
         <div class="avatar-shell profile-avatar-lg">
           {% if user.profile_photo %}
