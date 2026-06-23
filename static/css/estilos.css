@@ -327,6 +327,49 @@ main {
 }
 .btn-superacao:active { transform: translateY(0); }
 
+/* ============================================================================
+   Linha do Tempo Emocional — espinha vertical + nós, dentro da paleta navy.
+   ============================================================================ */
+.emo-timeline { list-style: none; position: relative; margin: 0; padding-left: 1.75rem; }
+.emo-timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px; top: 8px; bottom: 8px;
+  width: 2px;
+  background: linear-gradient(var(--border), rgba(106, 166, 255, 0.25), var(--border));
+}
+.emo-node { position: relative; padding-bottom: 1.5rem; }
+.emo-node:last-child { padding-bottom: 0; }
+.emo-dot {
+  position: absolute;
+  left: -1.75rem; top: 6px;
+  width: 14px; height: 14px;
+  border-radius: 999px;
+  background: var(--accent, #6aa6ff);
+  border: 2px solid var(--bg, #0a0e15);
+  box-shadow: 0 0 0 1px rgba(106, 166, 255, 0.45), 0 0 10px rgba(106, 166, 255, 0.4);
+}
+.emo-dot.is-pos {
+  background: #c7d8f5;
+  box-shadow: 0 0 0 1px rgba(199, 216, 245, 0.5), 0 0 12px rgba(199, 216, 245, 0.5);
+}
+.emo-node-body {
+  border: 1px solid var(--border);
+  background: rgba(159, 180, 212, 0.04);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.emo-node:hover .emo-node-body { border-color: rgba(106, 166, 255, 0.35); background: rgba(106, 166, 255, 0.05); }
+
+/* Distribuição (paleta emocional) */
+.emo-bar-row { display: grid; grid-template-columns: 7rem 1fr 2rem; align-items: center; gap: 0.6rem; }
+.emo-bar-label { font-size: 0.8rem; color: var(--text-muted); }
+.emo-bar-track { height: 8px; border-radius: 999px; background: rgba(159, 180, 212, 0.1); overflow: hidden; }
+.emo-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(106, 166, 255, 0.45), rgba(106, 166, 255, 0.9)); }
+.emo-bar-fill.is-pos { background: linear-gradient(90deg, rgba(199, 216, 245, 0.5), rgba(155, 196, 255, 0.95)); }
+.emo-bar-count { font-size: 0.8rem; color: var(--text-faint); text-align: right; }
+
 /* Skip-link: invisível até receber foco por teclado (acessibilidade). */
 .skip-link {
   position: absolute;

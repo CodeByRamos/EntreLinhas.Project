@@ -1084,6 +1084,28 @@ def get_overcome_count_by_user(user_id):
     conn.close()
     return total
 
+
+def get_emotional_timeline(user_id, limit=300):
+    """Posts publicados do usuário em ordem cronológica (mais antigos primeiro).
+
+    Ordena por id (monotônico com a criação) — data_postagem é string dd/mm/YYYY
+    e não ordena bem lexicalmente. Base da Linha do Tempo Emocional.
+    """
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT id, title, mensagem, categoria, emotional_tag, data_postagem,
+               visibility_mode, overcome_at
+        FROM posts
+        WHERE user_id = ? AND status = 'published' AND COALESCE(is_deleted, 0) = 0
+        ORDER BY id ASC
+        LIMIT ?
+        ''',
+        (user_id, limit),
+    ).fetchall()
+    conn.close()
+    return rows
+
 def log_sensitive_post(post_id, risk_level):
     """Registra internamente posts de risco sem dados de usuário."""
     conn = get_db_connection()

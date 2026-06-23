@@ -460,6 +460,55 @@ def superacoes():
     )
 
 
+@posts.route('/linha-do-tempo', methods=['GET'])
+def linha_do_tempo():
+    """Linha do Tempo Emocional: a jornada do usuário pelos próprios desabafos."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    current_user = db.get_user_by_id(session['user_id'])
+    if not current_user:
+        session.clear()
+        flash('Entre novamente para ver sua linha do tempo.', 'error')
+        return redirect(url_for('auth.login'))
+
+    timeline = db.get_emotional_timeline(current_user['id'])
+    total = len(timeline)
+
+    counts = {}
+    for p in timeline:
+        tag = normalize_emotional_tag(p['emotional_tag'])
+        counts[tag] = counts.get(tag, 0) + 1
+    distribution = sorted(
+        (
+            {
+                'valor': k,
+                'nome': EMOTIONAL_TAG_LABELS.get(k, k),
+                'total': v,
+                'pct': round(v * 100 / total) if total else 0,
+            }
+            for k, v in counts.items()
+        ),
+        key=lambda x: x['total'],
+        reverse=True,
+    )
+    summary = {
+        'total': total,
+        'first': timeline[0]['data_postagem'] if timeline else None,
+        'last': timeline[-1]['data_postagem'] if timeline else None,
+        'dominant': distribution[0]['nome'] if distribution else None,
+        'overcome': sum(1 for p in timeline if p['overcome_at']),
+    }
+
+    return render_template(
+        'posts/linha_do_tempo.html',
+        timeline=timeline,
+        distribution=distribution,
+        summary=summary,
+        emotional_tag_labels=EMOTIONAL_TAG_LABELS,
+    )
+
+
 @posts.route('/categorias')
 def get_categorias():
     """Rota para obter as categorias disponíveis (API)."""

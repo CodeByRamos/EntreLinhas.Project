@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Linha do Tempo Emocional - EntreLinhas{% endblock %}
+
+{% set POSITIVE = ['esperanca', 'amor', 'gratidao', 'recomeco'] %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">linha do tempo emocional</p>
+    <h1 class="hero-title">A sua travessia,<br>em ordem de chegada.</h1>
+    <p class="hero-description">
+      {% if summary.total %}
+        Cada desabafo seu, do primeiro ao mais recente. Releia, perceba padrões e veja como o que você sente foi mudando.
+      {% else %}
+        Conforme você for desabafando, esta página vai desenhar a sua jornada emocional ao longo do tempo.
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-10 max-w-3xl">
+  {% if timeline %}
+    {# Resumo #}
+    <section class="profile-metrics mb-6">
+      <div class="metric-card"><strong>{{ summary.total }}</strong><span>desabafos</span></div>
+      <div class="metric-card"><strong>{{ summary.dominant }}</strong><span>emoção mais presente</span></div>
+      <div class="metric-card"><strong>{{ summary.overcome }}</strong><span>superados 🌱</span></div>
+    </section>
+
+    {# Distribuição de emoções #}
+    <section class="glass-panel content-band mb-8">
+      <p class="section-kicker">como você se sentiu</p>
+      <h2 class="text-xl font-display mt-1 mb-4" style="color:var(--text-main)">Sua paleta emocional</h2>
+      <div class="space-y-2.5">
+        {% for d in distribution %}
+        <div class="emo-bar-row">
+          <span class="emo-bar-label">{{ d.nome }}</span>
+          <span class="emo-bar-track"><span class="emo-bar-fill {{ 'is-pos' if d.valor in POSITIVE else '' }}" style="width:{{ [d.pct, 6]|max }}%"></span></span>
+          <span class="emo-bar-count">{{ d.total }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="text-xs mt-4" style="color:var(--text-faint)">Da primeira vez ({{ summary.first }}) até agora ({{ summary.last }}).</p>
+    </section>
+
+    {# A linha do tempo #}
+    <ol class="emo-timeline">
+      {% for post in timeline %}
+      {% set tag = post.emotional_tag or 'vazio' %}
+      <li class="emo-node">
+        <span class="emo-dot {{ 'is-pos' if tag in POSITIVE else '' }}" aria-hidden="true"></span>
+        <div class="emo-node-body">
+          <div class="flex flex-wrap items-center gap-2 mb-1">
+            <span class="badge-emocional">{{ emotional_tag_labels.get(tag, tag|capitalize) }}</span>
+            <span class="text-xs" style="color:var(--text-faint)">{{ post.data_postagem }}</span>
+            {% if post.overcome_at %}<span class="badge-superacao">🌱 Superado</span>{% endif %}
+          </div>
+          {% if post.title %}<p class="font-display" style="color:var(--text-main)">{{ post.title }}</p>{% endif %}
+          <p class="text-sm leading-relaxed" style="color:var(--text)">{{ post.mensagem|truncate(200) }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% if summary.total >= 300 %}
+    <p class="text-xs text-center mt-6" style="color:var(--text-faint)">Mostrando seus 300 desabafos mais antigos.</p>
+    {% endif %}
+  {% else %}
+    <div class="empty-state text-center">
+      <p class="text-5xl mb-3">🕊️</p>
+      <p class="text-xl font-display" style="color:var(--text-main)">Sua linha do tempo começa no primeiro desabafo.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Quando você colocar algo para fora, ele aparece aqui — e a sua jornada começa a tomar forma.</p>
+      <a class="btn-modern btn-ghost mt-5 inline-flex" href="{{ url_for('posts.feed') }}">Ir para o feed</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
