@@ -28,8 +28,8 @@
           <h2 class="text-2xl font-display mt-1" style="color:var(--text-main)">Tem algo no peito?</h2>
           <p class="post-composer-note mt-1">Coloque em palavras, no seu tempo. Anônimo, se quiser.</p>
           {% if session.get('user_id') %}
-            <button type="button" class="btn-modern btn-primary w-full mt-4 composer-trigger">
-              <span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span>
+            <button type="button" class="cta-desabafe w-full mt-4 composer-trigger">
+              <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
             </button>
           {% else %}
             <p class="mt-4 mb-3 text-sm" style="color:var(--text-muted)">Para escrever com segurança, entre na sua conta ou crie uma.</p>
@@ -74,7 +74,7 @@
           <p class="text-xl font-display" style="color:var(--text-main)">Ainda está quieto por aqui.</p>
           <p class="mt-2" style="color:var(--text-muted)">Seja a primeira voz entre as linhas.</p>
           {% if session.get('user_id') %}
-            <button type="button" class="btn-modern btn-primary mt-4 composer-trigger"><span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span></button>
+            <button type="button" class="cta-desabafe mt-4 composer-trigger"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span></button>
           {% endif %}
         </div>
       {% endif %}

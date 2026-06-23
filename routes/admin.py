@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 import database as db
 import functools
+from utils.roles import ROLE_ORDER, ROLE_LABELS, normalize_role
 
 # Criação do Blueprint para as rotas administrativas
 admin = Blueprint('admin', __name__, url_prefix='/admin')
@@ -206,14 +207,52 @@ def remove_comment_report(report_id):
     """Rota para remover um report de comentário (admin)."""
     try:
         success = db.remove_comment_report(report_id)
-        
+
         if success:
             return jsonify({
-                'success': True, 
+                'success': True,
                 'message': 'Aviso de resposta removido.'
             })
         else:
             return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
-            
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
+
+
+@admin.route('/usuarios')
+@admin_required
+def users():
+    """Gestão de cargos da equipe. Só admin atribui selos (Colaborador, CEO, Equipe)."""
+    search = request.args.get('q', '').strip()
+    users_list = db.get_all_users(search=search or None, limit=200)
+    return render_template(
+        'admin/users.html',
+        users=users_list,
+        search=search,
+        role_order=ROLE_ORDER,
+        role_labels=ROLE_LABELS,
+    )
+
+
+@admin.route('/usuarios/<int:user_id>/cargo', methods=['POST'])
+@admin_required
+def set_user_role(user_id):
+    """Atribui um cargo a um usuário. Apenas admin (garantido por @admin_required)."""
+    role = normalize_role(request.form.get('role'))
+
+    # Trava de segurança: o admin não pode rebaixar a própria conta e ficar sem acesso.
+    if user_id == session.get('admin_user_id'):
+        flash('Você não pode alterar o próprio cargo por aqui.', 'error')
+        return redirect(url_for('admin.users', q=request.args.get('q', '')))
+
+    target = db.get_user_by_id(user_id)
+    if not target:
+        flash('Não encontramos esse usuário.', 'error')
+        return redirect(url_for('admin.users'))
+
+    if db.update_user_role(user_id, role):
+        flash(f"Cargo de @{target['username']} atualizado para {ROLE_LABELS.get(role, role)}.", 'success')
+    else:
+        flash('Não conseguimos atualizar o cargo agora.', 'error')
+    return redirect(url_for('admin.users', q=request.args.get('q', '')))

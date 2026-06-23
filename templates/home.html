@@ -7,7 +7,15 @@
 {% set title = 'EntreLinhas' %}
 {% set description = 'Um espaço minimalista para dizer o que pesa no peito e encontrar acolhimento sem exposição.' %}
 {% set actions %}
-  <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-primary">Desabafar agora</a>
+  {% if session.get('user_id') %}
+    <button type="button" class="cta-desabafe cta-desabafe--hero composer-trigger" aria-haspopup="dialog">
+      <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe agora</span>
+    </button>
+  {% else %}
+    <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe cta-desabafe--hero">
+      <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe agora</span>
+    </a>
+  {% endif %}
   <a href="{{ url_for('main.how_it_works') }}" class="btn-modern btn-ghost">Como funciona</a>
 {% endset %}
 {% include 'components/hero.html' %}
@@ -16,7 +24,7 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <article class="glass-panel p-7">
       <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-main)">Escreva com liberdade</h3>
-      <p class="leading-relaxed" style="color:var(--text-muted)">Compartilhe pensamentos e emoções com conta protegida, sem expor sua identidade em público.</p>
+      <p class="leading-relaxed" style="color:var(--text-muted)">Coloque para fora o que pesa, no seu tempo. Sua conta fica protegida e você decide o quanto se mostra — anônimo, se quiser.</p>
     </article>
     <article class="glass-panel p-7">
       <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-main)">Receba acolhimento</h3>
@@ -32,7 +40,15 @@
 <section class="container mx-auto px-6 pb-14">
   <div class="glass-panel p-8 md:p-10 text-center max-w-3xl mx-auto">
     <p class="font-display italic leading-relaxed mb-6" style="color:var(--text-muted)">"Nem sempre precisamos de respostas. Às vezes, só de um lugar onde a nossa voz possa existir."</p>
-    <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-primary">Comece a desabafar</a>
+    {% if session.get('user_id') %}
+      <button type="button" class="cta-desabafe composer-trigger mx-auto" aria-haspopup="dialog">
+        <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
+      </button>
+    {% else %}
+      <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe mx-auto">
+        <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
+      </a>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

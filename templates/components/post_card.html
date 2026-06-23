@@ -1,3 +1,4 @@
+{% from 'components/role_badge.html' import role_tag with context %}
 {% macro render_post(post, show_report=False) -%}
 {% set tag = post.emotional_tag if 'emotional_tag' in post.keys() and post.emotional_tag else 'vazio' %}
 {% set labels = emotional_tag_labels|default({}) %}
@@ -13,7 +14,7 @@
             <span class="post-author-avatar avatar-default avatar-{{ (post.author_default_avatar if 'author_default_avatar' in post.keys() and post.author_default_avatar else 'vazio') }}"></span>
           {% endif %}
           <div class="min-w-0">
-            <p class="text-sm truncate" style="color:var(--text-main)">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}</p>
+            <p class="text-sm truncate flex items-center" style="color:var(--text-main)">por @{{ post.author_username or post.author_display_name or post.author_nickname or 'usuario' }}{{ role_tag(post.author_role if 'author_role' in post.keys() else none) }}</p>
             <p class="text-xs" style="color:var(--text-muted)">perfil visível</p>
           </div>
         {% else %}

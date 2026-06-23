@@ -1761,3 +1761,202 @@ body.composer-open { overflow: hidden; }
 
 /* Cabeçalho de seção com respiro consistente */
 .section-head { display: flex; flex-direction: column; gap: 0.2rem; }
+
+/* ============================================================================
+   CTA "Desabafe" — o botão-assinatura da plataforma. Premium, acolhedor, com
+   brilho que respira de leve. Não é um botão de framework.
+   ============================================================================ */
+.cta-desabafe {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.72rem 1.55rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.96rem;
+  letter-spacing: 0.005em;
+  color: #0a1020;
+  text-decoration: none;
+  cursor: pointer;
+  isolation: isolate;
+  border: 1px solid rgba(106, 166, 255, 0.55);
+  background: linear-gradient(135deg, #dbe9ff 0%, #a6caff 42%, #6aa6ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(40, 80, 150, 0.25),
+    0 8px 22px -8px rgba(106, 166, 255, 0.6);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, filter 0.3s ease;
+}
+
+/* halo suave atrás do botão — respira devagar no idle */
+.cta-desabafe::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(58% 120% at 50% 50%, rgba(106, 166, 255, 0.5), transparent 72%);
+  opacity: 0.4;
+  filter: blur(9px);
+  transition: opacity 0.4s ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cta-desabafe::after { animation: ctaGlow 4.5s ease-in-out infinite; }
+  @keyframes ctaGlow {
+    0%, 100% { opacity: 0.34; }
+    50% { opacity: 0.6; }
+  }
+}
+
+.cta-desabafe:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.06) brightness(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(40, 80, 150, 0.3),
+    0 15px 34px -10px rgba(106, 166, 255, 0.8),
+    0 0 28px rgba(106, 166, 255, 0.4);
+}
+.cta-desabafe:hover::after { opacity: 0.9; }
+.cta-desabafe:active { transform: translateY(0) scale(0.985); }
+.cta-desabafe:focus-visible { outline: 2px solid rgba(106, 166, 255, 0.95); outline-offset: 3px; }
+
+.cta-desabafe .cta-icon { display: inline-flex; transition: transform 0.3s ease; }
+.cta-desabafe .cta-icon svg { width: 17px; height: 17px; display: block; }
+.cta-desabafe:hover .cta-icon { transform: rotate(-12deg) translateY(-1px); }
+
+/* Variante hero — o ponto de atenção da página inicial */
+.cta-desabafe--hero {
+  padding: 0.95rem 2.15rem;
+  font-size: 1.08rem;
+  border-radius: 18px;
+}
+.cta-desabafe--hero .cta-icon svg { width: 20px; height: 20px; }
+
+.cta-desabafe.w-full { width: 100%; }
+
+/* ============================================================================
+   Modal "entre para participar" (controle de acesso amigável)
+   ============================================================================ */
+.auth-required-modal {
+  position: fixed; inset: 0; z-index: 70;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.auth-required-modal.hidden { display: none; }
+.auth-modal-card {
+  width: 100%; max-width: 26rem;
+  text-align: center;
+  padding: clamp(1.6rem, 4vw, 2.4rem);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(106, 166, 255, 0.14), transparent 55%),
+    var(--surface-strong);
+  box-shadow: var(--shadow-hard);
+}
+.auth-modal-mark { display: inline-flex; }
+
+/* ============================================================================
+   Selos de cargo (Colaborador / CEO / Equipe) — identificação da equipe.
+   Discretos, premium, com um pontinho que marca a hierarquia. Usuário comum
+   nunca recebe selo.
+   ============================================================================ */
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-left: 0.5rem;
+  padding: 0.12rem 0.55rem 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  backdrop-filter: blur(4px);
+}
+.role-tag-dot {
+  width: 5px; height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Colaborador — azul sereno da marca */
+.role-tag--collaborator {
+  color: #bcd6ff;
+  border-color: rgba(106, 166, 255, 0.4);
+  background: rgba(106, 166, 255, 0.12);
+}
+/* CEO — dourado/âmbar quente, o mais alto */
+.role-tag--ceo {
+  color: #f4d9a6;
+  border-color: rgba(226, 183, 110, 0.5);
+  background: linear-gradient(135deg, rgba(226, 183, 110, 0.2), rgba(226, 183, 110, 0.08));
+}
+/* Equipe/Admin — verde-água de moderação */
+.role-tag--admin {
+  color: #a9e3d0;
+  border-color: rgba(120, 214, 184, 0.42);
+  background: rgba(120, 214, 184, 0.12);
+}
+
+/* ============================================================================
+   Tabela de gestão de cargos (painel admin)
+   ============================================================================ */
+.admin-users-table { border-collapse: collapse; }
+.admin-users-table thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.admin-users-table tbody td {
+  padding: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.admin-users-table tbody tr:last-child td { border-bottom: none; }
+.admin-users-table tbody tr:hover { background: rgba(106, 166, 255, 0.04); }
+
+/* ============================================================================
+   Página Sobre — blocos de destaque de privacidade e links internos
+   ============================================================================ */
+.about-feature-list { display: flex; flex-direction: column; gap: 1.15rem; }
+.about-feature { display: flex; align-items: flex-start; gap: 0.85rem; }
+.about-feature-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  color: var(--brand);
+  opacity: 0.8;
+}
+.about-feature-title {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.15rem;
+}
+.about-feature-text { color: var(--text-muted); line-height: 1.6; }
+.about-inline-link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--brand);
+  text-decoration: none;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+.about-inline-link:hover { color: var(--text-main); transform: translateX(2px); }

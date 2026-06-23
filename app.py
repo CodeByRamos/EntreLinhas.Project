@@ -107,6 +107,8 @@ def create_app():
         return render_template('errors/500.html'), 500
     
     # Contexto global para templates
+    from utils.roles import get_role_badge
+
     @app.context_processor
     def inject_now():
         return {
@@ -114,6 +116,7 @@ def create_app():
             'current_user': get_current_user(session),
             'categorias': app.config.get('CATEGORIAS', []),
             'emotional_tags': app.config.get('TAGS_EMOCIONAIS', []),
+            'role_badge': get_role_badge,
         }
 
     @app.cli.command("create-admin")

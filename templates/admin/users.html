@@ -1,0 +1,72 @@
+{% extends 'admin/base.html' %}
+{% from 'components/role_badge.html' import role_tag with context %}
+
+{% block title %}Equipe e Cargos - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div>
+      <p class="section-kicker">administração</p>
+      <h1 class="text-3xl font-display font-bold mt-2" style="color:var(--text-main)">Equipe e cargos</h1>
+      <p class="mt-1 max-w-2xl" style="color:var(--text-muted)">Atribua selos oficiais às contas da equipe. O selo aparece ao lado do nome em desabafos, respostas e perfil. Só você, como administrador, pode mudar isso.</p>
+    </div>
+  </header>
+
+  <form method="get" action="{{ url_for('admin.users') }}" class="flex flex-wrap gap-3 items-center">
+    <input type="text" name="q" value="{{ search }}" placeholder="Buscar por nome, @usuário ou e-mail" class="input-modern flex-grow" style="max-width:28rem" />
+    <button type="submit" class="btn-modern btn-primary">Buscar</button>
+    {% if search %}<a href="{{ url_for('admin.users') }}" class="btn-modern btn-ghost">Limpar</a>{% endif %}
+  </form>
+
+  <section class="glass-panel content-band overflow-x-auto">
+    {% if users %}
+    <table class="admin-users-table w-full text-sm">
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th>E-mail</th>
+          <th>Cargo atual</th>
+          <th class="text-right">Atribuir cargo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-medium" style="color:var(--text-main)">{{ u.display_name or u.nickname or u.username }}</span>
+              {{ role_tag(u.role) }}
+            </div>
+            <div class="text-xs" style="color:var(--text-muted)">@{{ u.username }}</div>
+          </td>
+          <td style="color:var(--text-muted)">{{ u.email or '—' }}</td>
+          <td>
+            <span class="text-xs" style="color:var(--text)">{{ role_labels.get(u.role or 'user', 'Usuário') }}</span>
+          </td>
+          <td>
+            {% if u.id == session.get('admin_user_id') %}
+              <span class="text-xs" style="color:var(--text-faint)">você</span>
+            {% else %}
+            <form method="post" action="{{ url_for('admin.set_user_role', user_id=u.id, q=search) }}" class="flex gap-2 justify-end items-center">
+              <select name="role" class="input-modern" style="min-width:9rem">
+                {% for r in role_order %}
+                <option value="{{ r }}" {{ 'selected' if (u.role or 'user') == r else '' }}>{{ role_labels.get(r, r) }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn-modern btn-primary text-sm">Salvar</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-muted)">Nenhum usuário encontrado{% if search %} para "{{ search }}"{% endif %}.</p>
+    {% endif %}
+  </section>
+
+  <p class="text-xs" style="color:var(--text-faint)">O selo é apenas identificação visual. O acesso a este painel continua controlado separadamente pela conta de moderação.</p>
+</div>
+{% endblock %}

@@ -68,6 +68,10 @@ function loadComments(postId) {
  * @param {HTMLElement} textarea - Elemento textarea para limpar após envio
  */
 function submitComment(postId, commentText, textarea) {
+    if (window.EL_AUTH === false) {
+        if (window.elRequireAuth) window.elRequireAuth('responder');
+        return;
+    }
     // Desabilita o textarea durante o envio
     textarea.disabled = true;
     const originalPlaceholder = textarea.placeholder;
@@ -84,6 +88,7 @@ function submitComment(postId, commentText, textarea) {
         .then(async response => {
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.error) {
+                if (data.auth_required && window.elRequireAuth) { window.elRequireAuth('responder'); }
                 const err = new Error(data.error || 'Não conseguimos enviar sua resposta agora.');
                 err.detail = data.detail; err.context = data.context; err.status = response.status;
                 throw err;
@@ -148,9 +153,22 @@ function createCommentElement(comment) {
     div.dataset.commentId = comment.id;
     div.style.cssText = 'border:1px solid var(--border);background:rgba(159,180,212,0.04);border-radius:14px;padding:0.9rem 1rem;';
 
+    // Cabeçalho só aparece para respostas da equipe (cargo oficial). Usuário comum segue anônimo.
+    let authorHeader = '';
+    if (comment.author_role && comment.author_name) {
+        authorHeader = `
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-medium" style="color:var(--text-main)">${escapeHTML(comment.author_name)}</span>
+                <span class="role-tag role-tag--${escapeHTML(comment.author_role)}" title="Resposta da equipe EntreLinhas">
+                    <span class="role-tag-dot" aria-hidden="true"></span>${escapeHTML(comment.author_role_label || 'Equipe')}
+                </span>
+            </div>`;
+    }
+
     div.innerHTML = `
         <div class="flex justify-between items-start gap-3">
             <div class="flex-grow min-w-0">
+                ${authorHeader}
                 <p class="text-sm" style="color:var(--text)">${escapeHTML(comment.mensagem || comment.text)}</p>
                 <div class="mt-2 text-xs" style="color:var(--text-faint)">${comment.data_comentario || comment.date}</div>
             </div>

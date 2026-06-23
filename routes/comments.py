@@ -1,11 +1,35 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, session
 import database as db
 from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content
 from utils.api_errors import api_error
+from utils.roles import get_role_badge
 
 # Criação do Blueprint para as rotas de comentários
 comments = Blueprint('comments', __name__)
+
+
+def _serialize_comment(comment):
+    """Monta o JSON de um comentário, com selo de cargo só para a equipe.
+
+    Respostas de usuários comuns continuam anônimas (sem nome, sem selo).
+    """
+    data = {
+        'id': comment['id'],
+        'text': comment['mensagem'],
+        'date': comment['data_comentario'],
+    }
+    role = comment['author_role'] if 'author_role' in comment.keys() else None
+    badge = get_role_badge(role)
+    if badge:
+        data['author_name'] = (
+            comment['author_display_name']
+            or comment['author_username']
+            or 'Equipe EntreLinhas'
+        )
+        data['author_role'] = badge['slug']
+        data['author_role_label'] = badge['label']
+    return data
 
 @comments.route('/api/comments/<int:post_id>', methods=['GET'])
 def get_comments(post_id):
@@ -17,16 +41,10 @@ def get_comments(post_id):
             return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
         
         comments_list = db.get_comments(post_id)
-        
-        # Converte os objetos Row para dicionários
-        comments_data = []
-        for comment in comments_list:
-            comments_data.append({
-                'id': comment['id'],
-                'text': comment['mensagem'],
-                'date': comment['data_comentario']
-            })
-        
+
+        # Converte os objetos Row para dicionários (com selo de cargo da equipe)
+        comments_data = [_serialize_comment(comment) for comment in comments_list]
+
         return jsonify({'comments': comments_data})
     except Exception as exc:
         current_app.logger.exception("COMMENT_LOAD_ERROR post_id=%s", post_id)
@@ -34,10 +52,12 @@ def get_comments(post_id):
 
 @comments.route('/api/comments/<int:post_id>', methods=['POST'])
 def add_comment(post_id):
-    """API para adicionar um comentário a um post."""
+    """API para adicionar um comentário a um post. Exige login (validação no backend)."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Entre ou crie uma conta para responder com cuidado.', 'auth_required': True}), 401
     try:
         data = request.json
-        
+
         if not data or 'text' not in data or not data['text'].strip():
             return jsonify({'error': 'Escreva uma resposta antes de enviar.'}), 400
         
@@ -55,8 +75,8 @@ def add_comment(post_id):
         if not post:
             return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
         
-        # Cria o comentário no banco de dados
-        comment_id = db.create_comment(post_id, comment_text)
+        # Cria o comentário no banco de dados (associado ao autor logado)
+        comment_id = db.create_comment(post_id, comment_text, user_id=session['user_id'])
         
         if not comment_id:
             return jsonify({'error': 'Não conseguimos guardar sua resposta agora.'}), 500
@@ -73,12 +93,7 @@ def add_comment(post_id):
                     message='Alguém respondeu um desabafo seu. Entre para acompanhar.',
                     reference_id=post_id,
                 )
-            comment_data = {
-                'id': new_comment['id'],
-                'text': new_comment['mensagem'],
-                'date': new_comment['data_comentario']
-            }
-            return jsonify({'comment': comment_data})
+            return jsonify({'comment': _serialize_comment(new_comment)})
         else:
             return jsonify({'error': 'Sua resposta foi enviada, mas não conseguimos mostrá-la agora.'}), 500
             

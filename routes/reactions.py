@@ -25,12 +25,16 @@ def get_reactions(post_id):
 @reactions.route('/api/reactions/<int:post_id>', methods=['POST'])
 def toggle_reaction(post_id):
     """Adiciona ou remove a reação de um usuário (toggle)."""
+    # Exige login antes de qualquer validação (guest sempre recebe o convite de entrar).
+    if 'user_id' not in session:
+        return jsonify({'error': 'Entre ou crie uma conta para reagir.', 'auth_required': True}), 401
+
     data = request.get_json(silent=True) or {}
     if 'type' not in data:
         return jsonify({'error': 'Escolha uma reação antes de continuar.'}), 400
 
     reaction_type = data['type']
-    user_id = (data.get('user_id') or 'anonymous')
+    user_id = str(session['user_id'])
 
     if not any(r['valor'] == reaction_type for r in current_app.config['REACOES']):
         return jsonify({'error': 'Essa reação não está disponível agora.'}), 400

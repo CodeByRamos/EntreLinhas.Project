@@ -63,6 +63,7 @@
 
       <div class="nav-desktop-links">
         <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
@@ -75,15 +76,15 @@
 
       <div class="nav-actions">
         {% if logged_user %}
-          <button type="button" class="btn-modern btn-primary nav-cta composer-trigger" aria-haspopup="dialog">
-            <span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar</span>
+          <button type="button" class="cta-desabafe composer-trigger" aria-haspopup="dialog">
+            <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
           </button>
           <form method="post" action="{{ url_for('auth.logout') }}">
             <button type="submit" class="nav-pill nav-exit">Sair</button>
           </form>
         {% else %}
           <a href="{{ url_for('auth.login') }}" class="nav-pill">Entrar</a>
-          <a href="{{ url_for('auth.registro') }}" class="btn-modern btn-primary nav-cta">Criar conta</a>
+          <a href="{{ url_for('auth.registro') }}" class="cta-desabafe">Criar conta</a>
         {% endif %}
         <button type="button" id="mobile-menu-button" class="mobile-menu-button" aria-controls="mobile-menu" aria-expanded="false" aria-label="Abrir menu">
           <span></span>
@@ -96,9 +97,10 @@
     <div id="mobile-menu" class="mobile-nav-panel" hidden>
       <div class="mobile-nav-links">
         {% if logged_user %}
-          <button type="button" class="btn-modern btn-primary w-full composer-trigger"><span aria-hidden="true" class="composer-plus">+</span><span>Compartilhar desabafo</span></button>
+          <button type="button" class="cta-desabafe w-full composer-trigger"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span></button>
         {% endif %}
         <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
@@ -107,7 +109,6 @@
           <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
           <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações</a>
         {% endif %}
-        <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>
         {% endif %}
@@ -127,7 +128,7 @@
   {% if logged_user %}
   <div id="composer-drawer" class="composer-drawer" hidden>
     <div class="composer-backdrop" data-composer-close></div>
-    <aside class="composer-panel" role="dialog" aria-modal="true" aria-label="Compartilhar desabafo">
+    <aside class="composer-panel" role="dialog" aria-modal="true" aria-label="Desabafe">
       <button type="button" class="composer-close" data-composer-close aria-label="Fechar">&times;</button>
       {% include 'components/composer.html' %}
     </aside>
@@ -185,7 +186,47 @@
     </div>
   </footer>
 
-  <script>window.EL_REACOES = {{ config['REACOES']|tojson }};</script>
+  {% if not logged_user %}
+  <div id="auth-modal" class="auth-required-modal hidden">
+    <div class="modal-backdrop absolute inset-0" data-auth-close></div>
+    <div class="auth-modal-card relative">
+      <span class="auth-modal-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="40" height="40">
+          <rect x="20" y="31" width="60" height="4" rx="2" fill="#9fb4d4" />
+          <rect x="20" y="65" width="60" height="4" rx="2" fill="#9fb4d4" />
+          <g class="brand-breath"><circle cx="36" cy="50" r="4" fill="#6aa6ff"/><circle cx="50" cy="50" r="4.6" fill="#9bc4ff"/><circle cx="64" cy="50" r="4" fill="#6aa6ff"/></g>
+        </svg>
+      </span>
+      <h3 class="text-xl font-display mt-4 mb-2" style="color:var(--text-main)">Entre para participar</h3>
+      <p id="auth-modal-message" class="leading-relaxed" style="color:var(--text-muted)">Crie uma conta — anônima, se quiser — para reagir, responder e desabafar.</p>
+      <div class="flex flex-wrap gap-3 mt-6">
+        <a href="{{ url_for('auth.login', next=request.path) }}" class="cta-desabafe">Entrar</a>
+        <a href="{{ url_for('auth.registro', next=request.path) }}" class="btn-modern btn-ghost">Criar conta</a>
+        <button type="button" class="btn-modern btn-ghost" data-auth-close>Agora não</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <script>
+    window.EL_REACOES = {{ config['REACOES']|tojson }};
+    window.EL_AUTH = {{ 'true' if logged_user else 'false' }};
+    window.elRequireAuth = function (acao) {
+      var m = document.getElementById('auth-modal');
+      if (!m) { window.location.href = "{{ url_for('auth.login') }}"; return; }
+      var msg = document.getElementById('auth-modal-message');
+      if (msg && acao) msg.textContent = 'Crie uma conta — anônima, se quiser — para ' + acao + '.';
+      m.classList.remove('hidden');
+      document.body.classList.add('composer-open');
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      var m = document.getElementById('auth-modal');
+      if (!m) return;
+      m.querySelectorAll('[data-auth-close]').forEach(function (b) {
+        b.addEventListener('click', function () { m.classList.add('hidden'); document.body.classList.remove('composer-open'); });
+      });
+    });
+  </script>
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {

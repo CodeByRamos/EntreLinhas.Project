@@ -77,11 +77,12 @@ function createReactionButton(reacao, count, postId) {
 
 /** Alterna (adiciona/remove) uma reação. */
 function toggleReaction(postId, reactionType) {
-  let userId = localStorage.getItem('user_id');
-  if (!userId) {
-    userId = 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('user_id', userId);
+  if (window.EL_AUTH === false) {
+    if (window.elRequireAuth) window.elRequireAuth('reagir');
+    return;
   }
+  // A identidade vem da sessão no backend; o user_id local é só legado/telemetria.
+  var userId = localStorage.getItem('user_id') || '';
 
   const button = document.querySelector(`button[data-reacao="${reactionType}"][data-post-id="${postId}"]`);
   if (button) {
@@ -98,6 +99,7 @@ function toggleReaction(postId, reactionType) {
     .then(async response => {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (data.auth_required && window.elRequireAuth) { window.elRequireAuth('reagir'); }
         const err = new Error(data.error || 'Não conseguimos registrar sua reação agora.');
         err.detail = data.detail; err.context = data.context; err.status = response.status;
         throw err;

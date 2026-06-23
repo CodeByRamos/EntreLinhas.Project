@@ -1,0 +1,9 @@
+{# Selo de cargo oficial ao lado do nome. Nada é renderizado para usuário comum. #}
+{% macro role_tag(role) -%}
+  {%- set rb = role_badge(role) -%}
+  {%- if rb -%}
+  <span class="role-tag role-tag--{{ rb.slug }}" title="{{ rb.title }}">
+    <span class="role-tag-dot" aria-hidden="true"></span>{{ rb.label }}
+  </span>
+  {%- endif -%}
+{%- endmacro %}

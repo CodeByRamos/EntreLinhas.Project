@@ -608,7 +608,8 @@ def get_posts(limit=10, offset=0, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE COALESCE(p.is_deleted, 0) = 0
@@ -625,7 +626,8 @@ def get_posts(limit=10, offset=0, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
@@ -648,7 +650,8 @@ def get_hidden_posts(limit=50):
                u.display_name as author_display_name,
                u.profile_photo as author_profile_photo,
                u.avatar_url as author_avatar_url,
-               u.default_avatar as author_default_avatar
+               u.default_avatar as author_default_avatar,
+                   u.role as author_role
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.visivel = 0 AND COALESCE(p.is_deleted, 0) = 0
@@ -672,7 +675,8 @@ def get_post(post_id, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.id = ? AND COALESCE(p.is_deleted, 0) = 0
@@ -687,7 +691,8 @@ def get_post(post_id, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.id = ? AND p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
@@ -726,7 +731,8 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
                u.display_name as author_display_name,
                u.profile_photo as author_profile_photo,
                u.avatar_url as author_avatar_url,
-               u.default_avatar as author_default_avatar
+               u.default_avatar as author_default_avatar,
+                   u.role as author_role
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE {where_clause}
@@ -777,7 +783,8 @@ def get_echoed_posts_by_user(user_id, limit=10, offset=0):
                u.display_name as author_display_name,
                u.profile_photo as author_profile_photo,
                u.avatar_url as author_avatar_url,
-               u.default_avatar as author_default_avatar
+               u.default_avatar as author_default_avatar,
+                   u.role as author_role
         FROM echoes e
         JOIN posts p ON p.id = e.post_id
         LEFT JOIN users u ON p.user_id = u.id
@@ -976,17 +983,23 @@ def get_comments(post_id, include_hidden=False):
     
     if include_hidden:
         comments = conn.execute('''
-            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
-            FROM comments 
-            WHERE post_id = ? 
-            ORDER BY id ASC
+            SELECT c.id, c.post_id, c.mensagem, c.mensagem AS comment_text, c.data_comentario, c.visivel,
+                   c.user_id, u.role AS author_role,
+                   u.username AS author_username, u.display_name AS author_display_name
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.post_id = ?
+            ORDER BY c.id ASC
         ''', (post_id,)).fetchall()
     else:
         comments = conn.execute('''
-            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
-            FROM comments 
-            WHERE post_id = ? AND visivel = 1
-            ORDER BY id ASC
+            SELECT c.id, c.post_id, c.mensagem, c.mensagem AS comment_text, c.data_comentario, c.visivel,
+                   c.user_id, u.role AS author_role,
+                   u.username AS author_username, u.display_name AS author_display_name
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.post_id = ? AND c.visivel = 1
+            ORDER BY c.id ASC
         ''', (post_id,)).fetchall()
     
     conn.close()
@@ -1043,35 +1056,41 @@ def get_comment_by_id(comment_id, include_hidden=False):
     
     if include_hidden:
         comment = conn.execute('''
-            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
-            FROM comments 
-            WHERE id = ?
+            SELECT c.id, c.post_id, c.mensagem, c.mensagem AS comment_text, c.data_comentario, c.visivel,
+                   c.user_id, u.role AS author_role,
+                   u.username AS author_username, u.display_name AS author_display_name
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.id = ?
         ''', (comment_id,)).fetchone()
     else:
         comment = conn.execute('''
-            SELECT id, post_id, mensagem, mensagem AS comment_text, data_comentario, visivel 
-            FROM comments 
-            WHERE id = ? AND visivel = 1
+            SELECT c.id, c.post_id, c.mensagem, c.mensagem AS comment_text, c.data_comentario, c.visivel,
+                   c.user_id, u.role AS author_role,
+                   u.username AS author_username, u.display_name AS author_display_name
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.id = ? AND c.visivel = 1
         ''', (comment_id,)).fetchone()
     
     conn.close()
     return comment
 
-def create_comment(post_id, comment_text):
-    """Cria um novo comentário para um post."""
+def create_comment(post_id, comment_text, user_id=None):
+    """Cria um novo comentário para um post, associado ao autor."""
     conn = get_db_connection()
     data_comentario = datetime.now().strftime("%d/%m/%Y %H:%M")
     comment_text = trim_text(comment_text)
     if len(comment_text) < LIMITS["comment_content_min"] or len(comment_text) > LIMITS["comment_content_max"]:
         conn.close()
         return None
-    
+
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT INTO comments (post_id, mensagem, data_comentario, visivel)
-            VALUES (?, ?, ?, 1)
-        ''', (post_id, comment_text, data_comentario))
+            INSERT INTO comments (post_id, mensagem, data_comentario, visivel, user_id)
+            VALUES (?, ?, ?, 1, ?)
+        ''', (post_id, comment_text, data_comentario, user_id))
         
         comment_id = cursor.lastrowid
         conn.commit()
@@ -1181,7 +1200,8 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.categoria = ? AND COALESCE(p.is_deleted, 0) = 0
@@ -1198,7 +1218,8 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
                    u.display_name as author_display_name,
                    u.profile_photo as author_profile_photo,
                    u.avatar_url as author_avatar_url,
-                   u.default_avatar as author_default_avatar
+                   u.default_avatar as author_default_avatar,
+                   u.role as author_role
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
             WHERE p.categoria = ? AND p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0
@@ -1417,7 +1438,8 @@ def search_posts(query, limit=10, offset=0):
                u.display_name as author_display_name,
                u.profile_photo as author_profile_photo,
                u.avatar_url as author_avatar_url,
-               u.default_avatar as author_default_avatar
+               u.default_avatar as author_default_avatar,
+                   u.role as author_role
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0 AND (
@@ -1950,6 +1972,58 @@ def get_user_by_email(email):
 
     conn.close()
     return user
+
+
+def get_all_users(search=None, limit=200):
+    """Lista usuários ativos para a gestão de cargos (admin)."""
+    conn = get_db_connection()
+    if search and search.strip():
+        like = f"%{search.strip()}%"
+        users = conn.execute('''
+            SELECT id, username, nickname, display_name, email, role,
+                   is_admin, is_verified, created_at
+            FROM users
+            WHERE is_active = 1
+              AND (username LIKE ? OR display_name LIKE ? OR nickname LIKE ? OR email LIKE ?)
+            ORDER BY id ASC
+            LIMIT ?
+        ''', (like, like, like, like, limit)).fetchall()
+    else:
+        users = conn.execute('''
+            SELECT id, username, nickname, display_name, email, role,
+                   is_admin, is_verified, created_at
+            FROM users
+            WHERE is_active = 1
+            ORDER BY id ASC
+            LIMIT ?
+        ''', (limit,)).fetchall()
+    conn.close()
+    return users
+
+
+def update_user_role(user_id, role):
+    """Define o cargo (selo) de um usuário. Só o selo — não altera is_admin.
+
+    O acesso à moderação continua governado por is_admin / create-admin.
+    """
+    from utils.roles import normalize_role
+    role = normalize_role(role)
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?",
+            (role, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.update_user_role", "users.update", e,
+                      user_id=user_id, table="users", operation="update")
+        return False
+    finally:
+        conn.close()
+
 
 def update_user(user_id, username=None, nickname=None, bio=None, email=None, display_name=None, avatar_url=None, profile_photo=None, default_avatar=None, default_visibility_mode=None):
     """Atualiza informações do usuário."""

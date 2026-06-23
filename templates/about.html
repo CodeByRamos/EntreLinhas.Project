@@ -4,48 +4,104 @@
 
 {% block content %}
 <section class="page-hero">
-  <div class="container mx-auto px-6 text-center">
-    <p class="hero-kicker">Identidade do projeto</p>
-    <h1 class="hero-title">Um lugar para o que quase não coube em voz alta.</h1>
-    <p class="hero-description">O EntreLinhas nasceu como projeto acadêmico, mas cresceu como uma tentativa de criar um espaço anônimo, seguro e bonito para sentimentos difíceis.</p>
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">Sobre o projeto</p>
+    <h1 class="hero-title">Algumas dores precisam<br>primeiro virar palavras.</h1>
+    <p class="hero-description">O EntreLinhas é um lugar para colocar para fora o que pesa — sem rosto, sem julgamento, sem a pressa de parecer bem. Aqui, sentir já é o suficiente.</p>
   </div>
 </section>
 
-<div class="container mx-auto px-6 py-12 max-w-6xl space-y-8">
+<div class="container mx-auto px-6 py-12 max-w-5xl space-y-8">
+
+  {# 1 — O que é #}
   <section class="glass-panel content-band section-reading">
-    <p class="section-kicker">história</p>
-    <h2 class="font-display mt-2 mb-5">Do código ao cuidado</h2>
-    <p>O EntreLinhas nasceu como um projeto acadêmico, mas rapidamente passou a representar algo maior: a tentativa de criar um espaço onde sentimentos difíceis pudessem existir sem julgamento.</p>
-    <p>Criado por João Ramos, desenvolvedor fullstack e estudante de Análise e Desenvolvimento de Sistemas, o projeto mistura tecnologia, anonimato, design emocional e cuidado humano.</p>
-    <p>Aqui, o anonimato não é ausência de identidade. É uma forma de proteger quem ainda está encontrando palavras para o que sente.</p>
+    <p class="section-kicker">o que é</p>
+    <h2 class="font-display text-2xl md:text-3xl mt-2 mb-4" style="color:var(--text-main)">O que é o EntreLinhas</h2>
+    <p>O EntreLinhas é um espaço anônimo para desabafar. Um diário coletivo onde pessoas escrevem sobre amor, vazio, saudade, medo, cansaço e recomeços — e onde outras pessoas respondem com cuidado, não com julgamento.</p>
+    <p>Não é uma rede social. Não tem métrica de popularidade, não tem perfil para impressionar ninguém. É um mural silencioso onde a sua voz pode existir do jeito que ela é hoje, mesmo que ainda esteja tremendo.</p>
   </section>
 
+  {# 2 — Por que existe #}
   <section class="about-grid">
     <article class="story-card section-reading">
-      <p class="section-kicker">criação</p>
-      <h2 class="font-display mt-2 mb-4">João Ramos</h2>
-      <p>João Ramos atua como criador, CEO e desenvolvedor do EntreLinhas. A ideia nasceu na faculdade, mas carrega uma intenção maior: transformar código em um lugar sensível, elegante e acolhedor para desabafos reais.</p>
+      <p class="section-kicker">por que existe</p>
+      <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Por que ele existe</h2>
+      <p>Quase todo mundo já sentiu algo grande demais para caber numa conversa — e pequeno demais para procurar ajuda formal. Esse intervalo costuma ser solitário.</p>
+      <p>O EntreLinhas nasceu para ocupar exatamente esse espaço: dar um lugar bonito e seguro para o que normalmente fica guardado. Escrever, às vezes, é o primeiro passo para entender o que se sente.</p>
     </article>
-
     <article class="story-card section-reading">
-      <p class="section-kicker">missão</p>
-      <h2 class="font-display mt-2 mb-4">Um diário coletivo</h2>
-      <p>A proposta é permitir que pessoas escrevam sobre amor, vazio, saudade, tristeza, raiva, medo e recomeços sem precisar se explicar antes de serem acolhidas.</p>
+      <p class="section-kicker">a intenção</p>
+      <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Cuidado antes de tudo</h2>
+      <p>Cada detalhe foi pensado para acolher: a linguagem é humana, a moderação protege quem relata a própria dor e bloqueia ataques a terceiros, e sinais de risco abrem caminhos reais de apoio.</p>
+      <p>Aqui ninguém precisa se explicar antes de ser acolhido.</p>
     </article>
   </section>
 
+  {# 3 — Privacidade #}
   <section class="glass-panel content-band section-reading">
-    <p class="section-kicker">agradecimentos</p>
-    <h2 class="text-2xl font-semibold mt-2 mb-4">Pessoas que ajudaram a dar forma</h2>
-    <p>Esse projeto também carrega o apoio e a presença de pessoas que ajudaram no caminho. Agradeço aos devs, amigos e pessoas queridas que contribuíram para que essa ideia ganhasse forma.</p>
-    <div class="gratitude-list" aria-label="Pessoas agradecidas pelo projeto">
-      <span>João Vale</span>
-      <span>Sergio</span>
-      <span>Nicolas Minder</span>
-      <span>Anilson Góes</span>
-      <span>Maria Clara</span>
-      <span>Isabella Fernandes</span>
+    <p class="section-kicker">privacidade</p>
+    <h2 class="font-display text-2xl md:text-3xl mt-2 mb-4" style="color:var(--text-main)">Como protegemos sua privacidade</h2>
+    <p>Anonimato aqui não é ausência de identidade — é uma forma de proteger quem ainda está encontrando palavras para o que sente. Você decide o quanto se mostra.</p>
+    <div class="about-feature-list mt-5">
+      <div class="about-feature">
+        <span class="about-feature-icon" aria-hidden="true">◆</span>
+        <div>
+          <p class="about-feature-title">Você escolhe se aparece</p>
+          <p class="about-feature-text">Cada desabafo pode ser publicado de forma anônima ou com o seu perfil. O padrão é anônimo, sempre.</p>
+        </div>
+      </div>
+      <div class="about-feature">
+        <span class="about-feature-icon" aria-hidden="true">◆</span>
+        <div>
+          <p class="about-feature-title">Conta protegida</p>
+          <p class="about-feature-text">Sua conta existe só para guardar com segurança o que é seu — senhas ficam cifradas e seus dados não viram vitrine.</p>
+        </div>
+      </div>
+      <div class="about-feature">
+        <span class="about-feature-icon" aria-hidden="true">◆</span>
+        <div>
+          <p class="about-feature-title">Sem holofotes</p>
+          <p class="about-feature-text">Não há seguidores, curtidas em ranking ou exposição pública. O que existe são respostas de empatia e reações de acolhimento.</p>
+        </div>
+      </div>
     </div>
   </section>
+
+  {# 4 e 5 — Rede de Apoio + Cartas #}
+  <section class="about-grid">
+    <article class="story-card section-reading">
+      <p class="section-kicker">rede de apoio</p>
+      <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Rede de Apoio</h2>
+      <p>Desabafar ajuda, mas às vezes a dor pede mais. Por isso o EntreLinhas reúne caminhos de apoio: contatos de emergência como o CVV (188) e uma rede de psicólogos para quem quiser dar um próximo passo.</p>
+      <a href="{{ url_for('apoio.apoio_publico') }}" class="about-inline-link">Conhecer a Rede de Apoio →</a>
+    </article>
+    <article class="story-card section-reading">
+      <p class="section-kicker">cartas para o futuro</p>
+      <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Cartas para o Futuro</h2>
+      <p>Escreva uma carta para quem você vai ser daqui a um tempo. Ela fica selada até a data que você escolher — e reaparece quando chegar a hora, como um lembrete de onde você estava e do quanto caminhou.</p>
+      <a href="{{ url_for('cartas.minhas_cartas') }}" class="about-inline-link">Guardar uma carta →</a>
+    </article>
+  </section>
+
+  {# 6 — Nossa Visão #}
+  <section class="glass-panel content-band section-reading">
+    <p class="section-kicker">nossa visão</p>
+    <h2 class="font-display text-2xl md:text-3xl mt-2 mb-4" style="color:var(--text-main)">Nossa visão</h2>
+    <p>Sonhamos com uma internet onde existam mais lugares assim: silenciosos, gentis e honestos. Onde vulnerabilidade não seja conteúdo, e sim humanidade.</p>
+    <p>O EntreLinhas começou como um projeto acadêmico de <strong style="color:var(--text)">João Ramos</strong>, desenvolvedor e estudante de Análise e Desenvolvimento de Sistemas, mas cresceu como uma tentativa real de transformar código em cuidado. A intenção é simples e ambiciosa ao mesmo tempo: que ninguém precise sentir tudo isso sozinho.</p>
+    <div class="flex flex-wrap gap-3 mt-6">
+      {% if session.get('user_id') %}
+        <button type="button" class="cta-desabafe composer-trigger" aria-haspopup="dialog">
+          <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
+        </button>
+      {% else %}
+        <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe">
+          <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
+        </a>
+      {% endif %}
+      <a href="{{ url_for('main.how_it_works') }}" class="btn-modern btn-ghost">Como funciona</a>
+    </div>
+  </section>
+
 </div>
 {% endblock %}
