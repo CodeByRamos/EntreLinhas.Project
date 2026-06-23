@@ -241,11 +241,8 @@ def set_user_role(user_id):
     """Atribui um cargo a um usuário. Apenas admin (garantido por @admin_required)."""
     role = normalize_role(request.form.get('role'))
 
-    # Trava de segurança: o admin não pode rebaixar a própria conta e ficar sem acesso.
-    if user_id == session.get('admin_user_id'):
-        flash('Você não pode alterar o próprio cargo por aqui.', 'error')
-        return redirect(url_for('admin.users', q=request.args.get('q', '')))
-
+    # O selo é independente do acesso à moderação (is_admin), então mudar o
+    # próprio cargo é seguro — é assim que o fundador define o selo de CEO.
     target = db.get_user_by_id(user_id)
     if not target:
         flash('Não encontramos esse usuário.', 'error')

@@ -45,10 +45,8 @@
             <span class="text-xs" style="color:var(--text)">{{ role_labels.get(u.role or 'user', 'Usuário') }}</span>
           </td>
           <td>
-            {% if u.id == session.get('admin_user_id') %}
-              <span class="text-xs" style="color:var(--text-faint)">você</span>
-            {% else %}
             <form method="post" action="{{ url_for('admin.set_user_role', user_id=u.id, q=search) }}" class="flex gap-2 justify-end items-center">
+              {% if u.id == session.get('admin_user_id') %}<span class="text-xs" style="color:var(--text-faint)">você</span>{% endif %}
               <select name="role" class="input-modern" style="min-width:9rem">
                 {% for r in role_order %}
                 <option value="{{ r }}" {{ 'selected' if (u.role or 'user') == r else '' }}>{{ role_labels.get(r, r) }}</option>
@@ -56,7 +54,6 @@
               </select>
               <button type="submit" class="btn-modern btn-primary text-sm">Salvar</button>
             </form>
-            {% endif %}
           </td>
         </tr>
         {% endfor %}
