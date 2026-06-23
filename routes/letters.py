@@ -65,7 +65,7 @@ def nova_carta():
         return render_template('cartas/nova.html', form=f)
 
     if dbf.create_future_letter(session['user_id'], title, content, open_at):
-        flash('Sua carta está guardada. Você vai reencontrá-la quando a data chegar. 💌', 'success')
+        flash('Sua carta está guardada. Você vai reencontrá-la quando a data chegar.', 'success')
         return redirect(url_for('cartas.minhas_cartas'))
 
     flash('Não conseguimos guardar a carta agora. Tente de novo.', 'error')

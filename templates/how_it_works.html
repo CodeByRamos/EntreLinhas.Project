@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Entre Linhas — Como Funciona{% endblock %}
 
@@ -86,14 +87,14 @@
               Leia os desabafos de outras pessoas e, se quiser, deixe comentários de apoio ou reações. Lembre-se de ser respeitoso e empático, pois todos estamos aqui para nos apoiar mutuamente.
             </p>
             <div class="flex flex-wrap gap-2">
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
-                🤝 Te entendo
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
+                {{ icon('users') }} Te entendo
               </span>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
-                💪 Força!
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
+                {{ icon('sprout') }} Força
               </span>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
-                🫂 Abraço virtual
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style="background:var(--accent-soft);color:var(--accent);">
+                {{ icon('heart-handshake') }} Abraço
               </span>
             </div>
           </div>

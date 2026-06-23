@@ -1,4 +1,5 @@
 {% extends 'admin/base.html' %}
+{% from 'components/icons.html' import icon with context %}
 {% block title %}{{ p.name }} - Psicólogo - Admin{% endblock %}
 
 {% set STATUS_LABELS = {'pending': 'Pendente', 'approved': 'Aprovado', 'rejected': 'Rejeitado', 'changes_requested': 'Ajustes pedidos'} %}
@@ -7,7 +8,7 @@
 {% block content %}
 <div class="space-y-8 max-w-4xl">
   <div>
-    <a href="{{ url_for('apoio.admin_psicologos') }}" class="text-sm" style="color:var(--brand)">← Voltar à lista</a>
+    <a href="{{ url_for('apoio.admin_psicologos') }}" class="text-sm inline-flex items-center gap-1" style="color:var(--brand)">{{ icon('arrow-left') }} Voltar à lista</a>
     <div class="flex items-center gap-3 mt-3">
       <h1 class="text-3xl font-display font-bold" style="color:var(--text-main)">{{ p.name }}</h1>
       <span class="status-chip {{ STATUS_CHIP.get(p.status, 'status-hidden') }}">{{ STATUS_LABELS.get(p.status, p.status) }}</span>

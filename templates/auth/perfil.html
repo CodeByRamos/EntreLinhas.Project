@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components/role_badge.html' import role_tag with context %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Meu Perfil - EntreLinhas{% endblock %}
 
@@ -57,7 +58,7 @@
         <a class="btn-modern btn-primary" href="{{ url_for('auth.editar_perfil') }}">Editar perfil</a>
         <a class="btn-modern btn-ghost" href="{{ url_for('posts.meus_posts') }}">Meus desabafos</a>
         <a class="btn-modern btn-ghost" href="{{ url_for('posts.linha_do_tempo') }}">Linha do tempo</a>
-        <a class="btn-modern btn-ghost" href="{{ url_for('posts.superacoes') }}">🌱 Minhas superações</a>
+        <a class="btn-modern btn-ghost" href="{{ url_for('posts.superacoes') }}">{{ icon('sprout') }} Minhas superações</a>
         <a class="btn-modern btn-ghost" href="{{ url_for('posts.ecos') }}">Meus ecos</a>
         <a class="btn-modern btn-ghost" href="{{ url_for('auth.alterar_senha') }}">Alterar senha</a>
       </div>

@@ -78,7 +78,7 @@ def voluntario():
 
     if dbf.create_psychologist(name, contact_email, crp, estado, cidade, especialidades,
                                bio, contact_link, modalidade, photo_url):
-        flash('Recebemos seu cadastro 💙 Nossa equipe vai revisar com cuidado e, se aprovado, '
+        flash('Recebemos seu cadastro. Nossa equipe vai revisar com cuidado e, se aprovado, '
               'seu perfil aparece na página de apoio.', 'success')
         return redirect(url_for('apoio.apoio_publico'))
 

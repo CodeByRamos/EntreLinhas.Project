@@ -414,7 +414,7 @@ def marcar_superacao(post_id):
     if auth_redirect:
         return auth_redirect
     if db.mark_post_overcome(post_id, session['user_id']):
-        flash('Que caminho. 🌱 Esse desabafo virou um marco de superação seu.', 'success')
+        flash('Que caminho. Esse desabafo virou um marco de superação seu.', 'success')
     else:
         flash('Você só pode marcar como superado um desabafo que escreveu.', 'error')
     return redirect(request.referrer or url_for('posts.superacoes'))

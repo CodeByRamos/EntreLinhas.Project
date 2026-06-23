@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Sobre o EntreLinhas{% endblock %}
 
@@ -73,13 +74,13 @@
       <p class="section-kicker">rede de apoio</p>
       <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Rede de Apoio</h2>
       <p>Desabafar ajuda, mas às vezes a dor pede mais. Por isso o EntreLinhas reúne caminhos de apoio: contatos de emergência como o CVV (188) e uma rede de psicólogos para quem quiser dar um próximo passo.</p>
-      <a href="{{ url_for('apoio.apoio_publico') }}" class="about-inline-link">Conhecer a Rede de Apoio →</a>
+      <a href="{{ url_for('apoio.apoio_publico') }}" class="about-inline-link inline-flex items-center gap-1.5">Conhecer a Rede de Apoio {{ icon('arrow-right') }}</a>
     </article>
     <article class="story-card section-reading">
       <p class="section-kicker">cartas para o futuro</p>
       <h2 class="font-display text-xl md:text-2xl mt-2 mb-3" style="color:var(--text-main)">Cartas para o Futuro</h2>
       <p>Escreva uma carta para quem você vai ser daqui a um tempo. Ela fica selada até a data que você escolher — e reaparece quando chegar a hora, como um lembrete de onde você estava e do quanto caminhou.</p>
-      <a href="{{ url_for('cartas.minhas_cartas') }}" class="about-inline-link">Guardar uma carta →</a>
+      <a href="{{ url_for('cartas.minhas_cartas') }}" class="about-inline-link inline-flex items-center gap-1.5">Guardar uma carta {{ icon('arrow-right') }}</a>
     </article>
   </section>
 

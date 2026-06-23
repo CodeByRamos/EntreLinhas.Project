@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components/post_card.html' import render_post with context %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Minhas Superações - EntreLinhas{% endblock %}
 
@@ -39,7 +40,7 @@
     {% endif %}
   {% else %}
     <div class="empty-state text-center">
-      <p class="text-5xl mb-3">🌱</p>
+      <p class="mb-3 flex justify-center" style="color:var(--accent)">{{ icon('sprout', 'el-icon--xl') }}</p>
       <p class="text-xl font-display" style="color:var(--text-main)">Ainda sem marcos por aqui.</p>
       <p class="mt-2" style="color:var(--text-muted)">Nos seus desabafos, quando algo deixar de pesar, toque em <strong style="color:var(--text)">"Eu superei isso"</strong>. Esse lugar guarda essas viradas.</p>
       <a class="btn-modern btn-ghost mt-5 inline-flex" href="{{ url_for('posts.meus_posts') }}">Ver meus desabafos</a>

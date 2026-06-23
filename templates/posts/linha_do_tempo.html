@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Linha do Tempo Emocional - EntreLinhas{% endblock %}
 
@@ -25,7 +26,7 @@
     <section class="profile-metrics mb-6">
       <div class="metric-card"><strong>{{ summary.total }}</strong><span>desabafos</span></div>
       <div class="metric-card"><strong>{{ summary.dominant }}</strong><span>emoção mais presente</span></div>
-      <div class="metric-card"><strong>{{ summary.overcome }}</strong><span>superados 🌱</span></div>
+      <div class="metric-card"><strong>{{ summary.overcome }}</strong><span>superados</span></div>
     </section>
 
     {# Distribuição de emoções #}
@@ -54,7 +55,7 @@
           <div class="flex flex-wrap items-center gap-2 mb-1">
             <span class="badge-emocional">{{ emotional_tag_labels.get(tag, tag|capitalize) }}</span>
             <span class="text-xs" style="color:var(--text-faint)">{{ post.data_postagem }}</span>
-            {% if post.overcome_at %}<span class="badge-superacao">🌱 Superado</span>{% endif %}
+            {% if post.overcome_at %}<span class="badge-superacao">{{ icon('sprout') }} Superado</span>{% endif %}
           </div>
           {% if post.title %}<p class="font-display" style="color:var(--text-main)">{{ post.title }}</p>{% endif %}
           <p class="text-sm leading-relaxed" style="color:var(--text)">{{ post.mensagem|truncate(200) }}</p>
@@ -67,7 +68,7 @@
     {% endif %}
   {% else %}
     <div class="empty-state text-center">
-      <p class="text-5xl mb-3">🕊️</p>
+      <p class="mb-3 flex justify-center" style="color:var(--accent)">{{ icon('feather', 'el-icon--xl') }}</p>
       <p class="text-xl font-display" style="color:var(--text-main)">Sua linha do tempo começa no primeiro desabafo.</p>
       <p class="mt-2" style="color:var(--text-muted)">Quando você colocar algo para fora, ele aparece aqui — e a sua jornada começa a tomar forma.</p>
       <a class="btn-modern btn-ghost mt-5 inline-flex" href="{{ url_for('posts.feed') }}">Ir para o feed</a>

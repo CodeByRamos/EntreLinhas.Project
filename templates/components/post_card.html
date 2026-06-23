@@ -1,4 +1,5 @@
 {% from 'components/role_badge.html' import role_tag with context %}
+{% from 'components/icons.html' import icon with context %}
 {% macro render_post(post, show_report=False) -%}
 {% set tag = post.emotional_tag if 'emotional_tag' in post.keys() and post.emotional_tag else 'vazio' %}
 {% set labels = emotional_tag_labels|default({}) %}
@@ -27,7 +28,7 @@
       </div>
       <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
         <span class="badge-emocional">{{ labels.get(tag, tag|capitalize) }}</span>
-        {% if 'overcome_at' in post.keys() and post.overcome_at %}<span class="badge-superacao" title="O autor marcou este desabafo como superado">🌱 Superado</span>{% endif %}
+        {% if 'overcome_at' in post.keys() and post.overcome_at %}<span class="badge-superacao" title="O autor marcou este desabafo como superado">{{ icon('sprout') }} Superado</span>{% endif %}
       </div>
     </div>
 
