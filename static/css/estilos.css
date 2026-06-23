@@ -298,6 +298,35 @@ main {
   box-shadow: 0 0 0 3px rgba(224, 122, 110, 0.22);
 }
 
+/* Marco de Superação — selo e botão (verde-broto, esperança sem exagero). */
+.badge-superacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #a9e3d0;
+  border: 1px solid rgba(120, 214, 184, 0.42);
+  background: rgba(120, 214, 184, 0.12);
+}
+.btn-superacao {
+  color: #0a1020;
+  border: 1px solid rgba(120, 214, 184, 0.6);
+  background: linear-gradient(135deg, #cdeede 0%, #9bd9bf 55%, #6fc7a3 100%);
+  box-shadow: 0 6px 18px -8px rgba(120, 214, 184, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.3s ease, filter 0.2s ease;
+}
+.btn-superacao:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 10px 24px -8px rgba(120, 214, 184, 0.75);
+}
+.btn-superacao:active { transform: translateY(0); }
+
 /* Skip-link: invisível até receber foco por teclado (acessibilidade). */
 .skip-link {
   position: absolute;

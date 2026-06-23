@@ -9,7 +9,7 @@
       <h1 class="text-3xl font-display font-bold" style="color:var(--text-main)">Meus posts</h1>
       <p style="color:var(--text-muted)">Organizados por estilo de publicação, com ações rápidas.</p>
     </div>
-    <a class="btn-modern btn-primary" href="{{ url_for('posts.feed') }}#formulario-de-envio">Novo post</a>
+    <a class="btn-modern btn-ghost" href="{{ url_for('posts.superacoes') }}">🌱 Minhas superações</a>
   </div>
 
   <div class="flex flex-wrap gap-3 mb-6">
@@ -31,9 +31,21 @@
               <span>{{ post.data_postagem }}</span>
               <span class="status-chip {{ 'status-published' if post.status == 'published' else 'status-hidden' }}">{{ 'publicado' if post.status == 'published' else 'rascunho' }}</span>
               <span>{{ 'perfil público' if post.visibility_mode == 'profile' else 'anônimo' }}</span>
+              {% if post.overcome_at %}<span class="badge-superacao">🌱 Superado em {{ post.overcome_at }}</span>{% endif %}
             </div>
           </div>
           <div class="flex flex-col sm:flex-row gap-2">
+            {% if post.overcome_at %}
+              <form method="post" action="{{ url_for('posts.desmarcar_superacao', post_id=post.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-modern btn-ghost">Desfazer marco</button>
+              </form>
+            {% elif post.status == 'published' %}
+              <form method="post" action="{{ url_for('posts.marcar_superacao', post_id=post.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-modern btn-superacao">Eu superei isso</button>
+              </form>
+            {% endif %}
             <a class="btn-modern btn-ghost" href="{{ url_for('posts.editar_post', post_id=post.id) }}">Editar</a>
             <form method="post" action="{{ url_for('posts.excluir_post', post_id=post.id) }}" onsubmit="return confirm('Excluir este post permanentemente?');">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

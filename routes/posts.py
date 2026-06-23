@@ -407,6 +407,59 @@ def excluir_post(post_id):
     flash('Seu desabafo foi retirado.', 'success')
     return redirect(url_for('posts.meus_posts'))
 
+@posts.route('/posts/<int:post_id>/superei', methods=['POST'])
+def marcar_superacao(post_id):
+    """Marca um desabafo do próprio autor como marco de superação."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    if db.mark_post_overcome(post_id, session['user_id']):
+        flash('Que caminho. 🌱 Esse desabafo virou um marco de superação seu.', 'success')
+    else:
+        flash('Você só pode marcar como superado um desabafo que escreveu.', 'error')
+    return redirect(request.referrer or url_for('posts.superacoes'))
+
+
+@posts.route('/posts/<int:post_id>/superei/desfazer', methods=['POST'])
+def desmarcar_superacao(post_id):
+    """Desfaz o marco de superação (só o autor)."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    db.unmark_post_overcome(post_id, session['user_id'])
+    flash('Tudo bem voltar atrás. Tirei esse marco por enquanto.', 'info')
+    return redirect(request.referrer or url_for('posts.superacoes'))
+
+
+@posts.route('/superacoes', methods=['GET'])
+def superacoes():
+    """Histórico pessoal de superações do usuário."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    current_user = db.get_user_by_id(session['user_id'])
+    if not current_user:
+        session.clear()
+        flash('Entre novamente para ver suas superações.', 'error')
+        return redirect(url_for('auth.login'))
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 8
+    offset = (page - 1) * per_page
+    overcome_posts = db.get_overcome_posts_by_user(current_user['id'], limit=per_page, offset=offset)
+    total = db.get_overcome_count_by_user(current_user['id'])
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    return render_template(
+        'posts/superacoes.html',
+        overcome_posts=overcome_posts,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+        emotional_tag_labels=EMOTIONAL_TAG_LABELS,
+    )
+
+
 @posts.route('/categorias')
 def get_categorias():
     """Rota para obter as categorias disponíveis (API)."""

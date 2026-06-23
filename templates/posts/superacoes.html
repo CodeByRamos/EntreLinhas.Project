@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% from 'components/post_card.html' import render_post with context %}
+
+{% block title %}Minhas Superações - EntreLinhas{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">marcos de superação</p>
+    <h1 class="hero-title">O que um dia pesou,<br>e você atravessou.</h1>
+    <p class="hero-description">
+      {% if total %}
+        {{ total }} {{ 'desabafo que' if total == 1 else 'desabafos que' }} um dia doeram — e que você marcou como superados. Um mapa do quanto você caminhou.
+      {% else %}
+        Quando um desabafo antigo deixar de doer, marque-o como superado. Aqui ele vira parte da sua história de recomeços.
+      {% endif %}
+    </p>
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-10 max-w-3xl">
+  {% if overcome_posts %}
+    <div class="space-y-4 md:space-y-6">
+      {% for post in overcome_posts %}
+        {{ render_post(post, False) }}
+      {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="flex justify-center mt-8 gap-3">
+      {% if page > 1 %}
+      <a class="btn-modern btn-ghost" href="{{ url_for('posts.superacoes', page=page-1) }}">Anterior</a>
+      {% endif %}
+      <span class="px-4 py-2" style="color:var(--text-muted)">Página {{ page }} de {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a class="btn-modern btn-ghost" href="{{ url_for('posts.superacoes', page=page+1) }}">Próxima</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state text-center">
+      <p class="text-5xl mb-3">🌱</p>
+      <p class="text-xl font-display" style="color:var(--text-main)">Ainda sem marcos por aqui.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Nos seus desabafos, quando algo deixar de pesar, toque em <strong style="color:var(--text)">"Eu superei isso"</strong>. Esse lugar guarda essas viradas.</p>
+      <a class="btn-modern btn-ghost mt-5 inline-flex" href="{{ url_for('posts.meus_posts') }}">Ver meus desabafos</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reactions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/echo.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

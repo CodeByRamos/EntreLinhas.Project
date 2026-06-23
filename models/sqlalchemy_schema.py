@@ -63,6 +63,8 @@ class Post(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), onupdate=datetime.utcnow, nullable=False)
     is_deleted = db.Column(db.Integer, default=0, server_default="0", nullable=False)
     report_count = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    # Marco de Superação: quando o autor marca o desabafo como "eu superei isso"
+    overcome_at = db.Column(db.String(20))
 
 
 class Comment(db.Model):

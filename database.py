@@ -474,6 +474,7 @@ def init_db():
     _ensure_column(conn, "posts", "updated_at", "TIMESTAMP")
     _ensure_column(conn, "posts", "is_deleted", "INTEGER DEFAULT 0")
     _ensure_column(conn, "posts", "report_count", "INTEGER DEFAULT 0")
+    _ensure_column(conn, "posts", "overcome_at", "TEXT")
     _ensure_column(conn, "comments", "mensagem", "TEXT")
     _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
     _ensure_column(conn, "comments", "user_id", "INTEGER")
@@ -628,17 +629,19 @@ def ensure_performance_indexes():
 
 
 def ensure_reports_comments_user_id():
-    """Garante a coluna reports_comments.user_id em bancos já existentes.
+    """Garante colunas adicionadas após o create_all em bancos já existentes.
 
-    No Postgres o create_all() não altera tabela existente; aqui aplicamos o
-    ALTER idempotente. No SQLite usa o mesmo _ensure_column do init_db.
+    No Postgres o create_all() não altera tabela existente; aqui aplicamos os
+    ALTER idempotentes. No SQLite usa o mesmo _ensure_column do init_db.
     """
     conn = get_db_connection()
     try:
         if USE_POSTGRES:
             conn.execute("ALTER TABLE reports_comments ADD COLUMN IF NOT EXISTS user_id INTEGER")
+            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS overcome_at VARCHAR(20)")
         else:
             _ensure_column(conn, "reports_comments", "user_id", "INTEGER")
+            _ensure_column(conn, "posts", "overcome_at", "TEXT")
         conn.commit()
     except Exception as exc:
         logger.warning("ensure_reports_comments_user_id: %s", exc)
@@ -655,7 +658,7 @@ def get_posts(limit=10, offset=0, include_hidden=False):
         posts = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -673,7 +676,7 @@ def get_posts(limit=10, offset=0, include_hidden=False):
         posts = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -722,7 +725,7 @@ def get_post(post_id, include_hidden=False):
         post = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -738,7 +741,7 @@ def get_post(post_id, include_hidden=False):
         post = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -1001,6 +1004,86 @@ def update_post_visibility(post_id, visibility):
     conn.close()
     return cursor.rowcount > 0
 
+
+# ---------------------------------------------------------------------------
+# Marco de Superação: o autor marca um desabafo como "eu superei isso".
+# overcome_at (texto dd/mm/YYYY HH:MM) guarda quando virou marco.
+# ---------------------------------------------------------------------------
+
+def mark_post_overcome(post_id, user_id):
+    """Marca um desabafo do PRÓPRIO autor como superado. Idempotente."""
+    conn = get_db_connection()
+    overcome_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    try:
+        cursor = conn.execute(
+            "UPDATE posts SET overcome_at = ? "
+            "WHERE id = ? AND user_id = ? AND COALESCE(is_deleted, 0) = 0",
+            (overcome_at, post_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.mark_post_overcome", "posts.update", e,
+                      post_id=post_id, table="posts", operation="update")
+        return False
+    finally:
+        conn.close()
+
+
+def unmark_post_overcome(post_id, user_id):
+    """Desfaz o marco de superação (só o autor)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE posts SET overcome_at = NULL WHERE id = ? AND user_id = ?",
+            (post_id, user_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.unmark_post_overcome", "posts.update", e,
+                      post_id=post_id, table="posts", operation="update")
+        return False
+    finally:
+        conn.close()
+
+
+def get_overcome_posts_by_user(user_id, limit=20, offset=0):
+    """Histórico de superações do usuário (mais recentes primeiro)."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode, p.status, p.overcome_at,
+               u.username as author_username, u.nickname as author_nickname,
+               u.display_name as author_display_name, u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url, u.default_avatar as author_default_avatar,
+               u.role as author_role
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = ? AND p.overcome_at IS NOT NULL AND COALESCE(p.is_deleted, 0) = 0
+        ORDER BY p.id DESC
+        LIMIT ? OFFSET ?
+        ''',
+        (user_id, limit, offset),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_overcome_count_by_user(user_id):
+    conn = get_db_connection()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM posts "
+        "WHERE user_id = ? AND overcome_at IS NOT NULL AND COALESCE(is_deleted, 0) = 0",
+        (user_id,),
+    ).fetchone()[0]
+    conn.close()
+    return total
+
 def log_sensitive_post(post_id, risk_level):
     """Registra internamente posts de risco sem dados de usuário."""
     conn = get_db_connection()
@@ -1247,7 +1330,7 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
         posts = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -1265,7 +1348,7 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
         posts = conn.execute('''
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
-                   p.user_id, p.visibility_mode, p.status,
+                   p.user_id, p.visibility_mode, p.status, p.overcome_at,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
