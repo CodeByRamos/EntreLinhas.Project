@@ -7,6 +7,7 @@
 {% set description = 'Escreva hoje. Lacre. Reencontre essas palavras quando a data chegar.' %}
 {% set actions %}
   <a href="{{ url_for('cartas.nova_carta') }}" class="btn-modern btn-primary">Escrever uma carta</a>
+  <a href="{{ url_for('cartas.desconhecidos') }}" class="btn-modern btn-ghost">Cartas para desconhecidos</a>
 {% endset %}
 {% include 'components/hero.html' %}
 

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
+
+{% block title %}Uma carta para você - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-2xl">
+  <p class="text-center hero-kicker mb-6">uma carta chegou para você</p>
+
+  <div class="envelope-stage" id="envelope-stage">
+    <div class="envelope" id="envelope" aria-hidden="true">
+      <div class="envelope-back"></div>
+      <div class="envelope-letter-peek"></div>
+      <div class="envelope-front"></div>
+      <div class="envelope-flap"></div>
+      <div class="envelope-seal">{{ icon('mail') }}</div>
+    </div>
+
+    <button type="button" id="open-letter-btn" class="btn-modern btn-primary mt-6 inline-flex items-center gap-2">
+      {{ icon('mail-open') }} Abrir a carta
+    </button>
+
+    <div class="letter-reveal" id="letter-reveal">
+      <article class="letter-paper letter-paper--full">
+        <p class="letter-greeting">Querido desconhecido,</p>
+        <p class="letter-body">{{ letter.content }}</p>
+        <p class="letter-sign">— alguém, em algum lugar · {{ letter.created_at }}</p>
+      </article>
+
+      <div class="letter-actions">
+        <p class="text-sm text-center mb-3" style="color:var(--text-muted)">O que você gostaria de fazer com esta carta?</p>
+
+        <details class="letter-respond">
+          <summary class="btn-modern btn-superacao w-full justify-center inline-flex items-center gap-2">{{ icon('feather') }} Responder</summary>
+          <form method="post" action="{{ url_for('cartas.responder_desconhecido', letter_id=letter.id) }}" class="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <textarea name="content" rows="5" minlength="5" maxlength="2000" required
+              class="input-modern resize-y text-sm" style="font-family:var(--font-display)"
+              placeholder="Escreva de volta, com cuidado..."></textarea>
+            <button type="submit" class="btn-modern btn-primary inline-flex items-center justify-center gap-2">{{ icon('send') }} Enviar resposta</button>
+          </form>
+        </details>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <form method="post" action="{{ url_for('cartas.encaminhar_desconhecido', letter_id=letter.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn-modern btn-ghost w-full inline-flex items-center justify-center gap-2">{{ icon('arrow-right') }} Encaminhar a outra pessoa</button>
+          </form>
+          <form method="post" action="{{ url_for('cartas.apenas_ler_desconhecido', letter_id=letter.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn-modern btn-ghost w-full inline-flex items-center justify-center gap-2">{{ icon('check') }} Apenas ler e guardar</button>
+          </form>
+        </div>
+
+        <form method="post" action="{{ url_for('cartas.denunciar_desconhecido', letter_id=letter.id) }}" class="mt-4 text-center" onsubmit="return confirm('Denunciar esta carta à moderação?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="text-xs inline-flex items-center gap-1" style="color:var(--text-muted)">{{ icon('flag') }} Denunciar esta carta</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var stage = document.getElementById('envelope-stage');
+    var btn = document.getElementById('open-letter-btn');
+    if (!stage || !btn) return;
+    function open() {
+      stage.classList.add('is-open');
+      btn.style.display = 'none';
+    }
+    btn.addEventListener('click', open);
+    document.getElementById('envelope').addEventListener('click', open);
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
+
+{% block title %}Cartas para Desconhecidos - EntreLinhas{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">cartas para desconhecidos</p>
+    <h1 class="hero-title">Escreva para alguém<br>que você nunca vai conhecer.</h1>
+    <p class="hero-description">Uma carta anônima entra numa fila silenciosa. Outra pessoa, em algum lugar, vai abri-la — e talvez responda. Sem rostos, sem nomes. Só palavras encontrando palavras.</p>
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-10 max-w-4xl space-y-8">
+
+  {# Ações principais #}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {# Escrever #}
+    <section class="glass-panel content-band">
+      <div class="flex items-center gap-2 mb-3">
+        <span style="color:var(--accent)">{{ icon('feather') }}</span>
+        <h2 class="text-xl font-display" style="color:var(--text-main)">Escrever uma carta</h2>
+      </div>
+      <form method="post" action="{{ url_for('cartas.escrever_desconhecido') }}" class="flex flex-col gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <textarea name="content" rows="5" minlength="10" maxlength="2000" required
+          class="input-modern resize-y text-sm" style="font-family:var(--font-display)"
+          placeholder="Querido desconhecido,&#10;&#10;hoje eu queria te contar que..."></textarea>
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-xs" style="color:var(--text-faint)">{{ open_count }}/{{ max_open }} em circulação</span>
+          <button type="submit" class="cta-desabafe">
+            <span class="cta-icon" aria-hidden="true">{{ icon('send') }}</span><span>Enviar à fila</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    {# Receber #}
+    <section class="glass-panel content-band flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <span style="color:var(--accent)">{{ icon('mail') }}</span>
+          <h2 class="text-xl font-display" style="color:var(--text-main)">Receber uma carta</h2>
+        </div>
+        <p class="text-sm leading-relaxed" style="color:var(--text-muted)">Abra uma carta que outra pessoa deixou. Você pode responder, encaminhar para outra pessoa ou apenas ler em silêncio.</p>
+      </div>
+      <form method="post" action="{{ url_for('cartas.receber_desconhecido') }}" class="mt-5">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn-modern btn-primary w-full inline-flex items-center justify-center gap-2">{{ icon('mail-open') }} Abrir uma carta da fila</button>
+      </form>
+    </section>
+  </div>
+
+  {# Respostas recebidas #}
+  {% if replies %}
+  <section class="content-band">
+    <div class="flex items-center gap-2 mb-4">
+      <h2 class="text-xl font-display" style="color:var(--text-main)">Respostas que chegaram</h2>
+      {% if unread %}<span class="badge-escuta">{{ unread }} nova(s)</span>{% endif %}
+    </div>
+    <div class="space-y-4">
+      {% for r in replies %}
+      <article class="letter-paper {{ 'is-unread' if r.delivery_action is none else '' }}">
+        {% if r.original_content %}<p class="letter-quote">Em resposta à sua carta: "{{ r.original_content|truncate(90) }}"</p>{% endif %}
+        <p class="letter-body">{{ r.content }}</p>
+        <p class="letter-sign">— alguém que leu você · {{ r.created_at }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# Minhas cartas em circulação #}
+  <section class="glass-panel content-band">
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <h2 class="text-xl font-display" style="color:var(--text-main)">Suas cartas em circulação</h2>
+      <a href="{{ url_for('cartas.minhas_cartas') }}" class="text-sm inline-flex items-center gap-1" style="color:var(--brand)">Cartas para o futuro {{ icon('arrow-right') }}</a>
+    </div>
+    {% if my_letters %}
+      <div class="space-y-3">
+        {% for l in my_letters %}
+        <div class="flex items-start justify-between gap-4 py-2" style="border-bottom:1px solid var(--border)">
+          <p class="text-sm" style="color:var(--text)">{{ l.content|truncate(120) }}</p>
+          <span class="status-chip {{ 'status-published' if l.reply_count else 'status-hidden' }} flex-shrink-0">
+            {{ l.reply_count }} resposta{{ '' if l.reply_count == 1 else 's' }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted)">Você ainda não enviou nenhuma carta. Que tal escrever a primeira?</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

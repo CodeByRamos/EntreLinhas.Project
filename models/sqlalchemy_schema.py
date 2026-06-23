@@ -246,6 +246,31 @@ class ModerationAction(db.Model):
     created_at = db.Column(db.String(20), nullable=False)
 
 
+class StrangerLetter(db.Model):
+    """Carta anônima para desconhecidos. parent_id != NULL = resposta a outra carta."""
+    __tablename__ = "stranger_letters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    parent_id = db.Column(db.Integer)            # carta original, se for resposta
+    is_hidden = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    report_count = db.Column(db.Integer, default=0, server_default="0", nullable=False)
+    created_at = db.Column(db.String(20), nullable=False)
+
+
+class StrangerLetterDelivery(db.Model):
+    """Quem recebeu qual carta (evita reentrega e registra a ação tomada)."""
+    __tablename__ = "stranger_letter_deliveries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    letter_id = db.Column(db.Integer, db.ForeignKey("stranger_letters.id"), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    action = db.Column(db.String(20))            # NULL / read / responded / forwarded
+    created_at = db.Column(db.String(20), nullable=False)
+    __table_args__ = (db.UniqueConstraint("letter_id", "recipient_id", name="uq_letter_recipient"),)
+
+
 class FutureLetter(db.Model):
     __tablename__ = "future_letters"
 

@@ -329,3 +329,225 @@ def count_available_letters(user_id):
         if open_at and now >= open_at:
             total += 1
     return total
+
+
+# ---------------------------------------------------------------------------
+# Cartas para Desconhecidos — troca anônima de cartas entre usuários.
+# stranger_letters.parent_id NULL = carta original; != NULL = resposta.
+# Identidade do autor NUNCA é exposta na UI (só usada para roteamento/anti-spam).
+# ---------------------------------------------------------------------------
+
+def create_stranger_letter(author_id, content, parent_id=None):
+    conn = get_db_connection()
+    created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO stranger_letters (author_id, content, parent_id, is_hidden, report_count, created_at) "
+            "VALUES (?, ?, ?, 0, 0, ?)",
+            (author_id, content, parent_id, created_at),
+        )
+        lid = cur.lastrowid
+        conn.commit()
+        return lid
+    except Exception as exc:
+        conn.rollback()
+        log_exception(logger, "db_features.create_stranger_letter", "stranger_letters.insert", exc)
+        return None
+    finally:
+        conn.close()
+
+
+def count_open_letters_by_author(author_id):
+    """Cartas originais ativas do autor (anti-spam: limita fila por pessoa)."""
+    conn = get_db_connection()
+    n = conn.execute(
+        "SELECT COUNT(*) FROM stranger_letters WHERE author_id = ? AND parent_id IS NULL AND is_hidden = 0",
+        (author_id,),
+    ).fetchone()[0]
+    conn.close()
+    return n
+
+
+def deliver_random_letter(user_id):
+    """Entrega uma carta original aleatória que o usuário ainda não recebeu nem
+    escreveu, registrando a entrega. Retorna a carta (dict) ou None."""
+    conn = get_db_connection()
+    try:
+        row = conn.execute(
+            """
+            SELECT * FROM stranger_letters l
+            WHERE l.parent_id IS NULL AND l.is_hidden = 0 AND l.author_id <> ?
+              AND NOT EXISTS (
+                SELECT 1 FROM stranger_letter_deliveries d
+                WHERE d.letter_id = l.id AND d.recipient_id = ?
+              )
+            ORDER BY RANDOM()
+            LIMIT 1
+            """,
+            (user_id, user_id),
+        ).fetchone()
+        if not row:
+            return None
+        created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+        conn.execute(
+            "INSERT INTO stranger_letter_deliveries (letter_id, recipient_id, action, created_at) "
+            "VALUES (?, ?, NULL, ?)",
+            (row["id"], user_id, created_at),
+        )
+        conn.commit()
+        return dict(row)
+    except Exception as exc:
+        conn.rollback()
+        log_exception(logger, "db_features.deliver_random_letter", "deliveries.insert", exc)
+        return None
+    finally:
+        conn.close()
+
+
+def get_delivered_letter(letter_id, recipient_id):
+    """Carta entregue a este usuário (valida a entrega). None se não for dele."""
+    conn = get_db_connection()
+    row = conn.execute(
+        """
+        SELECT l.*, d.action AS delivery_action
+        FROM stranger_letters l
+        JOIN stranger_letter_deliveries d ON d.letter_id = l.id
+        WHERE l.id = ? AND d.recipient_id = ?
+        """,
+        (letter_id, recipient_id),
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def set_delivery_action(letter_id, recipient_id, action):
+    conn = get_db_connection()
+    try:
+        conn.execute(
+            "UPDATE stranger_letter_deliveries SET action = ? WHERE letter_id = ? AND recipient_id = ?",
+            (action, letter_id, recipient_id),
+        )
+        conn.commit()
+        return True
+    except Exception:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
+
+def respond_to_letter(responder_id, parent_letter_id, content):
+    """Cria a resposta e a entrega ao autor da carta original."""
+    conn = get_db_connection()
+    created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    try:
+        original = conn.execute(
+            "SELECT id, author_id FROM stranger_letters WHERE id = ? AND is_hidden = 0",
+            (parent_letter_id,),
+        ).fetchone()
+        if not original:
+            return False
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO stranger_letters (author_id, content, parent_id, is_hidden, report_count, created_at) "
+            "VALUES (?, ?, ?, 0, 0, ?)",
+            (responder_id, content, parent_letter_id, created_at),
+        )
+        reply_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO stranger_letter_deliveries (letter_id, recipient_id, action, created_at) "
+            "VALUES (?, ?, NULL, ?)",
+            (reply_id, original["author_id"], created_at),
+        )
+        conn.execute(
+            "UPDATE stranger_letter_deliveries SET action = 'responded' WHERE letter_id = ? AND recipient_id = ?",
+            (parent_letter_id, responder_id),
+        )
+        conn.commit()
+        return True
+    except Exception as exc:
+        conn.rollback()
+        log_exception(logger, "db_features.respond_to_letter", "stranger_letters.reply", exc)
+        return False
+    finally:
+        conn.close()
+
+
+def get_received_replies(user_id):
+    """Respostas entregues a mim (respostas às minhas cartas), mais recentes primeiro."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT l.*, d.action AS delivery_action, orig.content AS original_content
+        FROM stranger_letter_deliveries d
+        JOIN stranger_letters l ON l.id = d.letter_id
+        LEFT JOIN stranger_letters orig ON orig.id = l.parent_id
+        WHERE d.recipient_id = ? AND l.parent_id IS NOT NULL AND l.is_hidden = 0
+        ORDER BY l.id DESC
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def count_unread_replies(user_id):
+    conn = get_db_connection()
+    n = conn.execute(
+        """
+        SELECT COUNT(*) FROM stranger_letter_deliveries d
+        JOIN stranger_letters l ON l.id = d.letter_id
+        WHERE d.recipient_id = ? AND l.parent_id IS NOT NULL AND d.action IS NULL AND l.is_hidden = 0
+        """,
+        (user_id,),
+    ).fetchone()[0]
+    conn.close()
+    return n
+
+
+def get_my_stranger_letters(user_id):
+    """Cartas originais que escrevi, com contagem de respostas."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT l.*,
+          (SELECT COUNT(*) FROM stranger_letters r WHERE r.parent_id = l.id AND r.is_hidden = 0) AS reply_count
+        FROM stranger_letters l
+        WHERE l.author_id = ? AND l.parent_id IS NULL
+        ORDER BY l.id DESC
+        """,
+        (user_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def report_stranger_letter(letter_id, user_id, threshold=3):
+    """Denúncia: incrementa contagem, deduplica por entrega e oculta no limite."""
+    conn = get_db_connection()
+    try:
+        existing = conn.execute(
+            "SELECT action FROM stranger_letter_deliveries WHERE letter_id = ? AND recipient_id = ?",
+            (letter_id, user_id),
+        ).fetchone()
+        if existing and existing["action"] == 'reported':
+            return False
+        conn.execute("UPDATE stranger_letters SET report_count = report_count + 1 WHERE id = ?", (letter_id,))
+        conn.execute(
+            "UPDATE stranger_letters SET is_hidden = 1 WHERE id = ? AND report_count >= ?",
+            (letter_id, threshold),
+        )
+        if existing:
+            conn.execute(
+                "UPDATE stranger_letter_deliveries SET action = 'reported' WHERE letter_id = ? AND recipient_id = ?",
+                (letter_id, user_id),
+            )
+        conn.commit()
+        return True
+    except Exception as exc:
+        conn.rollback()
+        log_exception(logger, "db_features.report_stranger_letter", "stranger_letters.report", exc)
+        return False
+    finally:
+        conn.close()

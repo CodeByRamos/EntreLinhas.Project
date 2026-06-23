@@ -458,6 +458,76 @@ main {
 .overcome-note p { color: var(--text); line-height: 1.6; font-style: italic; }
 
 /* ============================================================================
+   Cartas para Desconhecidos — envelope que abre + papel de carta.
+   ============================================================================ */
+.envelope-stage { display: flex; flex-direction: column; align-items: center; perspective: 1400px; }
+.envelope {
+  position: relative; width: min(440px, 92vw); height: 280px; cursor: pointer;
+  filter: drop-shadow(0 24px 44px rgba(0, 0, 0, 0.45));
+}
+.envelope-back {
+  position: absolute; inset: 0; border-radius: 14px; z-index: 1;
+  background: linear-gradient(160deg, #243353, #16213a);
+  border: 1px solid rgba(106, 166, 255, 0.25);
+}
+.envelope-letter-peek {
+  position: absolute; left: 16px; right: 16px; top: 24px; height: 200px; z-index: 2;
+  background: #f3ead9; border-radius: 8px;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+}
+.envelope-front {
+  position: absolute; inset: 0; z-index: 4; border-radius: 14px;
+  background: linear-gradient(160deg, #2b3c5d, #1a2840);
+  clip-path: polygon(0 38%, 50% 76%, 100% 38%, 100% 100%, 0 100%);
+}
+.envelope-flap {
+  position: absolute; top: 0; left: 0; right: 0; height: 62%; z-index: 6;
+  background: linear-gradient(160deg, #34487a, #22324f);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center; transform: rotateX(0deg);
+  transition: transform 0.8s ease, z-index 0s linear 0.4s;
+}
+.envelope-seal {
+  position: absolute; top: 26%; left: 50%; transform: translate(-50%, -50%); z-index: 7;
+  width: 42px; height: 42px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #9bc4ff, #3e6fb0); color: #0a1020;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); transition: opacity 0.3s ease;
+}
+.envelope-seal .el-icon { width: 20px; height: 20px; }
+.envelope-stage.is-open .envelope-flap { transform: rotateX(178deg); z-index: 1; }
+.envelope-stage.is-open .envelope-seal { opacity: 0; }
+.envelope-stage.is-open .envelope-letter-peek { transform: translateY(-70px); opacity: 0; }
+
+.letter-reveal {
+  width: 100%; max-width: 560px; max-height: 0; overflow: hidden; opacity: 0;
+  transform: translateY(18px);
+  transition: max-height 0.85s ease, opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s, margin-top 0.4s ease;
+}
+.envelope-stage.is-open .letter-reveal { max-height: 2600px; opacity: 1; transform: translateY(0); margin-top: 1.75rem; }
+
+.letter-paper {
+  position: relative;
+  background: linear-gradient(180deg, #f6efe0, #efe5d2);
+  color: #2c2519; border-radius: 12px; padding: 1.5rem 1.7rem;
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.5);
+}
+.letter-paper.is-unread { box-shadow: 0 0 0 2px rgba(106, 166, 255, 0.5), 0 18px 40px -16px rgba(0, 0, 0, 0.5); }
+.letter-greeting { font-family: var(--font-display); font-size: 1.1rem; margin-bottom: 0.6rem; color: #3a2f1f; }
+.letter-body { font-family: var(--font-display); font-size: 1.05rem; line-height: 1.75; white-space: pre-line; color: #2c2519; }
+.letter-sign { margin-top: 1.1rem; text-align: right; font-style: italic; color: #6a5d45; font-size: 0.9rem; }
+.letter-quote { font-size: 0.78rem; color: #6a5d45; font-style: italic; margin-bottom: 0.5rem; }
+.letter-actions { margin-top: 1.5rem; }
+.letter-respond summary { list-style: none; cursor: pointer; }
+.letter-respond summary::-webkit-details-marker { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .envelope-flap, .envelope-letter-peek, .letter-reveal { transition: opacity 0.2s ease; }
+  .envelope-stage.is-open .envelope-flap { transform: none; opacity: 0; }
+  .envelope-stage.is-open .letter-reveal { max-height: 2600px; }
+}
+
+/* ============================================================================
    Linha do Tempo Emocional — espinha vertical + nós, dentro da paleta navy.
    ============================================================================ */
 .emo-timeline { list-style: none; position: relative; margin: 0; padding-left: 1.75rem; }
