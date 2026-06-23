@@ -45,7 +45,7 @@
 
   <nav class="site-nav" aria-label="Navegação principal">
     <div class="nav-shell">
-      <a href="{{ url_for('posts.feed') }}" class="brand-lockup" aria-label="Ir para o feed do EntreLinhas">
+      <a href="{{ url_for('posts.feed') if logged_user else url_for('main.home') }}" class="brand-lockup" aria-label="Ir para a página inicial do EntreLinhas">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 100 100" width="36" height="36" role="img" aria-label="Símbolo EntreLinhas">
             <rect x="20" y="31" width="60" height="4" rx="2" fill="#9fb4d4" />
@@ -64,7 +64,7 @@
       </a>
 
       <div class="nav-desktop-links">
-        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('posts.feed') if logged_user else url_for('main.home') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
@@ -102,7 +102,7 @@
         {% if logged_user %}
           <button type="button" class="cta-desabafe w-full composer-trigger"><span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span></button>
         {% endif %}
-        <a href="{{ url_for('posts.feed') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
+        <a href="{{ url_for('posts.feed') if logged_user else url_for('main.home') }}" class="nav-pill {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">Início</a>
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}

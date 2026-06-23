@@ -1,54 +1,193 @@
 {% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
 
-{% block title %}Entre Linhas — Um Espaço para Desabafar{% endblock %}
+{% block title %}EntreLinhas — Um lugar para dizer o que pesa{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />
+{% endblock %}
 
 {% block content %}
-{% set kicker = 'anônimo • íntimo • humano' %}
-{% set title = 'EntreLinhas' %}
-{% set description = 'Um espaço minimalista para dizer o que pesa no peito e encontrar acolhimento sem exposição.' %}
-{% set actions %}
-  {% if session.get('user_id') %}
-    <button type="button" class="cta-desabafe cta-desabafe--hero composer-trigger" aria-haspopup="dialog">
-      <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe agora</span>
-    </button>
-  {% else %}
-    <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe cta-desabafe--hero">
-      <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe agora</span>
-    </a>
-  {% endif %}
-  <a href="{{ url_for('main.how_it_works') }}" class="btn-modern btn-ghost">Como funciona</a>
-{% endset %}
-{% include 'components/hero.html' %}
+<div class="landing">
 
-<section class="container mx-auto px-6 py-12">
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <article class="glass-panel p-7">
-      <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-main)">Escreva com liberdade</h3>
-      <p class="leading-relaxed" style="color:var(--text-muted)">Coloque para fora o que pesa, no seu tempo. Sua conta fica protegida e você decide o quanto se mostra — anônimo, se quiser.</p>
-    </article>
-    <article class="glass-panel p-7">
-      <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-main)">Receba acolhimento</h3>
-      <p class="leading-relaxed" style="color:var(--text-muted)">A comunidade responde com empatia por comentários e reações respeitosas.</p>
-    </article>
-    <article class="glass-panel p-7">
-      <h3 class="font-display text-xl font-semibold mb-3" style="color:var(--text-main)">Volte quando precisar</h3>
-      <p class="leading-relaxed" style="color:var(--text-muted)">Use o espaço como um ritual de pausa: sentir, escrever e respirar.</p>
-    </article>
-  </div>
-</section>
-
-<section class="container mx-auto px-6 pb-14">
-  <div class="glass-panel p-8 md:p-10 text-center max-w-3xl mx-auto">
-    <p class="font-display italic leading-relaxed mb-6" style="color:var(--text-muted)">"Nem sempre precisamos de respostas. Às vezes, só de um lugar onde a nossa voz possa existir."</p>
-    {% if session.get('user_id') %}
-      <button type="button" class="cta-desabafe composer-trigger mx-auto" aria-haspopup="dialog">
-        <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
-      </button>
-    {% else %}
-      <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe mx-auto">
-        <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
+  {# ============================ HERO ============================ #}
+  <section class="lp-hero">
+    <div class="lp-hero-orbs" aria-hidden="true">
+      <span class="lp-orb lp-orb-1"></span>
+      <span class="lp-orb lp-orb-2"></span>
+      <span class="lp-orb lp-orb-3"></span>
+    </div>
+    <div class="lp-hero-inner container mx-auto px-6">
+      <span class="lp-hero-mark" data-reveal="scale" aria-hidden="true">
+        <svg viewBox="0 0 100 100" width="72" height="72" role="img" aria-label="Símbolo EntreLinhas">
+          <rect x="20" y="31" width="60" height="4" rx="2" fill="#9fb4d4" />
+          <rect x="20" y="65" width="60" height="4" rx="2" fill="#9fb4d4" />
+          <g class="brand-breath">
+            <circle cx="36" cy="50" r="4" fill="#6aa6ff" />
+            <circle cx="50" cy="50" r="4.6" fill="#9bc4ff" />
+            <circle cx="64" cy="50" r="4" fill="#6aa6ff" />
+          </g>
+        </svg>
+      </span>
+      <p class="lp-hero-kicker" data-reveal>anônimo · íntimo · humano</p>
+      <h1 class="lp-hero-title">
+        <span class="lp-line" data-reveal data-delay="1">Existem coisas que</span>
+        <span class="lp-line lp-grad" data-reveal data-delay="2">carregamos em silêncio.</span>
+      </h1>
+      <p class="lp-hero-sub" data-reveal data-delay="3">
+        O EntreLinhas é um lugar para dizer o que você nunca conseguiu dizer em voz alta — de forma anônima, acolhedora e sem julgamento. Aqui, sentir já é o suficiente.
+      </p>
+      <div class="lp-hero-cta" data-reveal data-delay="4">
+        <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe cta-desabafe--hero">
+          <span class="cta-icon" aria-hidden="true">{{ icon('feather') }}</span><span>Desabafe</span>
+        </a>
+        <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost lp-btn">Explorar comunidade</a>
+        <a href="{{ url_for('main.about') }}" class="btn-modern btn-ghost lp-btn">Conhecer o projeto</a>
+      </div>
+      <a href="#o-que-e" class="lp-scroll-cue" aria-label="Rolar para saber mais" data-reveal data-delay="5">
+        <span>role para descobrir</span>
+        {{ icon('chevron-down') }}
       </a>
-    {% endif %}
-  </div>
-</section>
+    </div>
+  </section>
+
+  {# ======================= O QUE É ======================= #}
+  <section class="lp-section" id="o-que-e">
+    <div class="container mx-auto px-6 max-w-5xl">
+      <p class="lp-eyebrow" data-reveal>o que é o EntreLinhas</p>
+      <h2 class="lp-h2" data-reveal data-delay="1">Um espaço para o que quase não coube em voz alta.</h2>
+      <div class="lp-pillars">
+        {% set pillars = [
+          ('shield', 'Anonimato', 'Você decide o quanto se mostra. O padrão é anônimo, sempre — sua voz sem o peso do seu nome.'),
+          ('heart-handshake', 'Acolhimento', 'Aqui ninguém precisa se explicar antes de ser acolhido. A comunidade responde com empatia, não com julgamento.'),
+          ('ear', 'Escuta', 'Às vezes não se quer conselho, só ser ouvido. O EntreLinhas tem espaço para os dois.'),
+          ('users', 'Comunidade', 'Um diário coletivo de pessoas reais sentindo coisas reais. Você não está sozinho no que sente.')
+        ] %}
+        {% for ic, t, d in pillars %}
+        <article class="lp-pillar" data-reveal data-stagger data-delay="{{ loop.index }}">
+          <span class="lp-pillar-icon">{{ icon(ic) }}</span>
+          <h3>{{ t }}</h3>
+          <p>{{ d }}</p>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ======================= FUNCIONALIDADES ======================= #}
+  <section class="lp-section lp-section--alt" id="recursos">
+    <div class="container mx-auto px-6 max-w-6xl">
+      <p class="lp-eyebrow" data-reveal>o que a plataforma oferece</p>
+      <h2 class="lp-h2" data-reveal data-delay="1">Mais que um mural. Um caminho.</h2>
+      <div class="lp-features">
+        {% set features = [
+          ('feather', 'Desabafos', 'Coloque para fora o que pesa, anônimo se quiser. A comunidade acolhe com reações e respostas cuidadosas.'),
+          ('ear', 'Quero apenas ser ouvido', 'Marque um desabafo como somente escuta. Sem debate, sem conselhos — só um espaço seguro para existir.'),
+          ('mail-open', 'Cartas para desconhecidos', 'Escreva uma carta anônima. Alguém, em algum lugar, vai abri-la — e talvez responda. Conexões humanas genuínas.'),
+          ('clock', 'Cartas para o futuro', 'Escreva para quem você vai ser. A carta fica lacrada até a data que você escolher e reaparece quando chegar a hora.'),
+          ('spark', 'Linha do tempo emocional', 'Releia sua jornada e veja como o que você sente foi mudando ao longo do tempo. Autoconhecimento que respeita o seu ritmo.'),
+          ('heart-handshake', 'Rede de apoio', 'Caminhos reais de ajuda: o CVV e uma rede de psicólogos voluntários, para quando a dor pedir mais que palavras.')
+        ] %}
+        {% for ic, t, d in features %}
+        <article class="lp-feature" data-reveal data-stagger data-delay="{{ loop.index }}">
+          <span class="lp-feature-icon">{{ icon(ic) }}</span>
+          <h3>{{ t }}</h3>
+          <p>{{ d }}</p>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ======================= PROVA SOCIAL ======================= #}
+  <section class="lp-section lp-proof">
+    <div class="container mx-auto px-6 max-w-5xl text-center">
+      <p class="lp-eyebrow" data-reveal>vozes entre as linhas</p>
+      <h2 class="lp-h2" data-reveal data-delay="1">O silêncio de muita gente já virou palavra aqui.</h2>
+      <div class="lp-stats">
+        {% set stat_items = [
+          (stats.desabafos, 'desabafos colocados para fora'),
+          (stats.respostas, 'respostas de apoio'),
+          (stats.acolhimentos, 'gestos de acolhimento'),
+          (stats.cartas, 'cartas escritas')
+        ] %}
+        {% for value, lbl in stat_items %}
+        <div class="lp-stat" data-reveal data-stagger data-delay="{{ loop.index }}">
+          <strong class="lp-stat-num" data-count="{{ value }}">0</strong>
+          <span class="lp-stat-label">{{ lbl }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {# ======================= PRIVACIDADE ======================= #}
+  <section class="lp-section lp-section--alt">
+    <div class="container mx-auto px-6 max-w-5xl">
+      <div class="lp-split">
+        <div class="lp-split-text" data-reveal data-delay="1">
+          <p class="lp-eyebrow">sua segurança primeiro</p>
+          <h2 class="lp-h2">Desabafar não deveria dar medo.</h2>
+          <p class="lp-lead">Anonimato aqui não é ausência de identidade — é uma forma de proteger quem ainda está encontrando palavras para o que sente.</p>
+          <ul class="lp-check-list">
+            <li>{{ icon('check') }} Você escolhe aparecer ou não em cada desabafo — anônimo por padrão.</li>
+            <li>{{ icon('check') }} Sem holofotes: nada de seguidores, ranking ou exposição pública.</li>
+            <li>{{ icon('check') }} Moderação que protege quem relata a própria dor e barra ataques a terceiros.</li>
+            <li>{{ icon('check') }} Sinais de risco abrem caminhos reais de apoio, com cuidado.</li>
+          </ul>
+        </div>
+        <div class="lp-shield-card" data-reveal="scale" data-delay="2" aria-hidden="true">
+          <span class="lp-shield-icon">{{ icon('shield') }}</span>
+          <p>Conta protegida.<br>Voz livre.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ======================= APOIO ======================= #}
+  <section class="lp-section">
+    <div class="container mx-auto px-6 max-w-5xl">
+      <p class="lp-eyebrow" data-reveal>quando a dor pede mais</p>
+      <h2 class="lp-h2" data-reveal data-delay="1">Você nunca está sozinho nisso.</h2>
+      <div class="lp-support">
+        <div class="lp-support-card lp-support-card--cvv" data-reveal data-stagger data-delay="1">
+          <span class="lp-support-icon">{{ icon('hand-heart') }}</span>
+          <h3>CVV · 188</h3>
+          <p>Apoio emocional e prevenção do suicídio, 24h, gratuito e sigiloso.</p>
+        </div>
+        <div class="lp-support-card" data-reveal data-stagger data-delay="2">
+          <span class="lp-support-icon">{{ icon('heart-handshake') }}</span>
+          <h3>Rede de apoio</h3>
+          <p>Psicólogos voluntários, verificados pela nossa equipe, para um próximo passo possível.</p>
+          <a href="{{ url_for('apoio.apoio_publico') }}" class="lp-support-link">Conhecer a rede {{ icon('arrow-right') }}</a>
+        </div>
+        <div class="lp-support-card" data-reveal data-stagger data-delay="3">
+          <span class="lp-support-icon">{{ icon('sunrise') }}</span>
+          <h3>No seu tempo</h3>
+          <p>Sem pressa para estar bem. Cada caminho de apoio está aqui para quando você quiser.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ======================= CTA FINAL ======================= #}
+  <section class="lp-final">
+    <div class="lp-final-orbs" aria-hidden="true"><span class="lp-orb lp-orb-1"></span><span class="lp-orb lp-orb-2"></span></div>
+    <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+      <h2 class="lp-final-title" data-reveal>Talvez seja hora de<br>colocar isso para fora.</h2>
+      <p class="lp-final-sub" data-reveal data-delay="1">Sem nome, sem cobrança, sem pressa. Só um lugar que estava esperando por você.</p>
+      <div data-reveal data-delay="2" class="lp-final-cta">
+        <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe cta-desabafe--hero">
+          <span class="cta-icon" aria-hidden="true">{{ icon('feather') }}</span><span>Desabafe agora</span>
+        </a>
+      </div>
+      <p class="lp-final-foot" data-reveal data-delay="3">Criar conta leva menos de um minuto — e pode ser anônima.</p>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/landing.js') }}"></script>
 {% endblock %}
