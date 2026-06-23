@@ -28,6 +28,7 @@
       </div>
       <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
         <span class="badge-emocional">{{ labels.get(tag, tag|capitalize) }}</span>
+        {% if 'listen_only' in post.keys() and post.listen_only %}<span class="badge-escuta" title="O autor pediu para apenas ser ouvido">{{ icon('ear') }} Somente escuta</span>{% endif %}
         {% if 'overcome_at' in post.keys() and post.overcome_at %}<span class="badge-superacao" title="O autor marcou este desabafo como superado">{{ icon('sprout') }} Superado</span>{% endif %}
       </div>
     </div>
@@ -36,6 +37,13 @@
       <h3 class="text-xl font-semibold font-display mb-3" style="color:var(--text-main)">{{ post.title }}</h3>
     {% endif %}
     <p class="whitespace-pre-line text-lg leading-relaxed mb-5" style="color:var(--text)">{{ post.mensagem }}</p>
+
+    {% if 'overcome_message' in post.keys() and post.overcome_message %}
+      <div class="overcome-note mb-5">
+        <span class="overcome-note-label">{{ icon('sprout') }} De quem passou por isso</span>
+        <p class="whitespace-pre-line">{{ post.overcome_message }}</p>
+      </div>
+    {% endif %}
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm font-medium" style="color:var(--text-muted)">
       <span class="badge-categoria {{ post.categoria }}">{{ '#' + post.categoria }}</span>
       <time datetime="{{ post.data_postagem }}" class="flex items-center gap-1 sm:justify-end">
@@ -88,27 +96,38 @@
 
   <div class="border-t" style="border-color:var(--border)">
     <div class="p-6 space-y-4">
-      <h3 class="text-lg font-semibold font-display" style="color:var(--text-main)">Respostas</h3>
-      <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
-        <div><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line w-60"></span></div>
-      </div>
-
-      <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
-        <div class="flex flex-col sm:flex-row items-start gap-3">
-          <div class="flex-grow w-full">
-            <label class="sr-only">Responder anonimamente</label>
-            <textarea
-              class="input-modern w-full resize-none text-sm"
-              placeholder="Deixe uma resposta com cuidado..."
-              rows="2"
-              minlength="2"
-              maxlength="500"
-              required
-            ></textarea>
+      {% if 'listen_only' in post.keys() and post.listen_only %}
+        <div class="listen-only-note">
+          <span class="listen-only-icon" aria-hidden="true">{{ icon('ear') }}</span>
+          <div>
+            <p class="font-medium" style="color:var(--text-main)">Somente escuta</p>
+            <p class="text-sm" style="color:var(--text-muted)">Quem escreveu pediu apenas para ser ouvido. Este desabafo não recebe respostas — sua presença em silêncio já é cuidado.</p>
           </div>
-          <button type="submit" class="btn-modern btn-primary text-sm flex-shrink-0">Enviar</button>
         </div>
-      </form>
+      {% else %}
+        <h3 class="text-lg font-semibold font-display" style="color:var(--text-main)">Respostas</h3>
+        <div class="space-y-4 comments-container" data-post-id="{{ post.id }}">
+          <div><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line w-60"></span></div>
+        </div>
+
+        <form class="mt-6 comment-form" data-post-id="{{ post.id }}">
+          <div class="flex flex-col sm:flex-row items-start gap-3">
+            <div class="flex-grow w-full">
+              <label class="sr-only" for="comment-{{ post.id }}">Responder anonimamente</label>
+              <textarea
+                id="comment-{{ post.id }}"
+                class="input-modern w-full resize-none text-sm"
+                placeholder="Deixe uma resposta com cuidado..."
+                rows="2"
+                minlength="2"
+                maxlength="500"
+                required
+              ></textarea>
+            </div>
+            <button type="submit" class="btn-modern btn-primary text-sm flex-shrink-0">Enviar</button>
+          </div>
+        </form>
+      {% endif %}
     </div>
   </div>
 </article>

@@ -95,6 +95,7 @@ def enviar():
         categoria = request.form.get('categoria')
         emotional_tag = normalize_emotional_tag(request.form.get('emotional_tag'))
         visibility_mode = request.form.get('visibility_mode', 'anonymous').strip().lower()
+        listen_only = request.form.get('comment_mode', 'open').strip().lower() == 'listen_only'
         action = request.form.get('action', 'publish')
         post_status = 'draft' if action == 'draft' else 'published'
         
@@ -149,6 +150,7 @@ def enviar():
                 status=post_status,
                 emotional_tag=emotional_tag,
                 sensitive_flag=is_sensitive or is_hate,
+                listen_only=listen_only,
             )
             if post_status == 'published' and sensitivity['risk_level'] == RISK_HIGH:
                 db.log_sensitive_post(post_id=post_id, risk_level=RISK_HIGH)
@@ -413,7 +415,10 @@ def marcar_superacao(post_id):
     auth_redirect = _require_login_for_posts()
     if auth_redirect:
         return auth_redirect
-    if db.mark_post_overcome(post_id, session['user_id']):
+    message = request.form.get('overcome_message', '').strip()
+    if len(message) > 600:
+        message = message[:600]
+    if db.mark_post_overcome(post_id, session['user_id'], message=message):
         flash('Que caminho. Esse desabafo virou um marco de superação seu.', 'success')
     else:
         flash('Você só pode marcar como superado um desabafo que escreveu.', 'error')

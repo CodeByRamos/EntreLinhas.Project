@@ -408,6 +408,55 @@ main {
 }
 .btn-superacao:active { transform: translateY(0); }
 
+/* Selo "Somente escuta" (modo Quero apenas ser ouvido) — calmo, azul-ardósia. */
+.badge-escuta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #c3d2ea;
+  border: 1px solid rgba(159, 180, 212, 0.34);
+  background: rgba(159, 180, 212, 0.1);
+}
+
+/* Painel de "somente escuta" no lugar das respostas */
+.listen-only-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(159, 180, 212, 0.32);
+  background: rgba(159, 180, 212, 0.05);
+}
+.listen-only-icon { color: var(--text-muted); margin-top: 0.1rem; }
+.listen-only-icon .el-icon { width: 1.4rem; height: 1.4rem; }
+
+/* Mensagem de superação deixada para quem passa pela mesma situação */
+.overcome-note {
+  border-left: 3px solid rgba(120, 214, 184, 0.6);
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1.05rem;
+  background: linear-gradient(100deg, rgba(120, 214, 184, 0.1), rgba(120, 214, 184, 0.02));
+}
+.overcome-note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a9e3d0;
+  margin-bottom: 0.3rem;
+}
+.overcome-note p { color: var(--text); line-height: 1.6; font-style: italic; }
+
 /* ============================================================================
    Linha do Tempo Emocional — espinha vertical + nós, dentro da paleta navy.
    ============================================================================ */

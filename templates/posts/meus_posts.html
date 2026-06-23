@@ -35,23 +35,26 @@
               {% if post.overcome_at %}<span class="badge-superacao">{{ icon('sprout') }} Superado em {{ post.overcome_at }}</span>{% endif %}
             </div>
           </div>
-          <div class="flex flex-col sm:flex-row gap-2">
+          <div class="flex flex-col gap-2 sm:w-72 flex-shrink-0">
             {% if post.overcome_at %}
               <form method="post" action="{{ url_for('posts.desmarcar_superacao', post_id=post.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                <button type="submit" class="btn-modern btn-ghost">Desfazer marco</button>
+                <button type="submit" class="btn-modern btn-ghost w-full">Desfazer marco</button>
               </form>
             {% elif post.status == 'published' %}
-              <form method="post" action="{{ url_for('posts.marcar_superacao', post_id=post.id) }}">
+              <form method="post" action="{{ url_for('posts.marcar_superacao', post_id=post.id) }}" class="flex flex-col gap-2">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="text" name="overcome_message" maxlength="600" class="input-modern text-sm" placeholder="Mensagem p/ quem passa por isso (opcional)" />
                 <button type="submit" class="btn-modern btn-superacao">Eu superei isso</button>
               </form>
             {% endif %}
-            <a class="btn-modern btn-ghost" href="{{ url_for('posts.editar_post', post_id=post.id) }}">Editar</a>
-            <form method="post" action="{{ url_for('posts.excluir_post', post_id=post.id) }}" onsubmit="return confirm('Excluir este post permanentemente?');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-              <button type="submit" class="btn-modern btn-danger">Excluir</button>
-            </form>
+            <div class="flex gap-2">
+              <a class="btn-modern btn-ghost flex-grow text-center" href="{{ url_for('posts.editar_post', post_id=post.id) }}">Editar</a>
+              <form method="post" action="{{ url_for('posts.excluir_post', post_id=post.id) }}" onsubmit="return confirm('Excluir este post permanentemente?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-modern btn-danger">Excluir</button>
+              </form>
+            </div>
           </div>
         </div>
       </article>

@@ -475,6 +475,8 @@ def init_db():
     _ensure_column(conn, "posts", "is_deleted", "INTEGER DEFAULT 0")
     _ensure_column(conn, "posts", "report_count", "INTEGER DEFAULT 0")
     _ensure_column(conn, "posts", "overcome_at", "TEXT")
+    _ensure_column(conn, "posts", "overcome_message", "TEXT")
+    _ensure_column(conn, "posts", "listen_only", "INTEGER DEFAULT 0")
     _ensure_column(conn, "comments", "mensagem", "TEXT")
     _ensure_column(conn, "comments", "visivel", "INTEGER DEFAULT 1")
     _ensure_column(conn, "comments", "user_id", "INTEGER")
@@ -639,9 +641,13 @@ def ensure_reports_comments_user_id():
         if USE_POSTGRES:
             conn.execute("ALTER TABLE reports_comments ADD COLUMN IF NOT EXISTS user_id INTEGER")
             conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS overcome_at VARCHAR(20)")
+            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS overcome_message TEXT")
+            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS listen_only INTEGER DEFAULT 0")
         else:
             _ensure_column(conn, "reports_comments", "user_id", "INTEGER")
             _ensure_column(conn, "posts", "overcome_at", "TEXT")
+            _ensure_column(conn, "posts", "overcome_message", "TEXT")
+            _ensure_column(conn, "posts", "listen_only", "INTEGER DEFAULT 0")
         conn.commit()
     except Exception as exc:
         logger.warning("ensure_reports_comments_user_id: %s", exc)
@@ -659,6 +665,7 @@ def get_posts(limit=10, offset=0, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -677,6 +684,7 @@ def get_posts(limit=10, offset=0, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -726,6 +734,7 @@ def get_post(post_id, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -742,6 +751,7 @@ def get_post(post_id, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -922,7 +932,7 @@ def delete_post(post_id):
     finally:
         conn.close()
 
-def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title=None, status='published', emotional_tag=None, sensitive_flag=False):
+def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title=None, status='published', emotional_tag=None, sensitive_flag=False, listen_only=False):
     """Cria um novo post com autoria obrigatória."""
     conn = get_db_connection()
     data_postagem = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -962,12 +972,12 @@ def create_post(mensagem, categoria, user_id, visibility_mode='anonymous', title
         cursor.execute('''
             INSERT INTO posts (
                 mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
-                emotional_tag, sensitive_flag, mood_type, visivel, is_deleted, report_count, updated_at
+                emotional_tag, sensitive_flag, mood_type, listen_only, visivel, is_deleted, report_count, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, datetime('now'))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 0, datetime('now'))
         ''', (
             mensagem, categoria, data_postagem, user_id, visibility_mode, status, title,
-            emotional_tag, 1 if sensitive_flag else 0, mood_type,
+            emotional_tag, 1 if sensitive_flag else 0, mood_type, 1 if listen_only else 0,
         ))
 
         post_id = cursor.lastrowid
@@ -1010,15 +1020,17 @@ def update_post_visibility(post_id, visibility):
 # overcome_at (texto dd/mm/YYYY HH:MM) guarda quando virou marco.
 # ---------------------------------------------------------------------------
 
-def mark_post_overcome(post_id, user_id):
-    """Marca um desabafo do PRÓPRIO autor como superado. Idempotente."""
+def mark_post_overcome(post_id, user_id, message=None):
+    """Marca um desabafo do PRÓPRIO autor como superado, com mensagem opcional
+    para quem passa pela mesma situação. Idempotente."""
     conn = get_db_connection()
     overcome_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    message = (message or "").strip() or None
     try:
         cursor = conn.execute(
-            "UPDATE posts SET overcome_at = ? "
+            "UPDATE posts SET overcome_at = ?, overcome_message = ? "
             "WHERE id = ? AND user_id = ? AND COALESCE(is_deleted, 0) = 0",
-            (overcome_at, post_id, user_id),
+            (overcome_at, message, post_id, user_id),
         )
         conn.commit()
         return cursor.rowcount > 0
@@ -1036,7 +1048,7 @@ def unmark_post_overcome(post_id, user_id):
     conn = get_db_connection()
     try:
         cursor = conn.execute(
-            "UPDATE posts SET overcome_at = NULL WHERE id = ? AND user_id = ?",
+            "UPDATE posts SET overcome_at = NULL, overcome_message = NULL WHERE id = ? AND user_id = ?",
             (post_id, user_id),
         )
         conn.commit()
@@ -1353,6 +1365,7 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,
@@ -1371,6 +1384,7 @@ def get_posts_by_category(categoria, limit=10, offset=0, include_hidden=False):
             SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                    p.mood_type, p.report_count, p.data_postagem, p.visivel,
                    p.user_id, p.visibility_mode, p.status, p.overcome_at,
+                   p.overcome_message, p.listen_only,
                    u.username as author_username,
                    u.nickname as author_nickname,
                    u.display_name as author_display_name,

@@ -65,6 +65,10 @@ class Post(db.Model):
     report_count = db.Column(db.Integer, default=0, server_default="0", nullable=False)
     # Marco de Superação: quando o autor marca o desabafo como "eu superei isso"
     overcome_at = db.Column(db.String(20))
+    # Mensagem deixada para quem passa pela mesma situação (junto da superação)
+    overcome_message = db.Column(db.Text)
+    # Modo "Quero apenas ser ouvido": bloqueia comentários quando 1
+    listen_only = db.Column(db.Integer, default=0, server_default="0", nullable=False)
 
 
 class Comment(db.Model):

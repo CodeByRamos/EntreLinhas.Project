@@ -77,7 +77,11 @@ def add_comment(post_id):
         post = db.get_post(post_id)
         if not post:
             return jsonify({'error': 'Esse desabafo não está mais disponível.'}), 404
-        
+
+        # Modo "Quero apenas ser ouvido": respostas bloqueadas no backend.
+        if 'listen_only' in post.keys() and post['listen_only']:
+            return jsonify({'error': 'Este desabafo é somente escuta. O autor pediu para apenas ser ouvido, sem respostas.'}), 403
+
         # Cria o comentário no banco de dados (associado ao autor logado)
         comment_id = db.create_comment(post_id, comment_text, user_id=session['user_id'])
         

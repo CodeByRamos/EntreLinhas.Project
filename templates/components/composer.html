@@ -48,13 +48,23 @@
       </div>
     </div>
 
-    <div>
-      <label for="visibility_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Como exibir este desabafo?</label>
-      <select id="visibility_mode" name="visibility_mode" class="input-modern">
-        {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
-        <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
-        <option value="profile" {% if visibility_preference == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
-      </select>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label for="visibility_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Como exibir este desabafo?</label>
+        <select id="visibility_mode" name="visibility_mode" class="input-modern">
+          {% set visibility_preference = (current_user.default_visibility_mode if current_user else 'anonymous') %}
+          <option value="anonymous" {% if visibility_preference == 'anonymous' %}selected{% endif %}>Anônimo (recomendado)</option>
+          <option value="profile" {% if visibility_preference == 'profile' %}selected{% endif %}>Mostrar meu perfil</option>
+        </select>
+      </div>
+      <div>
+        <label for="comment_mode" class="block font-medium mb-2" style="color:var(--text-muted)">Tipo de desabafo</label>
+        <select id="comment_mode" name="comment_mode" class="input-modern" aria-label="Permitir respostas ou apenas ser ouvido">
+          <option value="open" selected>Permitir respostas</option>
+          <option value="listen_only">Quero apenas ser ouvido</option>
+        </select>
+        <p class="text-xs mt-1" style="color:var(--text-faint)">"Apenas ser ouvido" desativa as respostas neste desabafo.</p>
+      </div>
     </div>
 
     <div class="flex flex-wrap gap-3 pt-1">
