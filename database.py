@@ -1693,36 +1693,8 @@ def get_report_count(post_id):
     conn.close()
     return count
 
-def get_reports_by_post(post_id):
-    """Retorna todos os reports de um post específico."""
-    conn = get_db_connection()
-    reports = conn.execute('''
-        SELECT r.id, r.data, p.nickname
-        FROM reports r
-        LEFT JOIN profiles p ON r.profile_id = p.id
-                                   WHERE r.post_id = ?
-        ORDER BY r.data DESC
-    ''', (post_id,)).fetchall()
-    conn.close()
-    return reports
-
-def get_all_reports(limit=50, offset=0):
-    """Retorna todos os reports para o painel administrativo."""
-    conn = get_db_connection()
-    reports = conn.execute('''
-        SELECT r.id, r.post_id, r.data, p.nickname, 
-               posts.mensagem, posts.categoria,
-               COUNT(r2.id) as total_reports
-        FROM reports r
-        LEFT JOIN profiles p ON r.profile_id = p.id
-        LEFT JOIN posts ON r.post_id = posts.id
-        LEFT JOIN reports r2 ON r.post_id = r2.post_id
-        GROUP BY r.post_id
-        ORDER BY total_reports DESC, r.data DESC
-        LIMIT ? OFFSET ?
-    ''', (limit, offset)).fetchall()
-    conn.close()
-    return reports
+# get_reports_by_post e get_all_reports tinham versões duplicadas/mortas aqui
+# (sobrescritas pelas definições vivas mais abaixo). Removidas na limpeza Wave 3.
 
 
 def add_comment_karma(comment_id, profile_id, karma_type):
@@ -2663,53 +2635,8 @@ if __name__ == "__main__":
     print("Banco de dados inicializado com sucesso!")
 
 
-def remove_report(post_id, profile_id=None):
-    """Remove um report de um post."""
-    conn = get_db_connection()
-    
-    try:
-        # Verificar se existe um report para remover
-        if profile_id:
-            existing_report = conn.execute('''
-                SELECT id FROM reports 
-                WHERE post_id = ? AND profile_id = ?
-            ''', (post_id, profile_id)).fetchone()
-            
-            if not existing_report:
-                conn.close()
-                return False, "Você não reportou este desabafo."
-            
-            # Remover o report específico do usuário
-            conn.execute('''
-                DELETE FROM reports 
-                WHERE post_id = ? AND profile_id = ?
-            ''', (post_id, profile_id))
-        else:
-            # Se não há profile_id, remove todos os reports do post (admin)
-            conn.execute('''
-                DELETE FROM reports WHERE post_id = ?
-            ''', (post_id,))
-        
-        # Verificar quantos reports o post ainda tem
-        report_count = conn.execute('''
-            SELECT COUNT(*) FROM reports WHERE post_id = ?
-        ''', (post_id,)).fetchone()[0]
-        
-        # Se ficar com menos de 5 reports, tornar o post visível novamente
-        if report_count < 5:
-            conn.execute('''
-                UPDATE posts SET visivel = 1 WHERE id = ?
-            ''', (post_id,))
-        
-        conn.commit()
-        conn.close()
-        return True, "Report removido com sucesso."
-        
-    except Exception as e:
-        conn.rollback()
-        conn.close()
-        print(f"Erro ao remover report: {e}")
-        return False, "Erro ao remover report."
+# remove_report tinha uma versão duplicada/morta aqui (sobrescrita pela definição
+# viva mais abaixo, que aceita user_id). Removida na limpeza Wave 3.
 
 
 def get_user_reaction(post_id, reaction_type, user_id):

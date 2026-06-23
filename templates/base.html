@@ -39,6 +39,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen font-sans flex flex-col">
+  <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo</a>
   {% set path = request.path %}
   {% set logged_user = current_user if current_user else none %}
 
@@ -139,7 +140,7 @@
   {% endif %}
   {% endblock %}
 
-  <main class="flex-grow">
+  <main class="flex-grow" id="conteudo-principal" tabindex="-1">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="container mx-auto px-6 pt-6 space-y-3" aria-live="polite">

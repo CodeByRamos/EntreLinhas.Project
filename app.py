@@ -17,7 +17,6 @@ from routes.stats import stats
 from routes.search import search
 from routes.profile import profile
 from routes.reports import reports
-from routes.karma import karma
 from routes.auth import auth
 from routes.notifications import notifications
 from routes.help import support
@@ -105,7 +104,6 @@ def create_app():
     app.register_blueprint(search)
     app.register_blueprint(profile)
     app.register_blueprint(reports)
-    app.register_blueprint(karma)
     app.register_blueprint(auth)
     app.register_blueprint(notifications)
     app.register_blueprint(support)

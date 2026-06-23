@@ -51,7 +51,7 @@ function loadComments(postId) {
                     container.appendChild(createCommentElement(comment));
                 });
             } else {
-                container.innerHTML = '<p class="text-sm" style="color:var(--text-muted)">Nenhuma resposta ainda. Talvez a sua seja a primeira.</p>';
+                container.innerHTML = '<p class="comments-empty text-sm" style="color:var(--text-muted)">Nenhuma resposta ainda. Talvez a sua seja a primeira.</p>';
             }
         })
         .catch(error => {
@@ -100,8 +100,8 @@ function submitComment(postId, commentText, textarea) {
             if (data.comment) {
                 const container = document.querySelector(`.comments-container[data-post-id="${postId}"]`);
                 
-                // Se for o primeiro comentário, limpa a mensagem "nenhum comentário"
-                if (container.querySelector('p.text-gray-500')) {
+                // Se for o primeiro comentário, limpa a mensagem de estado vazio
+                if (container.querySelector('.comments-empty')) {
                     container.innerHTML = '';
                 }
                 

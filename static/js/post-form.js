@@ -33,54 +33,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const remaining = maxLength - count;
         remainingChars.textContent = remaining;
         
-        // Atualizar classes de estilo com base na contagem
+        // Cores do contador no tema v2 (tokens), e estado do botão de envio.
+        const setCounterColor = (color, bold) => {
+            charCount.style.color = color;
+            remainingChars.style.color = color;
+            charCount.style.fontWeight = bold ? '700' : '';
+            remainingChars.style.fontWeight = bold ? '700' : '';
+        };
+        const setSubmitEnabled = (enabled) => {
+            if (!submitButton) return;
+            submitButton.disabled = !enabled;
+            submitButton.classList.toggle('opacity-50', !enabled);
+            submitButton.classList.toggle('cursor-not-allowed', !enabled);
+        };
+
         if (count > maxLength) {
-            charCount.classList.add('text-red-500', 'font-bold');
-            charCount.classList.remove('text-gray-500', 'text-yellow-500');
-            remainingChars.classList.add('text-red-500', 'font-bold');
-            remainingChars.classList.remove('text-gray-500', 'text-yellow-500');
-            
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.remove('hover:bg-primary-700');
-            }
+            setCounterColor('var(--danger)', true);
+            setSubmitEnabled(false);
         } else if (count > maxLength * 0.8) {
-            // Acima de 80% do limite
-            charCount.classList.add('text-yellow-500');
-            charCount.classList.remove('text-red-500', 'text-gray-500', 'font-bold');
-            remainingChars.classList.add('text-yellow-500');
-            remainingChars.classList.remove('text-red-500', 'text-gray-500', 'font-bold');
-            
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.add('hover:bg-primary-700');
-            }
+            setCounterColor('#e2b76e', false);   // âmbar suave (atenção)
+            setSubmitEnabled(true);
         } else if (count < minLength) {
-            // Abaixo do mínimo
-            charCount.classList.add('text-yellow-500');
-            charCount.classList.remove('text-red-500', 'text-gray-500', 'font-bold');
-            remainingChars.classList.add('text-yellow-500');
-            remainingChars.classList.remove('text-red-500', 'text-gray-500', 'font-bold');
-            
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.remove('hover:bg-primary-700');
-            }
+            setCounterColor('#e2b76e', false);
+            setSubmitEnabled(false);
         } else {
-            // Normal
-            charCount.classList.add('text-gray-500');
-            charCount.classList.remove('text-red-500', 'text-yellow-500', 'font-bold');
-            remainingChars.classList.add('text-gray-500');
-            remainingChars.classList.remove('text-red-500', 'text-yellow-500', 'font-bold');
-            
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                submitButton.classList.add('hover:bg-primary-700');
-            }
+            setCounterColor('var(--text-muted)', false);
+            setSubmitEnabled(true);
         }
     }
     
@@ -124,15 +102,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 5000);
             }
             
-            // Destacar campos com erro
+            // Destacar campos com erro (classe v2 que o .input-modern reconhece)
             if (conteudo.length < minLength || conteudo.length > maxLength) {
-                conteudoTextarea.classList.add('border-red-500', 'focus:ring-red-500');
-                conteudoTextarea.classList.remove('border-gray-300', 'focus:ring-primary-500');
+                conteudoTextarea.classList.add('input-error');
             }
-            
             if (!categoria) {
-                categoriaSelect.classList.add('border-red-500', 'focus:ring-red-500');
-                categoriaSelect.classList.remove('border-gray-300', 'focus:ring-primary-500');
+                categoriaSelect.classList.add('input-error');
             }
         }
         
@@ -178,18 +153,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCharCount();
     }
     
-    // Remover classes de erro ao interagir com os campos
+    // Remover destaque de erro ao interagir com os campos
     if (conteudoTextarea) {
         conteudoTextarea.addEventListener('focus', function() {
-            this.classList.remove('border-red-500', 'focus:ring-red-500');
-            this.classList.add('border-gray-300', 'focus:ring-primary-500');
+            this.classList.remove('input-error');
         });
     }
-    
+
     if (categoriaSelect) {
         categoriaSelect.addEventListener('focus', function() {
-            this.classList.remove('border-red-500', 'focus:ring-red-500');
-            this.classList.add('border-gray-300', 'focus:ring-primary-500');
+            this.classList.remove('input-error');
         });
     }
     

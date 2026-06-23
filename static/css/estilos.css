@@ -291,6 +291,34 @@ main {
   background: rgba(224, 122, 110, 0.12);
 }
 
+/* Destaque de campo com erro de validação no tema v2 (substitui border-red-500
+   do tema antigo, que o .input-modern ignorava). */
+.input-modern.input-error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(224, 122, 110, 0.22);
+}
+
+/* Skip-link: invisível até receber foco por teclado (acessibilidade). */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 200;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 12px 12px;
+  background: var(--brand, #6aa6ff);
+  color: #0a1020;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+#conteudo-principal:focus { outline: none; }
+
 .segmented-link {
   border-radius: 999px;
   padding: 0.45rem 1rem;
