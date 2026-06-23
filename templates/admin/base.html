@@ -59,7 +59,9 @@
         <a href="{{ url_for('admin.posts') }}" class="nav-pill {{ 'active' if path.startswith('/admin/posts') else '' }}">Desabafos</a>
         <a href="{{ url_for('admin.post_reports') }}" class="nav-pill {{ 'active' if path.startswith('/admin/reports') else '' }}">Reports</a>
         <a href="{{ url_for('admin.comments') }}" class="nav-pill {{ 'active' if path.startswith('/admin/comments') else '' }}">Respostas</a>
+        <a href="{{ url_for('admin.moderation_queue') }}" class="nav-pill {{ 'active' if path.startswith('/admin/moderacao') else '' }}">Moderação</a>
         <a href="{{ url_for('admin.comment_reports') }}" class="nav-pill {{ 'active' if path.startswith('/admin/comment-reports') else '' }}">Alertas</a>
+        <a href="{{ url_for('apoio.admin_psicologos') }}" class="nav-pill {{ 'active' if path.startswith('/admin/psicologos') else '' }}">Psicólogos</a>
         <a href="{{ url_for('admin.users') }}" class="nav-pill {{ 'active' if path.startswith('/admin/usuarios') else '' }}">Equipe</a>
       </div>
       <div class="nav-actions">
@@ -85,7 +87,9 @@
         <a href="{{ url_for('admin.posts') }}" class="nav-pill {{ 'active' if path.startswith('/admin/posts') else '' }}">Desabafos</a>
         <a href="{{ url_for('admin.post_reports') }}" class="nav-pill {{ 'active' if path.startswith('/admin/reports') else '' }}">Reports</a>
         <a href="{{ url_for('admin.comments') }}" class="nav-pill {{ 'active' if path.startswith('/admin/comments') else '' }}">Respostas</a>
+        <a href="{{ url_for('admin.moderation_queue') }}" class="nav-pill {{ 'active' if path.startswith('/admin/moderacao') else '' }}">Moderação</a>
         <a href="{{ url_for('admin.comment_reports') }}" class="nav-pill {{ 'active' if path.startswith('/admin/comment-reports') else '' }}">Alertas</a>
+        <a href="{{ url_for('apoio.admin_psicologos') }}" class="nav-pill {{ 'active' if path.startswith('/admin/psicologos') else '' }}">Psicólogos</a>
         <a href="{{ url_for('admin.users') }}" class="nav-pill {{ 'active' if path.startswith('/admin/usuarios') else '' }}">Equipe</a>
         <a href="{{ url_for('main.home') }}" class="nav-pill">Voltar ao site</a>
         <a href="{{ url_for('admin.logout') }}" class="nav-pill nav-exit">Sair</a>

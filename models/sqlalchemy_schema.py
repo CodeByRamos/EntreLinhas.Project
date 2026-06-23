@@ -205,6 +205,39 @@ class Psychologist(db.Model):
     is_verified = db.Column(db.Integer, default=0, server_default="0", nullable=False)
     is_active = db.Column(db.Integer, default=1, server_default="1", nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, server_default=sa.func.now(), nullable=False)
+    # Snapshot da última revisão (auditoria detalhada vai em psychologist_reviews)
+    reviewed_by_id = db.Column(db.Integer)
+    reviewed_by_username = db.Column(db.String(80))
+    reviewed_at = db.Column(db.String(20))
+    review_notes = db.Column(db.Text)
+
+
+class PsychologistReview(db.Model):
+    """Trilha de auditoria das decisões sobre cadastros de psicólogos."""
+    __tablename__ = "psychologist_reviews"
+
+    id = db.Column(db.Integer, primary_key=True)
+    psychologist_id = db.Column(db.Integer, db.ForeignKey("psychologists.id"), nullable=False)
+    action = db.Column(db.String(30), nullable=False)          # approved/rejected/changes_requested
+    status_to = db.Column(db.String(20), nullable=False)
+    notes = db.Column(db.Text)
+    reviewer_id = db.Column(db.Integer)
+    reviewer_username = db.Column(db.String(80))
+    created_at = db.Column(db.String(20), nullable=False)
+
+
+class ModerationAction(db.Model):
+    """Histórico de ações de moderação sobre desabafos e respostas."""
+    __tablename__ = "moderation_actions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    target_type = db.Column(db.String(20), nullable=False)     # post/comment
+    target_id = db.Column(db.Integer, nullable=False)
+    action = db.Column(db.String(20), nullable=False)          # approve/hide/remove/review
+    notes = db.Column(db.Text)
+    moderator_id = db.Column(db.Integer)
+    moderator_username = db.Column(db.String(80))
+    created_at = db.Column(db.String(20), nullable=False)
 
 
 class FutureLetter(db.Model):

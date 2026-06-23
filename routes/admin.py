@@ -222,6 +222,81 @@ def remove_comment_report(report_id):
         return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
 
 
+@admin.route('/moderacao')
+@admin_required
+def moderation_queue():
+    """Fila de revisão: desabafos sensíveis + respostas denunciadas + histórico."""
+    return render_template(
+        'admin/moderation.html',
+        sensitive_posts=db.get_sensitive_posts_for_queue(limit=80),
+        reported_comments=db.get_reported_comments_for_queue(limit=80),
+        counts=db.get_moderation_queue_counts(),
+        history=db.get_moderation_actions(limit=40),
+    )
+
+
+_MOD_POST_ACTIONS = ('approve', 'review', 'hide', 'remove')
+_MOD_COMMENT_ACTIONS = ('approve', 'review', 'hide', 'remove')
+
+
+@admin.route('/moderacao/post/<int:post_id>/<action>', methods=['POST'])
+@admin_required
+def moderate_post(post_id, action):
+    if action not in _MOD_POST_ACTIONS:
+        flash('Ação de moderação inválida.', 'error')
+        return redirect(url_for('admin.moderation_queue'))
+    post = db.get_post(post_id, include_hidden=True)
+    if not post:
+        flash('Esse desabafo não está mais disponível.', 'error')
+        return redirect(url_for('admin.moderation_queue'))
+
+    notes = request.form.get('notes', '').strip()
+    if action in ('approve', 'review'):
+        db.clear_post_sensitive_flag(post_id)
+        msg = 'Desabafo aprovado e mantido.' if action == 'approve' else 'Desabafo revisado.'
+    elif action == 'hide':
+        db.update_post_visibility(post_id, 0)
+        msg = 'Desabafo ocultado do feed.'
+    else:  # remove
+        db.soft_delete_post(post_id)
+        msg = 'Desabafo removido.'
+
+    db.log_moderation_action('post', post_id, action,
+                             moderator_id=session.get('admin_user_id'),
+                             moderator_username=session.get('admin_username'),
+                             notes=notes)
+    flash(msg, 'success')
+    return redirect(url_for('admin.moderation_queue'))
+
+
+@admin.route('/moderacao/comment/<int:comment_id>/<action>', methods=['POST'])
+@admin_required
+def moderate_comment(comment_id, action):
+    if action not in _MOD_COMMENT_ACTIONS:
+        flash('Ação de moderação inválida.', 'error')
+        return redirect(url_for('admin.moderation_queue'))
+    comment = db.get_comment_by_id(comment_id, include_hidden=True)
+    if not comment:
+        flash('Essa resposta não está mais disponível.', 'error')
+        return redirect(url_for('admin.moderation_queue'))
+
+    notes = request.form.get('notes', '').strip()
+    # Qualquer decisão resolve as denúncias pendentes (tira a resposta da fila).
+    db.resolve_comment_reports(comment_id)
+    if action in ('approve', 'review'):
+        msg = 'Resposta aprovada e mantida.' if action == 'approve' else 'Resposta revisada.'
+    else:  # hide ou remove → oculta (comentário não tem soft-delete próprio)
+        db.update_comment_visibility(comment_id, 0)
+        msg = 'Resposta ocultada.' if action == 'hide' else 'Resposta removida.'
+
+    db.log_moderation_action('comment', comment_id, action,
+                             moderator_id=session.get('admin_user_id'),
+                             moderator_username=session.get('admin_username'),
+                             notes=notes)
+    flash(msg, 'success')
+    return redirect(url_for('admin.moderation_queue'))
+
+
 @admin.route('/usuarios')
 @admin_required
 def users():

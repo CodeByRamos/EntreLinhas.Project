@@ -279,6 +279,18 @@ main {
   background: rgba(159, 180, 212, 0.06);
 }
 
+.status-warn {
+  color: #f4d9a6;
+  border-color: rgba(226, 183, 110, 0.5);
+  background: rgba(226, 183, 110, 0.12);
+}
+
+.status-danger {
+  color: #f3b6b0;
+  border-color: rgba(224, 122, 110, 0.5);
+  background: rgba(224, 122, 110, 0.12);
+}
+
 .segmented-link {
   border-radius: 999px;
   padding: 0.45rem 1rem;

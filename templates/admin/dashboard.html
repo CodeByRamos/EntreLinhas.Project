@@ -40,10 +40,10 @@
         <p class="mt-2 max-w-2xl" style="color:var(--text-muted)">Priorize reports pendentes, posts sensíveis e conteúdos ocultos. A ideia é cuidar do espaço sem transformar dor em punição.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:max-w-xl">
-        <a href="{{ url_for('admin.post_reports') }}" class="filter-link active">Ver reports pendentes</a>
-        <a href="{{ url_for('admin.posts', visibility='sensitive') }}" class="filter-link">Ver posts sensíveis</a>
+        <a href="{{ url_for('admin.moderation_queue') }}" class="filter-link active">Fila de moderação</a>
+        <a href="{{ url_for('admin.post_reports') }}" class="filter-link">Ver reports pendentes</a>
+        <a href="{{ url_for('apoio.admin_psicologos') }}" class="filter-link">Psicólogos voluntários</a>
         <a href="{{ url_for('admin.posts', visibility='hidden') }}" class="filter-link">Desabafos ocultos: {{ stats.hidden_posts }}</a>
-        <a href="{{ url_for('admin.comments', visibility='hidden') }}" class="filter-link">Respostas ocultas: {{ stats.hidden_comments }}</a>
       </div>
     </div>
   </section>

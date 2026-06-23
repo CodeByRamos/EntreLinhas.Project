@@ -3017,6 +3017,155 @@ def get_reports_by_post(post_id):
     return reports
 
 
+# ---------------------------------------------------------------------------
+# Fila de moderação (Wave 2): conteúdo sensível/denunciado + histórico de ações
+# ---------------------------------------------------------------------------
+
+def get_sensitive_posts_for_queue(limit=50, offset=0):
+    """Desabafos marcados como sensíveis e ainda visíveis (precisam de revisão)."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.report_count, p.data_postagem, p.visivel, p.status, p.visibility_mode,
+               u.username AS author_username, u.display_name AS author_display_name
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.sensitive_flag = 1 AND p.visivel = 1
+          AND COALESCE(p.is_deleted, 0) = 0 AND p.status = 'published'
+        ORDER BY p.report_count DESC, p.id DESC
+        LIMIT ? OFFSET ?
+        """,
+        (limit, offset),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_reported_comments_for_queue(limit=50):
+    """Respostas com denúncias não resolvidas, agrupadas, com contagem e post de origem."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        """
+        SELECT c.id, c.post_id, c.mensagem, c.data_comentario, c.visivel,
+               COUNT(rc.id) AS report_count,
+               MAX(rc.data_report) AS last_report
+        FROM comments c
+        JOIN reports_comments rc ON rc.comment_id = c.id
+        WHERE COALESCE(rc.resolved, 0) = 0 AND c.visivel = 1
+        GROUP BY c.id, c.post_id, c.mensagem, c.data_comentario, c.visivel
+        ORDER BY report_count DESC, c.id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def clear_post_sensitive_flag(post_id):
+    """Marca o post como revisado/ok: tira o flag de sensível (sai da fila), mantém visível."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute("UPDATE posts SET sensitive_flag = 0 WHERE id = ?", (post_id,))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.clear_post_sensitive_flag", "posts.update", e,
+                      post_id=post_id, table="posts", operation="update")
+        return False
+    finally:
+        conn.close()
+
+
+def soft_delete_post(post_id):
+    """Remoção reversível pela moderação: is_deleted=1 + oculta. Preserva o registro."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE posts SET is_deleted = 1, visivel = 0 WHERE id = ?", (post_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.soft_delete_post", "posts.update", e,
+                      post_id=post_id, table="posts", operation="update")
+        return False
+    finally:
+        conn.close()
+
+
+def resolve_comment_reports(comment_id):
+    """Resolve todas as denúncias pendentes de uma resposta (tira da fila)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.execute(
+            "UPDATE reports_comments SET resolved = 1 WHERE comment_id = ? AND COALESCE(resolved, 0) = 0",
+            (comment_id,),
+        )
+        conn.commit()
+        return cursor.rowcount
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.resolve_comment_reports", "reports_comments.update", e,
+                      comment_id=comment_id, table="reports_comments", operation="update")
+        return 0
+    finally:
+        conn.close()
+
+
+def log_moderation_action(target_type, target_id, action, moderator_id=None,
+                          moderator_username=None, notes=None):
+    """Registra uma ação de moderação na trilha de auditoria."""
+    conn = get_db_connection()
+    created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    notes = (notes or "").strip() or None
+    try:
+        conn.execute(
+            "INSERT INTO moderation_actions "
+            "(target_type, target_id, action, notes, moderator_id, moderator_username, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (target_type, target_id, action, notes, moderator_id, moderator_username, created_at),
+        )
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        log_exception(logger, "database.log_moderation_action", "moderation_actions.insert", e,
+                      table="moderation_actions", operation="insert")
+        return False
+    finally:
+        conn.close()
+
+
+def get_moderation_actions(limit=80):
+    """Histórico recente de ações de moderação."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM moderation_actions ORDER BY id DESC LIMIT ?", (limit,)
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_moderation_queue_counts():
+    """Contagens para os badges da fila."""
+    conn = get_db_connection()
+    sensitive = conn.execute(
+        "SELECT COUNT(*) FROM posts WHERE sensitive_flag = 1 AND visivel = 1 "
+        "AND COALESCE(is_deleted, 0) = 0 AND status = 'published'"
+    ).fetchone()[0]
+    reported_comments = conn.execute(
+        "SELECT COUNT(DISTINCT rc.comment_id) FROM reports_comments rc "
+        "JOIN comments c ON c.id = rc.comment_id "
+        "WHERE COALESCE(rc.resolved, 0) = 0 AND c.visivel = 1"
+    ).fetchone()[0]
+    conn.close()
+    return {"sensitive_posts": sensitive, "reported_comments": reported_comments}
+
+
 def get_all_reports(limit=50, offset=0, status=None):
     conn = get_db_connection()
     filters = []

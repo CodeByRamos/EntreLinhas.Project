@@ -93,15 +93,56 @@ def admin_psicologos():
     return render_template(
         'admin/psychologists.html',
         pendentes=dbf.get_psychologists_by_status('pending'),
+        ajustes=dbf.get_psychologists_by_status('changes_requested'),
         todos=dbf.get_all_psychologists(),
+        counts=dbf.get_psychologist_status_counts(),
     )
+
+
+@apoio.route('/admin/psicologos/<int:psych_id>')
+def admin_psicologo_detalhe(psych_id):
+    if not _admin_ok():
+        return redirect(url_for('admin.login'))
+    psych = dbf.get_psychologist(psych_id)
+    if not psych:
+        flash('Cadastro não encontrado.', 'error')
+        return redirect(url_for('apoio.admin_psicologos'))
+    return render_template(
+        'admin/psychologist_detail.html',
+        p=psych,
+        historico=dbf.get_psychologist_reviews(psych_id),
+    )
+
+
+_ACAO_STATUS = {'aprovar': 'approved', 'rejeitar': 'rejected', 'ajustes': 'changes_requested'}
+_ACAO_MSG = {
+    'approved': 'Psicólogo aprovado — agora aparece na Rede de Apoio.',
+    'rejected': 'Cadastro rejeitado.',
+    'changes_requested': 'Pedido de ajustes registrado.',
+}
 
 
 @apoio.route('/admin/psicologos/<int:psych_id>/<acao>', methods=['POST'])
 def admin_psicologo_acao(psych_id, acao):
     if not _admin_ok():
         return redirect(url_for('admin.login'))
-    status = {'aprovar': 'approved', 'rejeitar': 'rejected'}.get(acao)
-    if status and dbf.set_psychologist_status(psych_id, status):
-        flash('Psicólogo aprovado.' if status == 'approved' else 'Cadastro rejeitado.', 'success')
-    return redirect(url_for('apoio.admin_psicologos'))
+    status = _ACAO_STATUS.get(acao)
+    if not status:
+        flash('Ação inválida.', 'error')
+        return redirect(url_for('apoio.admin_psicologos'))
+
+    notes = request.form.get('notes', '').strip()
+    # Rejeição e pedido de ajustes pedem uma observação (explica o motivo).
+    if status in ('rejected', 'changes_requested') and not notes:
+        flash('Escreva uma observação explicando a decisão antes de continuar.', 'error')
+        return redirect(request.referrer or url_for('apoio.admin_psicologos'))
+
+    ok = dbf.set_psychologist_status(
+        psych_id, status,
+        reviewer_id=session.get('admin_user_id'),
+        reviewer_username=session.get('admin_username'),
+        notes=notes,
+    )
+    flash(_ACAO_MSG[status] if ok else 'Não conseguimos atualizar o cadastro agora.',
+          'success' if ok else 'error')
+    return redirect(request.referrer or url_for('apoio.admin_psicologos'))

@@ -1,0 +1,61 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ p.name }} - Psicólogo - Admin{% endblock %}
+
+{% set STATUS_LABELS = {'pending': 'Pendente', 'approved': 'Aprovado', 'rejected': 'Rejeitado', 'changes_requested': 'Ajustes pedidos'} %}
+{% set STATUS_CHIP = {'pending': 'status-hidden', 'approved': 'status-published', 'rejected': 'status-danger', 'changes_requested': 'status-warn'} %}
+
+{% block content %}
+<div class="space-y-8 max-w-4xl">
+  <div>
+    <a href="{{ url_for('apoio.admin_psicologos') }}" class="text-sm" style="color:var(--brand)">← Voltar à lista</a>
+    <div class="flex items-center gap-3 mt-3">
+      <h1 class="text-3xl font-display font-bold" style="color:var(--text-main)">{{ p.name }}</h1>
+      <span class="status-chip {{ STATUS_CHIP.get(p.status, 'status-hidden') }}">{{ STATUS_LABELS.get(p.status, p.status) }}</span>
+    </div>
+  </div>
+
+  <section class="glass-panel content-band">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+      <p><strong style="color:var(--text-main)">CRP:</strong> <span style="color:var(--text)">{{ p.crp or '—' }}</span></p>
+      <p><strong style="color:var(--text-main)">E-mail:</strong> <span style="color:var(--text)">{{ p.contact_email or '—' }}</span></p>
+      <p><strong style="color:var(--text-main)">Local:</strong> <span style="color:var(--text)">{{ p.cidade ~ '/' if p.cidade }}{{ p.estado or '—' }}</span></p>
+      <p><strong style="color:var(--text-main)">Modalidade:</strong> <span style="color:var(--text)">{{ p.modalidade }}</span></p>
+      <p class="md:col-span-2"><strong style="color:var(--text-main)">Especialidades:</strong> <span style="color:var(--text)">{{ p.especialidades or '—' }}</span></p>
+      {% if p.contact_link %}<p class="md:col-span-2"><strong style="color:var(--text-main)">Contato:</strong> <a href="{{ p.contact_link }}" target="_blank" rel="noopener" style="color:var(--brand)">{{ p.contact_link }}</a></p>{% endif %}
+    </div>
+    {% if p.bio %}<p class="mt-4 leading-relaxed" style="color:var(--text)">{{ p.bio }}</p>{% endif %}
+  </section>
+
+  <section class="glass-panel content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Decidir</h2>
+    <form method="post" class="space-y-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <textarea name="notes" rows="3" class="input-modern w-full text-sm" placeholder="Observação (obrigatória para rejeitar ou pedir ajustes)"></textarea>
+      <div class="flex flex-wrap gap-2">
+        <button formaction="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='aprovar') }}" class="btn-modern btn-primary text-sm">Aprovar</button>
+        <button formaction="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='ajustes') }}" class="btn-modern btn-ghost text-sm">Solicitar ajustes</button>
+        <button formaction="{{ url_for('apoio.admin_psicologo_acao', psych_id=p.id, acao='rejeitar') }}" class="btn-modern btn-danger text-sm">Rejeitar</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="glass-panel content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Histórico de decisões</h2>
+    {% if historico %}
+      <ol class="space-y-3">
+        {% for h in historico %}
+        <li class="flex items-start gap-3 text-sm">
+          <span class="status-chip {{ STATUS_CHIP.get(h.status_to, 'status-hidden') }} flex-shrink-0">{{ STATUS_LABELS.get(h.status_to, h.status_to) }}</span>
+          <div>
+            <p style="color:var(--text)">{{ h.notes or 'Sem observação.' }}</p>
+            <p class="text-xs mt-0.5" style="color:var(--text-faint)">{{ h.reviewer_username or 'sistema' }} · {{ h.created_at }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p style="color:var(--text-muted)">Ainda sem decisões registradas.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

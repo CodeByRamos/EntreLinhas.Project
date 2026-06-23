@@ -1,0 +1,116 @@
+{% extends 'admin/base.html' %}
+{% block title %}Fila de Moderação - Admin EntreLinhas{% endblock %}
+
+{% set ACTION_LABELS = {'approve': 'Aprovado', 'review': 'Revisado', 'hide': 'Ocultado', 'remove': 'Removido'} %}
+
+{% block content %}
+<div class="space-y-8">
+  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div>
+      <p class="section-kicker">moderação</p>
+      <h1 class="text-3xl font-display font-bold mt-2" style="color:var(--text-main)">Fila de revisão</h1>
+      <p class="mt-1 max-w-2xl" style="color:var(--text-muted)">Conteúdo sinalizado como sensível ou denunciado. Cuide do espaço sem transformar dor em punição — toda ação fica registrada.</p>
+    </div>
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="status-chip status-warn">Sensíveis: {{ counts.get('sensitive_posts', 0) }}</span>
+      <span class="status-chip status-danger">Respostas denunciadas: {{ counts.get('reported_comments', 0) }}</span>
+    </div>
+  </header>
+
+  {# ---- Desabafos sensíveis ---- #}
+  <section class="content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Desabafos sensíveis ({{ sensitive_posts|length }})</h2>
+    {% if sensitive_posts %}
+      <div class="space-y-4">
+        {% for post in sensitive_posts %}
+        <div class="glass-panel p-5">
+          <div class="flex items-center gap-2 mb-2 text-xs" style="color:var(--text-muted)">
+            <span class="badge-categoria {{ post.categoria }}">#{{ post.categoria }}</span>
+            <span>· {{ post.data_postagem }}</span>
+            {% if post.report_count %}<span class="status-chip status-danger">{{ post.report_count }} denúncia(s)</span>{% endif %}
+          </div>
+          {% if post.title %}<p class="font-display text-lg" style="color:var(--text-main)">{{ post.title }}</p>{% endif %}
+          <p class="whitespace-pre-line leading-relaxed mt-1" style="color:var(--text)">{{ post.mensagem }}</p>
+          <form method="post" class="mt-4 flex flex-col gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <textarea name="notes" rows="1" class="input-modern text-sm" placeholder="Observação (opcional)"></textarea>
+            <div class="flex flex-wrap gap-2">
+              <button formaction="{{ url_for('admin.moderate_post', post_id=post.id, action='approve') }}" class="btn-modern btn-primary text-sm">Aprovar</button>
+              <button formaction="{{ url_for('admin.moderate_post', post_id=post.id, action='review') }}" class="btn-modern btn-ghost text-sm">Revisar</button>
+              <button formaction="{{ url_for('admin.moderate_post', post_id=post.id, action='hide') }}" class="btn-modern btn-ghost text-sm">Ocultar</button>
+              <button formaction="{{ url_for('admin.moderate_post', post_id=post.id, action='remove') }}" class="btn-modern btn-danger text-sm">Remover</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted)">Nenhum desabafo sensível aguardando revisão. 🌿</p>
+    {% endif %}
+  </section>
+
+  {# ---- Respostas denunciadas ---- #}
+  <section class="content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Respostas denunciadas ({{ reported_comments|length }})</h2>
+    {% if reported_comments %}
+      <div class="space-y-4">
+        {% for c in reported_comments %}
+        <div class="glass-panel p-5">
+          <div class="flex items-center gap-2 mb-2 text-xs" style="color:var(--text-muted)">
+            <span class="status-chip status-danger">{{ c.report_count }} denúncia(s)</span>
+            <span>· {{ c.data_comentario }}</span>
+            <a href="{{ url_for('posts.feed') }}#post-{{ c.post_id }}" class="ml-auto" style="color:var(--brand)">ver desabafo</a>
+          </div>
+          <p class="whitespace-pre-line leading-relaxed" style="color:var(--text)">{{ c.mensagem }}</p>
+          <form method="post" class="mt-4 flex flex-col gap-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <textarea name="notes" rows="1" class="input-modern text-sm" placeholder="Observação (opcional)"></textarea>
+            <div class="flex flex-wrap gap-2">
+              <button formaction="{{ url_for('admin.moderate_comment', comment_id=c.id, action='approve') }}" class="btn-modern btn-primary text-sm">Aprovar</button>
+              <button formaction="{{ url_for('admin.moderate_comment', comment_id=c.id, action='review') }}" class="btn-modern btn-ghost text-sm">Revisar</button>
+              <button formaction="{{ url_for('admin.moderate_comment', comment_id=c.id, action='hide') }}" class="btn-modern btn-ghost text-sm">Ocultar</button>
+              <button formaction="{{ url_for('admin.moderate_comment', comment_id=c.id, action='remove') }}" class="btn-modern btn-danger text-sm">Remover</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted)">Nenhuma resposta denunciada. 🌿</p>
+    {% endif %}
+  </section>
+
+  {# ---- Histórico ---- #}
+  <section class="glass-panel content-band">
+    <h2 class="text-xl font-display mb-4" style="color:var(--text-main)">Histórico de moderação</h2>
+    {% if history %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr style="color:var(--text-muted)" class="text-left">
+              <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Quando</th>
+              <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Alvo</th>
+              <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Ação</th>
+              <th class="py-2 pr-4 font-mono uppercase tracking-wider text-xs">Moderador</th>
+              <th class="py-2 font-mono uppercase tracking-wider text-xs">Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in history %}
+            <tr style="border-top:1px solid var(--border)">
+              <td class="py-2 pr-4 text-xs" style="color:var(--text-faint)">{{ h.created_at }}</td>
+              <td class="py-2 pr-4 text-xs" style="color:var(--text-muted)">{{ 'desabafo' if h.target_type == 'post' else 'resposta' }} #{{ h.target_id }}</td>
+              <td class="py-2 pr-4"><span class="status-chip {{ 'status-published' if h.action in ('approve','review') else 'status-danger' if h.action == 'remove' else 'status-hidden' }}">{{ ACTION_LABELS.get(h.action, h.action) }}</span></td>
+              <td class="py-2 pr-4 text-xs" style="color:var(--text-muted)">{{ h.moderator_username or 'sistema' }}</td>
+              <td class="py-2 text-xs" style="color:var(--text)">{{ h.notes or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted)">Nenhuma ação registrada ainda.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -27,6 +27,11 @@ _PSYCH_COLUMNS = [
     ("modalidade", "VARCHAR(20) DEFAULT 'ambos'", "TEXT DEFAULT 'ambos'"),
     ("photo_url", "TEXT", "TEXT"),
     ("status", "VARCHAR(20) DEFAULT 'pending'", "TEXT DEFAULT 'pending'"),
+    # Snapshot da última revisão (Wave 2 — fluxo de aprovação com auditoria)
+    ("reviewed_by_id", "INTEGER", "INTEGER"),
+    ("reviewed_by_username", "VARCHAR(80)", "TEXT"),
+    ("reviewed_at", "VARCHAR(20)", "TEXT"),
+    ("review_notes", "TEXT", "TEXT"),
 ]
 
 
@@ -134,18 +139,69 @@ def get_all_psychologists():
     return rows
 
 
-def set_psychologist_status(psych_id, status):
-    if status not in ("approved", "rejected", "pending"):
+PSYCH_STATUSES = ("pending", "approved", "rejected", "changes_requested")
+
+
+def set_psychologist_status(psych_id, status, reviewer_id=None, reviewer_username=None, notes=None):
+    """Muda o status de um cadastro e registra a decisão na trilha de auditoria.
+
+    Só 'approved' fica público (is_verified=1). Toda ação grava quem decidiu,
+    quando e a observação, em psychologist_reviews.
+    """
+    if status not in PSYCH_STATUSES:
         return False
     conn = get_db_connection()
     is_verified = 1 if status == "approved" else 0
-    conn.execute(
-        "UPDATE psychologists SET status = ?, is_verified = ? WHERE id = ?",
-        (status, is_verified, psych_id),
-    )
-    conn.commit()
+    reviewed_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+    notes = (notes or "").strip() or None
+    try:
+        conn.execute(
+            "UPDATE psychologists SET status = ?, is_verified = ?, reviewed_by_id = ?, "
+            "reviewed_by_username = ?, reviewed_at = ?, review_notes = ? WHERE id = ?",
+            (status, is_verified, reviewer_id, reviewer_username, reviewed_at, notes, psych_id),
+        )
+        conn.execute(
+            "INSERT INTO psychologist_reviews "
+            "(psychologist_id, action, status_to, notes, reviewer_id, reviewer_username, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (psych_id, status, status, notes, reviewer_id, reviewer_username, reviewed_at),
+        )
+        conn.commit()
+        return True
+    except Exception as exc:
+        conn.rollback()
+        log_exception(logger, "db_features.set_psychologist_status", "psychologists.update", exc)
+        return False
+    finally:
+        conn.close()
+
+
+def get_psychologist(psych_id):
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM psychologists WHERE id = ?", (psych_id,)).fetchone()
     conn.close()
-    return True
+    return row
+
+
+def get_psychologist_reviews(psych_id):
+    """Histórico de decisões (mais recente primeiro)."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT * FROM psychologist_reviews WHERE psychologist_id = ? ORDER BY id DESC",
+        (psych_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_psychologist_status_counts():
+    """Contagem por status para os badges do painel."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT status, COUNT(*) AS total FROM psychologists GROUP BY status"
+    ).fetchall()
+    conn.close()
+    return {row["status"]: row["total"] for row in rows}
 
 
 def get_approved_psych_states():
