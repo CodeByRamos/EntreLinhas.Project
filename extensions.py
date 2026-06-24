@@ -33,7 +33,11 @@ except ImportError:  # pragma: no cover - rede de segurança p/ ambiente sem as 
             return view
 
     class _NoopLimiter:
-        """Stub de rate limiter quando Flask-Limiter não está instalado."""
+        """Stub de rate limiter quando Flask-Limiter não está instalado.
+
+        Espelha a superfície usada/plausível da API real para que adicionar
+        @limiter.exempt / shared_limit no futuro não derrube o boot num ambiente
+        sem a lib (o decorator é aplicado no import dos blueprints)."""
         enabled = False
 
         def init_app(self, app):
@@ -43,6 +47,20 @@ except ImportError:  # pragma: no cover - rede de segurança p/ ambiente sem as 
             def decorator(func):
                 return func
             return decorator
+
+        # Alias: shared_limit tem a mesma forma de decorator que limit.
+        shared_limit = limit
+
+        def exempt(self, func=None, **kwargs):
+            # Pode ser usado como @limiter.exempt ou @limiter.exempt(...).
+            if func is None:
+                def decorator(f):
+                    return f
+                return decorator
+            return func
+
+        def request_filter(self, func):
+            return func
 
         def reset(self):
             return None

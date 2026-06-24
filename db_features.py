@@ -13,6 +13,27 @@ from utils.safe_logging import log_exception
 
 logger = logging.getLogger("entrelinhas.features")
 
+# Tipos de IntegrityError dos drivers disponíveis — usados para tratar colisão
+# de unique constraint (ex.: entrega de carta sob double-submit) como caso
+# esperado, não erro. Montado defensivamente para funcionar com qualquer driver.
+_INTEGRITY_ERRORS = []
+try:
+    import sqlite3 as _sqlite3
+    _INTEGRITY_ERRORS.append(_sqlite3.IntegrityError)
+except Exception:
+    pass
+try:
+    import psycopg as _psycopg
+    _INTEGRITY_ERRORS.append(_psycopg.IntegrityError)
+except Exception:
+    pass
+try:
+    import psycopg2 as _psycopg2
+    _INTEGRITY_ERRORS.append(_psycopg2.IntegrityError)
+except Exception:
+    pass
+_INTEGRITY_ERRORS = tuple(_INTEGRITY_ERRORS) or (Exception,)
+
 
 # ---------------------------------------------------------------------------
 # Garantia de schema nos dois bancos (colunas novas de psychologists).
@@ -369,34 +390,46 @@ def count_open_letters_by_author(author_id):
     return n
 
 
-def deliver_random_letter(user_id):
+def deliver_random_letter(user_id, _attempts=3):
     """Entrega uma carta original aleatória que o usuário ainda não recebeu nem
-    escreveu, registrando a entrega. Retorna a carta (dict) ou None."""
+    escreveu, registrando a entrega. Retorna a carta (dict) ou None.
+
+    Se dois cliques concorrentes escolherem a mesma carta, a UniqueConstraint
+    (letter_id, recipient_id) faz o 2º INSERT colidir — tratamos como caso
+    esperado e tentamos outra carta, em vez de logar erro e dizer 'sem cartas'."""
     conn = get_db_connection()
     try:
-        row = conn.execute(
-            """
-            SELECT * FROM stranger_letters l
-            WHERE l.parent_id IS NULL AND l.is_hidden = 0 AND l.author_id <> ?
-              AND NOT EXISTS (
-                SELECT 1 FROM stranger_letter_deliveries d
-                WHERE d.letter_id = l.id AND d.recipient_id = ?
-              )
-            ORDER BY RANDOM()
-            LIMIT 1
-            """,
-            (user_id, user_id),
-        ).fetchone()
-        if not row:
-            return None
-        created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
-        conn.execute(
-            "INSERT INTO stranger_letter_deliveries (letter_id, recipient_id, action, created_at) "
-            "VALUES (?, ?, NULL, ?)",
-            (row["id"], user_id, created_at),
-        )
-        conn.commit()
-        return dict(row)
+        for _ in range(_attempts):
+            row = conn.execute(
+                """
+                SELECT * FROM stranger_letters l
+                WHERE l.parent_id IS NULL AND l.is_hidden = 0 AND l.author_id <> ?
+                  AND NOT EXISTS (
+                    SELECT 1 FROM stranger_letter_deliveries d
+                    WHERE d.letter_id = l.id AND d.recipient_id = ?
+                  )
+                ORDER BY RANDOM()
+                LIMIT 1
+                """,
+                (user_id, user_id),
+            ).fetchone()
+            if not row:
+                return None
+            created_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+            try:
+                conn.execute(
+                    "INSERT INTO stranger_letter_deliveries (letter_id, recipient_id, action, created_at) "
+                    "VALUES (?, ?, NULL, ?)",
+                    (row["id"], user_id, created_at),
+                )
+                conn.commit()
+                return dict(row)
+            except _INTEGRITY_ERRORS:
+                # Colisão de entrega (double-submit): essa carta sai do conjunto
+                # via NOT EXISTS na próxima volta. Não é erro.
+                conn.rollback()
+                continue
+        return None
     except Exception as exc:
         conn.rollback()
         log_exception(logger, "db_features.deliver_random_letter", "deliveries.insert", exc)
@@ -413,7 +446,7 @@ def get_delivered_letter(letter_id, recipient_id):
         SELECT l.*, d.action AS delivery_action
         FROM stranger_letters l
         JOIN stranger_letter_deliveries d ON d.letter_id = l.id
-        WHERE l.id = ? AND d.recipient_id = ?
+        WHERE l.id = ? AND d.recipient_id = ? AND l.is_hidden = 0
         """,
         (letter_id, recipient_id),
     ).fetchone()
@@ -447,6 +480,14 @@ def respond_to_letter(responder_id, parent_letter_id, content):
             (parent_letter_id,),
         ).fetchone()
         if not original:
+            return False
+        # Uma resposta por carta, por pessoa: evita assédio/spam dirigido ao
+        # autor anônimo (que não pode bloquear ninguém).
+        already = conn.execute(
+            "SELECT 1 FROM stranger_letters WHERE parent_id = ? AND author_id = ?",
+            (parent_letter_id, responder_id),
+        ).fetchone()
+        if already:
             return False
         cur = conn.cursor()
         cur.execute(
@@ -524,25 +565,29 @@ def get_my_stranger_letters(user_id):
 
 
 def report_stranger_letter(letter_id, user_id, threshold=3):
-    """Denúncia: incrementa contagem, deduplica por entrega e oculta no limite."""
+    """Denúncia: marca reported_at na entrega de forma ATÔMICA (dedup por usuário
+    sem destruir o estado read/responded/forwarded) e incrementa a contagem só
+    quando a marca é nova. Oculta a carta no limite."""
     conn = get_db_connection()
     try:
-        existing = conn.execute(
-            "SELECT action FROM stranger_letter_deliveries WHERE letter_id = ? AND recipient_id = ?",
-            (letter_id, user_id),
-        ).fetchone()
-        if existing and existing["action"] == 'reported':
+        reported_at = datetime.now().strftime("%d/%m/%Y %H:%M")
+        cur = conn.cursor()
+        # O UPDATE guardado (reported_at IS NULL) trava a linha e serializa
+        # denúncias concorrentes do mesmo par: só a primeira casa (rowcount==1).
+        cur.execute(
+            "UPDATE stranger_letter_deliveries SET reported_at = ? "
+            "WHERE letter_id = ? AND recipient_id = ? AND reported_at IS NULL",
+            (reported_at, letter_id, user_id),
+        )
+        if (cur.rowcount or 0) < 1:
+            # Já denunciou antes (ou não tem entrega): não conta de novo.
+            conn.rollback()
             return False
         conn.execute("UPDATE stranger_letters SET report_count = report_count + 1 WHERE id = ?", (letter_id,))
         conn.execute(
             "UPDATE stranger_letters SET is_hidden = 1 WHERE id = ? AND report_count >= ?",
             (letter_id, threshold),
         )
-        if existing:
-            conn.execute(
-                "UPDATE stranger_letter_deliveries SET action = 'reported' WHERE letter_id = ? AND recipient_id = ?",
-                (letter_id, user_id),
-            )
         conn.commit()
         return True
     except Exception as exc:

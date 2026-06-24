@@ -267,6 +267,7 @@ class StrangerLetterDelivery(db.Model):
     letter_id = db.Column(db.Integer, db.ForeignKey("stranger_letters.id"), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     action = db.Column(db.String(20))            # NULL / read / responded / forwarded
+    reported_at = db.Column(db.String(20))       # denúncia é ortogonal a action
     created_at = db.Column(db.String(20), nullable=False)
     __table_args__ = (db.UniqueConstraint("letter_id", "recipient_id", name="uq_letter_recipient"),)
 

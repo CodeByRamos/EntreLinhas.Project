@@ -253,6 +253,20 @@ _PG_POOL_PID = None
 _PG_POOL_LOCK = threading.Lock()
 
 
+def _reset_pg_pool_after_fork():
+    """Após um fork (gunicorn --preload), o filho NÃO pode herdar o pool do pai
+    (sockets/threads do pool não sobrevivem ao fork). Zera a referência sem
+    fechar — fechar tocaria os fds compartilhados com o pai. O filho recria o
+    seu próprio pool no primeiro uso."""
+    global _PG_POOL, _PG_POOL_PID
+    _PG_POOL = None
+    _PG_POOL_PID = None
+
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=_reset_pg_pool_after_fork)
+
+
 def _get_pg_pool():
     """Pool de conexões por processo (lazy + seguro contra fork do gunicorn).
 
@@ -277,7 +291,13 @@ def _get_pg_pool():
                         max_size=int(os.environ.get("PG_POOL_MAX", "5") or "5"),
                         timeout=float(os.environ.get("PG_POOL_TIMEOUT", "10") or "10"),
                         max_idle=120.0,
-                        kwargs={"row_factory": dict_row},
+                        # prepare_threshold=None DESLIGA os prepared statements
+                        # automáticos do psycopg3: conexões longevas no pool +
+                        # PgBouncer transaction-mode do Neon (-pooler) fariam o
+                        # EXECUTE cair num backend que não tem o PREPARE
+                        # ("prepared statement does not exist"). Sem isso, quebra
+                        # intermitente em produção sob carga.
+                        kwargs={"row_factory": dict_row, "prepare_threshold": None},
                         check=ConnectionPool.check_connection,
                         name="entrelinhas",
                         open=False,
@@ -725,23 +745,32 @@ def ensure_reports_comments_user_id():
     No Postgres o create_all() não altera tabela existente; aqui aplicamos os
     ALTER idempotentes. No SQLite usa o mesmo _ensure_column do init_db.
     """
-    conn = get_db_connection()
-    try:
-        if USE_POSTGRES:
-            conn.execute("ALTER TABLE reports_comments ADD COLUMN IF NOT EXISTS user_id INTEGER")
-            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS overcome_at VARCHAR(20)")
-            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS overcome_message TEXT")
-            conn.execute("ALTER TABLE posts ADD COLUMN IF NOT EXISTS listen_only INTEGER DEFAULT 0")
-        else:
-            _ensure_column(conn, "reports_comments", "user_id", "INTEGER")
-            _ensure_column(conn, "posts", "overcome_at", "TEXT")
-            _ensure_column(conn, "posts", "overcome_message", "TEXT")
-            _ensure_column(conn, "posts", "listen_only", "INTEGER DEFAULT 0")
-        conn.commit()
-    except Exception as exc:
-        logger.warning("ensure_reports_comments_user_id: %s", exc)
-    finally:
-        conn.close()
+    # (tabela, coluna, definição PG, definição SQLite). Cada migração roda
+    # ISOLADA — uma falha (ex.: tabela ainda inexistente) não aborta as outras,
+    # evitando o efeito cascata de transação abortada no Postgres.
+    migrations = [
+        ("reports_comments", "user_id", "INTEGER", "INTEGER"),
+        ("posts", "overcome_at", "VARCHAR(20)", "TEXT"),
+        ("posts", "overcome_message", "TEXT", "TEXT"),
+        ("posts", "listen_only", "INTEGER DEFAULT 0", "INTEGER DEFAULT 0"),
+        ("stranger_letter_deliveries", "reported_at", "VARCHAR(20)", "TEXT"),
+    ]
+    for table, col, pg_def, sqlite_def in migrations:
+        conn = get_db_connection()
+        try:
+            if USE_POSTGRES:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {pg_def}")
+            else:
+                _ensure_column(conn, table, col, sqlite_def)
+            conn.commit()
+        except Exception as exc:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            logger.warning("migração ignorada (%s.%s): %s", table, col, exc)
+        finally:
+            conn.close()
 
 # Funções para posts (desabafos)
 
@@ -797,7 +826,7 @@ def get_hidden_posts(limit=50):
     posts = conn.execute('''
         SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                p.mood_type, p.report_count, p.data_postagem, p.visivel,
-               p.user_id, p.visibility_mode, p.status,
+               p.user_id, p.visibility_mode, p.status, p.overcome_at, p.overcome_message, p.listen_only,
                u.username as author_username,
                u.nickname as author_nickname,
                u.display_name as author_display_name,
@@ -880,7 +909,7 @@ def get_posts_by_user(user_id, limit=10, offset=0, include_hidden=True, visibili
         SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                p.mood_type, p.report_count, p.data_postagem, p.visivel,
                p.user_id, p.visibility_mode,
-               p.status AS status,
+               p.status AS status, p.overcome_at, p.overcome_message, p.listen_only,
                u.username as author_username,
                u.nickname as author_nickname,
                u.display_name as author_display_name,
@@ -1158,7 +1187,7 @@ def get_overcome_posts_by_user(user_id, limit=20, offset=0):
         '''
         SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                p.mood_type, p.report_count, p.data_postagem, p.visivel,
-               p.user_id, p.visibility_mode, p.status, p.overcome_at,
+               p.user_id, p.visibility_mode, p.status, p.overcome_at, p.overcome_message, p.listen_only,
                u.username as author_username, u.nickname as author_nickname,
                u.display_name as author_display_name, u.profile_photo as author_profile_photo,
                u.avatar_url as author_avatar_url, u.default_avatar as author_default_avatar,
@@ -1693,7 +1722,7 @@ def search_posts(query, limit=10, offset=0):
     posts = conn.execute('''
         SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
                p.mood_type, p.report_count, p.data_postagem, p.visivel,
-               p.user_id, p.visibility_mode, p.status,
+               p.user_id, p.visibility_mode, p.status, p.overcome_at, p.overcome_message, p.listen_only,
                u.username as author_username,
                u.nickname as author_nickname,
                u.display_name as author_display_name,

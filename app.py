@@ -67,8 +67,9 @@ def create_app():
     # token via header X-CSRFToken (ver patch global de fetch em main.js).
     csrf.init_app(app)
     # Rate limiting por IP (limites declarados por rota com @limiter.limit).
-    if app.config.get('RATELIMIT_ENABLED', True):
-        limiter.init_app(app)
+    # O próprio flask_limiter respeita RATELIMIT_ENABLED internamente — sempre
+    # registramos para que app.extensions['limiter'] exista.
+    limiter.init_app(app)
 
     if not SECURITY_AVAILABLE:
         # Deps de segurança ausentes: app sobe sem CSRF/rate limiting, mas avisa
