@@ -1261,6 +1261,30 @@ def get_unanswered_count(exclude_user_id):
     return total
 
 
+def get_community_emotional_pulse(sample=300):
+    """Distribuição de emoções nos últimos `sample` desabafos publicados.
+
+    O estado emocional coletivo da comunidade agora. Ordena por id DESC (recente)
+    porque data_postagem é string e não ordena bem. Funciona em SQLite e Postgres.
+    """
+    conn = get_db_connection()
+    rows = conn.execute(
+        '''
+        SELECT emotional_tag, COUNT(*) AS total FROM (
+            SELECT emotional_tag FROM posts
+            WHERE visivel = 1 AND status = 'published' AND COALESCE(is_deleted, 0) = 0
+            ORDER BY id DESC
+            LIMIT ?
+        ) sub
+        GROUP BY emotional_tag
+        ORDER BY total DESC
+        ''',
+        (sample,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
 def get_emotional_timeline(user_id, limit=300):
     """Posts publicados do usuário em ordem cronológica (mais antigos primeiro).
 

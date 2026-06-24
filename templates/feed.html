@@ -61,6 +61,14 @@
             {% endfor %}
           </div>
         </section>
+
+        <a href="{{ url_for('posts.pulso') }}" class="acolher-feed-card" style="border-color:rgba(106,166,255,0.3)">
+          <span class="acolher-feed-icon" aria-hidden="true" style="color:var(--accent);background:rgba(106,166,255,0.12);border-color:rgba(106,166,255,0.28)">{{ icon('spark') }}</span>
+          <span>
+            <span class="acolher-feed-title">Pulso da comunidade</span>
+            <span class="acolher-feed-sub">Veja o que estamos sentindo juntos</span>
+          </span>
+        </a>
       </div>
     </div>
 

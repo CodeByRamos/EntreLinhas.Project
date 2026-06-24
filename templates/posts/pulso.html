@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
+
+{% block title %}Pulso da Comunidade - EntreLinhas{% endblock %}
+
+{% set POSITIVE = ['esperanca', 'amor', 'gratidao', 'recomeco'] %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">pulso da comunidade</p>
+    {% if pulse %}
+      <h1 class="hero-title">Agora, a comunidade<br>sente principalmente <span style="color:var(--accent)">{{ pulse[0].nome|lower }}</span>.</h1>
+      <p class="hero-description">O que pesa em você provavelmente pesa em mais gente do que imagina. Este é o sentimento coletivo dos últimos desabafos — uma prova silenciosa de que você não está sozinho.</p>
+    {% else %}
+      <h1 class="hero-title">O sentimento da comunidade<br>começa no primeiro desabafo.</h1>
+      <p class="hero-description">Quando as primeiras vozes chegarem, este lugar vai mostrar o que estamos sentindo juntos.</p>
+    {% endif %}
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-10 max-w-2xl">
+  {% if pulse %}
+    <section class="glass-panel content-band">
+      <div class="flex items-center gap-2 mb-5">
+        <span style="color:var(--accent)">{{ icon('spark') }}</span>
+        <h2 class="text-xl font-display" style="color:var(--text-main)">O que estamos sentindo</h2>
+      </div>
+      <div class="space-y-2.5">
+        {% for e in pulse %}
+        <div class="emo-bar-row">
+          <span class="emo-bar-label">{{ e.nome }}</span>
+          <span class="emo-bar-track"><span class="emo-bar-fill {{ 'is-pos' if e.valor in POSITIVE else '' }}" style="width:{{ [e.pct, 4]|max }}%"></span></span>
+          <span class="emo-bar-count">{{ e.pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+      <p class="text-xs mt-5" style="color:var(--text-faint)">Com base nos {{ total }} desabafos mais recentes da comunidade.</p>
+    </section>
+
+    <div class="text-center mt-8">
+      <p class="font-display text-lg mb-4" style="color:var(--text-muted)">Sente algo parecido? Você está em boa companhia.</p>
+      <div class="flex flex-wrap gap-3 justify-center">
+        {% if session.get('user_id') %}
+          <button type="button" class="cta-desabafe composer-trigger" aria-haspopup="dialog">
+            <span class="cta-icon" aria-hidden="true">{{ icon('feather') }}</span><span>Desabafe</span>
+          </button>
+          <a href="{{ url_for('posts.acolher') }}" class="btn-modern btn-ghost inline-flex items-center gap-2">{{ icon('heart-handshake') }} Acolher uma voz</a>
+        {% else %}
+          <a href="{{ url_for('auth.registro', next=url_for('posts.feed')) }}" class="cta-desabafe">
+            <span class="cta-icon" aria-hidden="true">{{ icon('feather') }}</span><span>Desabafe</span>
+          </a>
+          <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost">Explorar a comunidade</a>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="empty-state text-center">
+      <p class="mb-3 flex justify-center" style="color:var(--accent)">{{ icon('spark', 'el-icon--xl') }}</p>
+      <p class="text-xl font-display" style="color:var(--text-main)">Ainda em silêncio.</p>
+      <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost mt-5 inline-flex">Ir para o feed</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

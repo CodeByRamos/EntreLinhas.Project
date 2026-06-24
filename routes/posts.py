@@ -574,6 +574,23 @@ def acolher_responder(post_id):
     return redirect(url_for('posts.acolher'))
 
 
+@posts.route('/pulso')
+def pulso():
+    """Pulso da Comunidade: o estado emocional coletivo agora (público)."""
+    rows = db.get_community_emotional_pulse(sample=300)
+    total = sum(r['total'] for r in rows) or 0
+    pulse = [
+        {
+            'valor': r['emotional_tag'] or 'vazio',
+            'nome': EMOTIONAL_TAG_LABELS.get(r['emotional_tag'], (r['emotional_tag'] or 'vazio').capitalize()),
+            'total': r['total'],
+            'pct': round(r['total'] * 100 / total) if total else 0,
+        }
+        for r in rows
+    ]
+    return render_template('posts/pulso.html', pulse=pulse, total=total)
+
+
 @posts.route('/categorias')
 def get_categorias():
     """Rota para obter as categorias disponíveis (API)."""
