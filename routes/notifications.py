@@ -31,3 +31,32 @@ def mark_as_read(notification_id):
     if not success:
         flash("Notificação não encontrada para o seu usuário.", "error")
     return redirect(url_for("notifications.list_notifications"))
+
+
+@notifications.route("/notificacoes/marcar-todas", methods=["POST"])
+def mark_all_read():
+    auth = _require_login()
+    if auth:
+        return auth
+    db.mark_all_notifications_read(session["user_id"])
+    return redirect(url_for("notifications.list_notifications"))
+
+
+@notifications.route("/notificacoes/<int:notification_id>/ir", methods=["GET"])
+def open_notification(notification_id):
+    """Marca como lida e leva ao conteúdo relacionado (fecha o ciclo)."""
+    auth = _require_login()
+    if auth:
+        return auth
+    item = db.get_notification(notification_id, session["user_id"])
+    if not item:
+        flash("Notificação não encontrada.", "error")
+        return redirect(url_for("notifications.list_notifications"))
+    db.mark_notification_as_read(notification_id, session["user_id"])
+    ntype = item["type"]
+    ref = item["reference_id"]
+    if ntype == "stranger_reply":
+        return redirect(url_for("cartas.desconhecidos"))
+    if ntype in ("post_reply", "echo") and ref:
+        return redirect(url_for("posts.feed") + "#post-" + str(ref))
+    return redirect(url_for("posts.feed"))

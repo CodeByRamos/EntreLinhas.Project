@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% from 'components/icons.html' import icon with context %}
 <html lang="pt-br" class="dark">
 <head>
   <meta charset="UTF-8" />
@@ -79,6 +80,10 @@
 
       <div class="nav-actions">
         {% if logged_user %}
+          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-bell {{ 'active' if path.startswith('/notificacoes') else '' }}" aria-label="Notificações{% if unread_notifications %} — {{ unread_notifications }} não lidas{% endif %}">
+            {{ icon('bell') }}
+            {% if unread_notifications %}<span class="nav-bell-badge">{{ unread_notifications if unread_notifications < 100 else '99+' }}</span>{% endif %}
+          </a>
           <button type="button" class="cta-desabafe composer-trigger" aria-haspopup="dialog">
             <span class="cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg></span><span>Desabafe</span>
           </button>
@@ -112,7 +117,7 @@
           <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
           <a href="{{ url_for('posts.meus_posts') }}" class="nav-pill {{ 'active' if path.startswith('/meus-posts') else '' }}">Meus rastros</a>
           <a href="{{ url_for('posts.ecos') }}" class="nav-pill {{ 'active' if path.startswith('/ecos') else '' }}">Ecos</a>
-          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações</a>
+          <a href="{{ url_for('notifications.list_notifications') }}" class="nav-pill {{ 'active' if path.startswith('/notificacoes') else '' }}">Notificações{% if unread_notifications %} <span class="nav-bell-badge nav-bell-badge--inline">{{ unread_notifications if unread_notifications < 100 else '99+' }}</span>{% endif %}</a>
         {% endif %}
         {% if logged_user and (logged_user.is_admin or logged_user.role == 'admin') %}
           <a href="{{ url_for('admin.dashboard') }}" class="nav-pill nav-pill-soft {{ 'active' if path.startswith('/admin') else '' }}">Admin</a>

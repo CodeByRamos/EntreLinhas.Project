@@ -8,7 +8,7 @@ created_at, etc.) explicitamente — defaults do ORM não valem pra SQL cru.
 from datetime import datetime
 import logging
 
-from database import get_db_connection, USE_POSTGRES, _ensure_column, _as_datetime
+from database import get_db_connection, USE_POSTGRES, _ensure_column, _as_datetime, create_notification
 from utils.safe_logging import log_exception
 
 logger = logging.getLogger("entrelinhas.features")
@@ -506,6 +506,16 @@ def respond_to_letter(responder_id, parent_letter_id, content):
             (parent_letter_id, responder_id),
         )
         conn.commit()
+        # Fecha o ciclo: avisa quem escreveu a carta original que chegou resposta.
+        try:
+            create_notification(
+                user_id=original["author_id"],
+                notification_type="stranger_reply",
+                title="Alguém respondeu sua carta",
+                message="Uma pessoa desconhecida leu o que você escreveu e respondeu. Abra para ler.",
+            )
+        except Exception:
+            pass
         return True
     except Exception as exc:
         conn.rollback()

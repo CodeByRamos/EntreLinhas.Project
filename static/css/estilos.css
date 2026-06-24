@@ -2273,6 +2273,72 @@ body.composer-open { overflow: hidden; }
 }
 .about-inline-link:hover { color: var(--text-main); transform: translateX(2px); }
 
+/* Cartões de notificação (página /notificacoes) */
+.notif-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(159, 180, 212, 0.04);
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease, background 0.25s ease;
+}
+.notif-card:hover { transform: translateY(-2px); border-color: rgba(106, 166, 255, 0.35); background: rgba(106, 166, 255, 0.05); }
+.notif-card.is-unread { border-color: rgba(106, 166, 255, 0.32); background: rgba(106, 166, 255, 0.07); }
+.notif-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.4rem; height: 2.4rem; flex-shrink: 0; border-radius: 12px;
+  color: var(--accent); background: rgba(106, 166, 255, 0.12); border: 1px solid rgba(106, 166, 255, 0.25);
+}
+.notif-icon .el-icon { width: 1.25rem; height: 1.25rem; }
+.notif-title { font-weight: 600; color: var(--text-main); }
+.notif-message { font-size: 0.92rem; line-height: 1.5; color: var(--text-muted); margin-top: 0.15rem; }
+.notif-time { font-size: 0.72rem; color: var(--text-faint); margin-top: 0.4rem; }
+.notif-dot { width: 9px; height: 9px; border-radius: 999px; background: var(--accent); flex-shrink: 0; margin-top: 0.5rem; box-shadow: 0 0 8px rgba(106, 166, 255, 0.6); }
+
+/* Sino de notificações no nav + selo de não-lidas */
+.nav-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: rgba(159, 180, 212, 0.04);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.nav-bell:hover, .nav-bell.active { color: var(--accent); border-color: rgba(106, 166, 255, 0.4); background: rgba(106, 166, 255, 0.06); }
+.nav-bell .el-icon { width: 1.2rem; height: 1.2rem; }
+.nav-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6aa6ff, #3e6fb0);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  border: 2px solid var(--bg, #0a0e15);
+  box-shadow: 0 0 10px rgba(106, 166, 255, 0.5);
+}
+.nav-bell-badge--inline {
+  position: static;
+  display: inline-block;
+  vertical-align: middle;
+  border: none;
+  margin-left: 0.3rem;
+}
+
 /* Acolher uma voz — card focado e íntimo de um desabafo sem resposta */
 .acolher-card {
   position: relative;

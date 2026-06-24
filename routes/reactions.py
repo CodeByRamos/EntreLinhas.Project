@@ -92,6 +92,22 @@ def toggle_echo(post_id):
     if not success:
         return jsonify({'success': False, 'message': 'Não conseguimos registrar seu eco agora.'}), 500
 
+    # Fecha o ciclo: avisa o autor que alguém se identificou com o desabafo dele.
+    if active:
+        try:
+            post = db.get_post(post_id)
+            author_id = post['user_id'] if post and 'user_id' in post.keys() else None
+            if author_id and author_id != session['user_id']:
+                db.create_notification(
+                    user_id=author_id,
+                    notification_type='echo',
+                    title='Alguém ecoou seu desabafo',
+                    message='Uma pessoa sentiu que poderia ter escrito o que você escreveu.',
+                    reference_id=post_id,
+                )
+        except Exception:
+            current_app.logger.exception("ECHO_NOTIFY_ERROR post_id=%s", post_id)
+
     message = 'Seu eco foi registrado.' if active else 'Seu eco foi recolhido.'
     return jsonify({
         'success': True,

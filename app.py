@@ -167,6 +167,15 @@ def create_app():
         week = datetime.now().isocalendar()[1]
         return reflexoes[week % len(reflexoes)]
 
+    def _unread_notifications():
+        uid = session.get('user_id')
+        if not uid:
+            return 0
+        try:
+            return db.count_unread_notifications(uid)
+        except Exception:
+            return 0
+
     @app.context_processor
     def inject_now():
         return {
@@ -176,6 +185,7 @@ def create_app():
             'emotional_tags': app.config.get('TAGS_EMOCIONAIS', []),
             'role_badge': get_role_badge,
             'reflexao_semana': _weekly_reflection(),
+            'unread_notifications': _unread_notifications(),
         }
 
     @app.cli.command("create-admin")

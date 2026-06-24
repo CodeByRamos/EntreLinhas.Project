@@ -2639,6 +2639,40 @@ def mark_notification_as_read(notification_id, user_id):
     conn.close()
     return success
 
+
+def get_notification(notification_id, user_id):
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT id, user_id, type, title, message, reference_id, is_read, created_at "
+        "FROM notifications WHERE id = ? AND user_id = ?",
+        (notification_id, user_id),
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def count_unread_notifications(user_id):
+    """Notificações não lidas (para o selo no nav)."""
+    conn = get_db_connection()
+    total = conn.execute(
+        "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND COALESCE(is_read, 0) = 0",
+        (user_id,),
+    ).fetchone()[0]
+    conn.close()
+    return total
+
+
+def mark_all_notifications_read(user_id):
+    conn = get_db_connection()
+    cursor = conn.execute(
+        "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND COALESCE(is_read, 0) = 0",
+        (user_id,),
+    )
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected
+
 def deactivate_user(user_id):
     """Desativa um usuário (soft delete)."""
     conn = get_db_connection()
