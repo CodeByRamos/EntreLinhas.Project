@@ -2272,3 +2272,49 @@ body.composer-open { overflow: hidden; }
   transition: color 0.25s ease, transform 0.25s ease;
 }
 .about-inline-link:hover { color: var(--text-main); transform: translateX(2px); }
+
+/* Agradecimentos — cartões de tributo para quem ajudou no projeto */
+.gratitude-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.9rem;
+}
+.gratitude-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.7rem;
+  padding: 1.3rem 1rem;
+  border-radius: var(--radius-lg, 18px);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(106, 166, 255, 0.08), transparent 60%),
+    rgba(159, 180, 212, 0.04);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease, background 0.35s ease;
+}
+.gratitude-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(106, 166, 255, 0.42);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(106, 166, 255, 0.14), transparent 60%),
+    rgba(106, 166, 255, 0.05);
+}
+.gratitude-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(106, 166, 255, 0.1);
+  border: 1px solid rgba(106, 166, 255, 0.28);
+}
+.gratitude-icon .el-icon { width: 1.35rem; height: 1.35rem; }
+.gratitude-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text-main);
+  letter-spacing: 0.01em;
+}
