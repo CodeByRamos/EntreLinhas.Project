@@ -59,9 +59,10 @@ def feed():
     feed_mood = dominant_mood(desabafos)
     
     current_user = db.get_user_by_id(session['user_id']) if session.get('user_id') else None
+    unanswered_count = db.get_unanswered_count(session['user_id']) if session.get('user_id') else 0
 
-    return render_template('feed.html', 
-                          desabafos=desabafos, 
+    return render_template('feed.html',
+                          desabafos=desabafos,
                           categorias=categorias_form,
                           emotional_tags=emotional_tags,
                           emotional_tag_labels=EMOTIONAL_TAG_LABELS,
@@ -70,6 +71,7 @@ def feed():
                           categorias_disponiveis=categorias_disponiveis,
                           categoria_atual=categoria,
                           reacoes=reacoes,
+                          unanswered_count=unanswered_count,
                           page=page,
                           total_pages=total_pages,
                           current_user=current_user)
@@ -512,6 +514,64 @@ def linha_do_tempo():
         summary=summary,
         emotional_tag_labels=EMOTIONAL_TAG_LABELS,
     )
+
+
+@posts.route('/acolher', methods=['GET'])
+def acolher():
+    """Acolher uma voz: mostra um desabafo sem nenhuma resposta, por vez."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    uid = session['user_id']
+    rows = db.get_unanswered_posts(uid, limit=1)
+    voz = rows[0] if rows else None
+    total = db.get_unanswered_count(uid)
+    return render_template(
+        'posts/acolher.html',
+        voz=voz,
+        total=total,
+        emotional_tag_labels=EMOTIONAL_TAG_LABELS,
+    )
+
+
+@posts.route('/acolher/<int:post_id>/responder', methods=['POST'])
+@limiter.limit('30 per minute; 200 per hour')
+def acolher_responder(post_id):
+    """Responde a uma voz e segue para a próxima."""
+    auth_redirect = _require_login_for_posts()
+    if auth_redirect:
+        return auth_redirect
+    uid = session['user_id']
+    texto = request.form.get('resposta', '').strip()
+
+    post = db.get_post(post_id)
+    if not post:
+        flash('Essa voz não está mais disponível.', 'error')
+        return redirect(url_for('posts.acolher'))
+    if 'listen_only' in post.keys() and post['listen_only']:
+        flash('Esse desabafo é somente escuta — o autor pediu para apenas ser ouvido.', 'info')
+        return redirect(url_for('posts.acolher'))
+    if len(texto) < LIMITS['comment_content_min'] or len(texto) > LIMITS['comment_content_max']:
+        flash(f"Sua resposta precisa ter entre {LIMITS['comment_content_min']} e {LIMITS['comment_content_max']} caracteres.", 'error')
+        return redirect(url_for('posts.acolher'))
+    if evaluate_post_content(texto).get('block_publication'):
+        flash('Essa resposta traz uma ofensa que fere outras pessoas e não pode ser enviada assim. Reescreva com cuidado.', 'error')
+        return redirect(url_for('posts.acolher'))
+
+    comment_id = db.create_comment(post_id, texto, user_id=uid)
+    if comment_id:
+        if 'user_id' in post.keys() and post['user_id']:
+            db.create_notification(
+                user_id=post['user_id'],
+                notification_type='post_reply',
+                title='Alguém acolheu seu desabafo',
+                message='Uma pessoa respondeu um desabafo seu. Entre para ler.',
+                reference_id=post_id,
+            )
+        flash('Sua presença chegou a quem precisava. Obrigado por acolher.', 'success')
+    else:
+        flash('Não conseguimos enviar sua resposta agora. Tente de novo em instantes.', 'error')
+    return redirect(url_for('posts.acolher'))
 
 
 @posts.route('/categorias')

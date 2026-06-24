@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
+
+{% block title %}Acolher uma voz - EntreLinhas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12 max-w-2xl">
+  <header class="text-center mb-8">
+    <p class="hero-kicker">acolher uma voz</p>
+    <h1 class="font-display text-3xl md:text-4xl mt-2" style="color:var(--text-main)">
+      Alguém escreveu isto<br>e ninguém respondeu ainda.
+    </h1>
+    {% if total %}
+      <p class="mt-3" style="color:var(--text-muted)">{{ total }} {{ 'voz ainda espera' if total == 1 else 'vozes ainda esperam' }} por uma presença. Você pode ser ela — uma de cada vez, com calma.</p>
+    {% endif %}
+  </header>
+
+  {% if voz %}
+    {% set tag = voz.emotional_tag or 'vazio' %}
+    <article class="acolher-card mood-card mood-{{ tag }}">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <span class="badge-categoria {{ voz.categoria }}">{{ '#' + voz.categoria }}</span>
+        <span class="badge-emocional">{{ emotional_tag_labels.get(tag, tag|capitalize) }}</span>
+      </div>
+      {% if voz.title %}<h2 class="font-display text-2xl mb-3" style="color:var(--text-main)">{{ voz.title }}</h2>{% endif %}
+      <p class="acolher-message whitespace-pre-line">{{ voz.mensagem }}</p>
+      <p class="text-xs mt-4" style="color:var(--text-faint)">{{ voz.data_postagem }}</p>
+    </article>
+
+    <form method="post" action="{{ url_for('posts.acolher_responder', post_id=voz.id) }}" class="mt-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label for="resposta" class="block font-medium mb-2" style="color:var(--text-muted)">Deixe uma resposta com cuidado</label>
+      <textarea id="resposta" name="resposta" rows="4" minlength="2" maxlength="500" required
+        class="input-modern resize-y w-full" placeholder="Não precisa resolver nada. Às vezes, só dizer 'eu te ouvi' já muda o dia de alguém."></textarea>
+      <div class="flex flex-wrap items-center justify-between gap-3 mt-4">
+        <a href="{{ url_for('posts.acolher') }}" class="btn-modern btn-ghost inline-flex items-center gap-2">{{ icon('arrow-right') }} Ver outra voz</a>
+        <button type="submit" class="cta-desabafe">
+          <span class="cta-icon" aria-hidden="true">{{ icon('send') }}</span><span>Enviar com cuidado</span>
+        </button>
+      </div>
+    </form>
+
+    <p class="text-center text-xs mt-8" style="color:var(--text-faint)">
+      Uma resposta gentil, sem pressa de consertar. Aqui ninguém precisa de solução — só de presença.
+    </p>
+  {% else %}
+    <div class="empty-state text-center">
+      <p class="mb-3 flex justify-center" style="color:var(--accent)">{{ icon('heart-handshake', 'el-icon--xl') }}</p>
+      <p class="text-xl font-display" style="color:var(--text-main)">Por enquanto, toda voz foi acolhida.</p>
+      <p class="mt-2" style="color:var(--text-muted)">Que coisa rara e bonita. Quando alguém desabafar de novo, este espaço vai te avisar com uma voz para acolher.</p>
+      <a href="{{ url_for('posts.feed') }}" class="btn-modern btn-ghost mt-5 inline-flex">Voltar ao feed</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

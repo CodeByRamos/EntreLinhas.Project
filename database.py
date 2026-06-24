@@ -1215,6 +1215,52 @@ def get_overcome_count_by_user(user_id):
     return total
 
 
+# ---------------------------------------------------------------------------
+# Acolher uma voz: desabafos publicados, visíveis, que aceitam resposta e ainda
+# NÃO receberam nenhuma. Exclui os próprios do usuário e os "somente escuta".
+# ---------------------------------------------------------------------------
+
+_UNANSWERED_WHERE = (
+    "p.visivel = 1 AND p.status = 'published' AND COALESCE(p.is_deleted, 0) = 0 "
+    "AND COALESCE(p.listen_only, 0) = 0 AND p.user_id <> ? "
+    "AND NOT EXISTS (SELECT 1 FROM comments c WHERE c.post_id = p.id AND c.visivel = 1)"
+)
+
+
+def get_unanswered_posts(exclude_user_id, limit=1, offset=0):
+    """Vozes ainda sem resposta, em ordem aleatória (uma de cada vez)."""
+    conn = get_db_connection()
+    rows = conn.execute(
+        f'''
+        SELECT p.id, p.title, p.mensagem, p.categoria, p.emotional_tag, p.sensitive_flag,
+               p.mood_type, p.report_count, p.data_postagem, p.visivel,
+               p.user_id, p.visibility_mode, p.status, p.overcome_at, p.overcome_message, p.listen_only,
+               u.username as author_username, u.nickname as author_nickname,
+               u.display_name as author_display_name, u.profile_photo as author_profile_photo,
+               u.avatar_url as author_avatar_url, u.default_avatar as author_default_avatar,
+               u.role as author_role
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE {_UNANSWERED_WHERE}
+        ORDER BY RANDOM()
+        LIMIT ? OFFSET ?
+        ''',
+        (exclude_user_id, limit, offset),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def get_unanswered_count(exclude_user_id):
+    conn = get_db_connection()
+    total = conn.execute(
+        f"SELECT COUNT(*) FROM posts p WHERE {_UNANSWERED_WHERE}",
+        (exclude_user_id,),
+    ).fetchone()[0]
+    conn.close()
+    return total
+
+
 def get_emotional_timeline(user_id, limit=300):
     """Posts publicados do usuário em ordem cronológica (mais antigos primeiro).
 

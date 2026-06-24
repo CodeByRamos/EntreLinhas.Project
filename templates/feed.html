@@ -41,6 +41,16 @@
           {% endif %}
         </section>
 
+        {% if session.get('user_id') and unanswered_count %}
+        <a href="{{ url_for('posts.acolher') }}" class="acolher-feed-card">
+          <span class="acolher-feed-icon" aria-hidden="true">{{ icon('heart-handshake') }}</span>
+          <span>
+            <span class="acolher-feed-title">Acolher uma voz</span>
+            <span class="acolher-feed-sub">{{ unanswered_count }} {{ 'desabafo ainda sem resposta' if unanswered_count == 1 else 'desabafos ainda sem resposta' }}</span>
+          </span>
+        </a>
+        {% endif %}
+
         <section class="glass-panel feed-sidebar-card p-6">
           <p class="section-kicker">encontrar</p>
           <h2 class="text-xl font-display mt-2 mb-4" style="color:var(--text-main)">Filtrar por assunto</h2>

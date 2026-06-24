@@ -68,6 +68,7 @@
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
+          <a href="{{ url_for('posts.acolher') }}" class="nav-pill {{ 'active' if path.startswith('/acolher') else '' }}">Acolher</a>
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
           <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') or path.startswith('/meus-posts') or path.startswith('/ecos') else '' }}">Perfil</a>
         {% endif %}
@@ -106,6 +107,7 @@
         <a href="{{ url_for('main.about') }}" class="nav-pill {{ 'active' if path.startswith('/sobre') else '' }}">Sobre</a>
         <a href="{{ url_for('apoio.apoio_publico') }}" class="nav-pill {{ 'active' if path.startswith('/apoio') or path.startswith('/ajuda') else '' }}">Apoio</a>
         {% if logged_user %}
+          <a href="{{ url_for('posts.acolher') }}" class="nav-pill {{ 'active' if path.startswith('/acolher') else '' }}">Acolher</a>
           <a href="{{ url_for('cartas.minhas_cartas') }}" class="nav-pill {{ 'active' if path.startswith('/cartas') else '' }}">Cartas</a>
           <a href="{{ url_for('auth.perfil') }}" class="nav-pill {{ 'active' if path.startswith('/perfil') else '' }}">Perfil</a>
           <a href="{{ url_for('posts.meus_posts') }}" class="nav-pill {{ 'active' if path.startswith('/meus-posts') else '' }}">Meus rastros</a>
