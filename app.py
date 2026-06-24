@@ -6,7 +6,7 @@ except ImportError:
 
 from flask import Flask, render_template, session, request, jsonify
 import database as db
-from extensions import db as sqlalchemy_db, migrate, csrf, limiter
+from extensions import db as sqlalchemy_db, migrate, csrf, limiter, SECURITY_AVAILABLE
 from models import sqlalchemy_schema  # noqa: F401
 from routes.main import main
 from routes.posts import posts
@@ -69,6 +69,15 @@ def create_app():
     # Rate limiting por IP (limites declarados por rota com @limiter.limit).
     if app.config.get('RATELIMIT_ENABLED', True):
         limiter.init_app(app)
+
+    if not SECURITY_AVAILABLE:
+        # Deps de segurança ausentes: app sobe sem CSRF/rate limiting, mas avisa
+        # alto. Registra um csrf_token() vazio para os templates não quebrarem.
+        app.jinja_env.globals.setdefault('csrf_token', lambda: '')
+        app.logger.warning(
+            "ATENÇÃO: Flask-WTF/Flask-Limiter NÃO instalados — CSRF e rate "
+            "limiting estão DESLIGADOS. Rode: pip install -r requirements.txt"
+        )
     
     # Inicializa o banco SQLite apenas em desenvolvimento local.
     if not app.config.get('USE_POSTGRES'):
@@ -121,18 +130,19 @@ def create_app():
     def _wants_json():
         return request.path.startswith('/api/') or request.accept_mimetypes.best == 'application/json'
 
-    from flask_wtf.csrf import CSRFError
+    if SECURITY_AVAILABLE:
+        from flask_wtf.csrf import CSRFError
 
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(error):
-        # Token ausente/expirado: peça para recarregar (em vez de erro cru).
-        if _wants_json():
-            return jsonify({
-                'success': False,
-                'error': 'Sua sessão expirou. Recarregue a página e tente de novo.',
-                'csrf': True,
-            }), 400
-        return render_template('errors/csrf.html', reason=error.description), 400
+        @app.errorhandler(CSRFError)
+        def handle_csrf_error(error):
+            # Token ausente/expirado: peça para recarregar (em vez de erro cru).
+            if _wants_json():
+                return jsonify({
+                    'success': False,
+                    'error': 'Sua sessão expirou. Recarregue a página e tente de novo.',
+                    'csrf': True,
+                }), 400
+            return render_template('errors/csrf.html', reason=error.description), 400
 
     @app.errorhandler(429)
     def ratelimit_handler(error):

@@ -19,14 +19,20 @@ def _landing_stats():
         stats['acolhimentos'] = db.get_reaction_count() or 0
     except Exception:
         pass
+    conn = None
     try:
         conn = db.get_db_connection()
         fl = conn.execute("SELECT COUNT(*) FROM future_letters").fetchone()[0]
         sl = conn.execute("SELECT COUNT(*) FROM stranger_letters").fetchone()[0]
-        conn.close()
         stats['cartas'] = (fl or 0) + (sl or 0)
     except Exception:
         pass
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
     return stats
 
 
