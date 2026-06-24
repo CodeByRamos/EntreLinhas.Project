@@ -2273,6 +2273,39 @@ body.composer-open { overflow: hidden; }
 }
 .about-inline-link:hover { color: var(--text-main); transform: translateX(2px); }
 
+/* Reflexão da Semana — convite reflexivo no topo do feed */
+.reflexao-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+  padding: 1.4rem 1.5rem;
+  border-radius: var(--radius-lg, 18px);
+  border: 1px solid rgba(106, 166, 255, 0.3);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(106, 166, 255, 0.14), transparent 55%),
+    rgba(8, 13, 24, 0.5);
+}
+.reflexao-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex-shrink: 0;
+  border-radius: 14px;
+  color: var(--accent);
+  background: rgba(106, 166, 255, 0.12);
+  border: 1px solid rgba(106, 166, 255, 0.28);
+}
+.reflexao-icon .el-icon { width: 1.5rem; height: 1.5rem; }
+.reflexao-question {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  margin-top: 0.35rem;
+}
+
 /* Agradecimentos — cartões de tributo para quem ajudou no projeto */
 .gratitude-grid {
   display: grid;

@@ -159,6 +159,14 @@ def create_app():
     # Contexto global para templates
     from utils.roles import get_role_badge
 
+    def _weekly_reflection():
+        reflexoes = app.config.get('REFLEXOES_SEMANAIS') or []
+        if not reflexoes:
+            return None
+        # Determinístico por semana ISO: muda toda segunda, igual para todos.
+        week = datetime.now().isocalendar()[1]
+        return reflexoes[week % len(reflexoes)]
+
     @app.context_processor
     def inject_now():
         return {
@@ -167,6 +175,7 @@ def create_app():
             'categorias': app.config.get('CATEGORIAS', []),
             'emotional_tags': app.config.get('TAGS_EMOCIONAIS', []),
             'role_badge': get_role_badge,
+            'reflexao_semana': _weekly_reflection(),
         }
 
     @app.cli.command("create-admin")

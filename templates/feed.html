@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'components/post_card.html' import render_post with context %}
+{% from 'components/icons.html' import icon with context %}
 
 {% block title %}Início - EntreLinhas{% endblock %}
 
@@ -54,6 +55,19 @@
     </div>
 
     <div class="md:col-span-2">
+      {% if reflexao_semana and session.get('user_id') and not categoria_atual %}
+      <section class="reflexao-card mb-6">
+        <span class="reflexao-icon" aria-hidden="true">{{ icon('sunrise') }}</span>
+        <div class="min-w-0">
+          <p class="section-kicker">reflexão da semana</p>
+          <p class="reflexao-question">{{ reflexao_semana }}</p>
+          <button type="button" class="btn-modern btn-superacao mt-3 composer-trigger" data-prefill-title="{{ reflexao_semana }}">
+            <span>Refletir sobre isso</span>
+          </button>
+        </div>
+      </section>
+      {% endif %}
+
       <div class="feed-layout-heading">
         <div>
           <p class="section-kicker">diário coletivo</p>

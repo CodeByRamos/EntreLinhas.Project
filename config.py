@@ -105,3 +105,20 @@ REACOES = [
     {'valor': 'abraco', 'nome': 'Abraço', 'icon': 'embrace'},
     {'valor': 'inspirador', 'nome': 'Me inspirou', 'icon': 'spark'}
 ]
+
+# Reflexão da Semana — um convite reflexivo que rotaciona por número da semana
+# (determinístico, sem banco). Pensado para autoconhecimento, não para engajamento.
+REFLEXOES_SEMANAIS = [
+    "Qual foi a coisa mais difícil que você enfrentou esta semana?",
+    "O que você gostaria de ter dito a alguém, mas não disse?",
+    "Que peso você está carregando que talvez já pudesse soltar?",
+    "Quando foi a última vez que você se sentiu em paz? O que havia ali?",
+    "O que o seu eu de um ano atrás não acreditaria que você superou?",
+    "Por quem ou por quê você sente saudade hoje?",
+    "O que você precisa ouvir, mas ninguém te disse ainda?",
+    "Qual pequena vitória desta semana passou despercebida?",
+    "Se o cansaço de hoje pudesse falar, o que ele diria?",
+    "O que você tem evitado sentir?",
+    "Que parte de você pede mais gentileza ultimamente?",
+    "O que mudou em você nos últimos meses, sem você perceber?",
+]

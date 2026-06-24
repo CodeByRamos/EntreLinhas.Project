@@ -272,6 +272,12 @@
           var mm = document.getElementById('mobile-menu');
           if (mm) { mm.hidden = true; }
           openComposer();
+          // Pré-preenche o título (ex.: Reflexão da Semana) ao abrir o composer.
+          var prefill = b.getAttribute('data-prefill-title');
+          if (prefill) {
+            var t = document.getElementById('titulo');
+            if (t && !t.value) t.value = prefill;
+          }
         });
       });
       drawer.querySelectorAll('[data-composer-close]').forEach(function (b) { b.addEventListener('click', closeComposer); });
