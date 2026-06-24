@@ -25,6 +25,16 @@ except ImportError:
     psycopg = None
     dict_row = None
 
+# Pool de conexões (psycopg_pool). Importado de forma defensiva: se a lib não
+# estiver instalada, o app cai para conexão direta (comportamento antigo) sem
+# quebrar. Instale com `psycopg[binary,pool]` (já no requirements.txt).
+try:
+    from psycopg_pool import ConnectionPool
+except ImportError:
+    ConnectionPool = None
+
+import threading
+
 from utils.security import hash_password, verify_password, is_legacy_hash
 from utils.validation import LIMITS, is_valid_email, is_valid_username, trim_text
 from utils.safe_logging import log_exception
@@ -135,13 +145,22 @@ class _PostgresCursor:
 
 
 class _PostgresConnection:
-    def __init__(self, url):
-        if psycopg2 is not None:
+    """Conexão Postgres compatível com a API do sqlite3 usada no projeto.
+
+    Pode envolver uma conexão NOVA (caminho direto) ou uma conexão emprestada
+    de um pool — nesse caso, ``close()`` devolve ao pool em vez de fechar.
+    """
+    def __init__(self, url=None, raw=None, pool=None):
+        self._pool = pool
+        if raw is not None:
+            self._conn = raw
+            self._driver = "psycopg"
+        elif psycopg2 is not None:
             self._driver = "psycopg2"
-            self._conn = psycopg2.connect(url, cursor_factory=DictCursor)
+            self._conn = psycopg2.connect(url or DATABASE_URL, cursor_factory=DictCursor)
         elif psycopg is not None:
             self._driver = "psycopg"
-            self._conn = psycopg.connect(url, row_factory=dict_row)
+            self._conn = psycopg.connect(url or DATABASE_URL, row_factory=dict_row)
         else:
             raise RuntimeError("Instale psycopg[binary] para usar PostgreSQL.")
 
@@ -159,7 +178,22 @@ class _PostgresConnection:
         self._conn.rollback()
 
     def close(self):
-        self._conn.close()
+        if self._pool is not None:
+            # Devolve ao pool. Antes, limpa qualquer transação pendente para a
+            # próxima requisição não herdar estado abortado.
+            try:
+                self._conn.rollback()
+            except Exception:
+                pass
+            try:
+                self._pool.putconn(self._conn)
+                return
+            except Exception:
+                pass
+        try:
+            self._conn.close()
+        except Exception:
+            pass
 
 
 def _get_table_columns(conn, table_name):
@@ -214,14 +248,69 @@ def _sanitize_user_row(user_row):
     user_dict.pop("password_hash", None)
     return user_dict
 
+_PG_POOL = None
+_PG_POOL_PID = None
+_PG_POOL_LOCK = threading.Lock()
+
+
+def _get_pg_pool():
+    """Pool de conexões por processo (lazy + seguro contra fork do gunicorn).
+
+    Reutilizar conexões evita o handshake TCP/TLS/auth a cada query — que é a
+    maior fonte de lentidão no Neon. Retorna None se o pool não estiver
+    disponível (lib ausente ou falha ao abrir): aí usamos conexão direta.
+    """
+    global _PG_POOL, _PG_POOL_PID
+    if ConnectionPool is None or psycopg is None:
+        return None
+    pid = os.getpid()
+    # Pool herdado de um fork (gunicorn preload) não pode ser reutilizado.
+    if _PG_POOL is not None and _PG_POOL_PID != pid:
+        _PG_POOL = None
+    if _PG_POOL is None:
+        with _PG_POOL_LOCK:
+            if _PG_POOL is None or _PG_POOL_PID != os.getpid():
+                try:
+                    pool = ConnectionPool(
+                        conninfo=DATABASE_URL,
+                        min_size=1,
+                        max_size=int(os.environ.get("PG_POOL_MAX", "5") or "5"),
+                        timeout=float(os.environ.get("PG_POOL_TIMEOUT", "10") or "10"),
+                        max_idle=120.0,
+                        kwargs={"row_factory": dict_row},
+                        check=ConnectionPool.check_connection,
+                        name="entrelinhas",
+                        open=False,
+                    )
+                    pool.open(wait=True, timeout=10.0)
+                    _PG_POOL = pool
+                    _PG_POOL_PID = os.getpid()
+                except Exception as exc:
+                    logger.warning("Não foi possível abrir o pool Postgres (usando conexão direta): %s", exc)
+                    _PG_POOL = None
+    return _PG_POOL
+
+
 def get_db_connection():
     """Estabelece e retorna uma conexão com o banco de dados.
 
-    No Postgres (Neon), a primeira conexão após inatividade pode falhar enquanto
-    o banco "acorda". Tentamos algumas vezes antes de desistir — isso mata boa
-    parte dos erros intermitentes ("falhou, tente de novo").
+    No Postgres usa um pool (conexões reutilizadas = muito mais rápido). Se o
+    pool não estiver disponível, cai para conexão direta com retry — o Neon pode
+    falhar a primeira conexão enquanto "acorda".
     """
     if USE_POSTGRES:
+        pool = _get_pg_pool()
+        if pool is not None:
+            timeout = float(os.environ.get("PG_POOL_TIMEOUT", "10") or "10")
+            for attempt in range(3):
+                try:
+                    raw = pool.getconn(timeout=timeout)
+                    return _PostgresConnection(raw=raw, pool=pool)
+                except Exception as exc:
+                    logger.warning("Pool getconn falhou (tentativa %s/3): %s", attempt + 1, exc)
+                    time.sleep(0.3 * (attempt + 1))
+            logger.warning("Pool indisponível; caindo para conexão direta.")
+        # Conexão direta (sem pool ou pool falhou).
         last_exc = None
         for attempt in range(4):
             try:
