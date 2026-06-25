@@ -94,14 +94,6 @@ class Reaction(db.Model):
     data_reacao = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
-class ReactionCount(db.Model):
-    __tablename__ = "reaction_counts"
-
-    post_id = db.Column(db.Integer, db.ForeignKey("posts.id"), primary_key=True)
-    reaction_type = db.Column(db.String(40), primary_key=True)
-    count = db.Column(db.Integer, default=0, nullable=False)
-
-
 class Echo(db.Model):
     __tablename__ = "echoes"
 
@@ -135,17 +127,6 @@ class CommentReport(db.Model):
     reason = db.Column(db.String(120), nullable=False)
     data_report = db.Column(db.String(20), nullable=False)
     resolved = db.Column(db.Integer, default=0, nullable=False)
-
-
-class CommentKarma(db.Model):
-    __tablename__ = "comment_karma"
-
-    id = db.Column(db.Integer, primary_key=True)
-    comment_id = db.Column(db.Integer, db.ForeignKey("comments.id"), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    profile_id = db.Column(db.Integer, db.ForeignKey("profiles.id"))
-    karma_type = db.Column(db.String(10), nullable=False)
-    data = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
 class PasswordResetToken(db.Model):

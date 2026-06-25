@@ -477,17 +477,6 @@ def init_db():
         )
     ''')
     
-    # Tabela de contagem de reações (para performance)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS reaction_counts (
-            post_id INTEGER NOT NULL,
-            reaction_type TEXT NOT NULL,
-            count INTEGER DEFAULT 0,
-            PRIMARY KEY (post_id, reaction_type),
-            FOREIGN KEY (post_id) REFERENCES posts (id)
-        )
-    """)
-
     # Tabela de reports de comentários
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS reports_comments (
@@ -632,21 +621,6 @@ def init_db():
         )
     ''')
 
-    # Tabela de karma de comentários
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS comment_karma (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            comment_id INTEGER NOT NULL,
-            user_id INTEGER,
-            profile_id INTEGER,
-            karma_type TEXT NOT NULL CHECK (karma_type IN ('up', 'down')),
-            data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (comment_id) REFERENCES comments (id),
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            UNIQUE(comment_id, user_id),
-            UNIQUE(comment_id, profile_id)
-        )
-    ''')
 
     # Migrações leves para bancos antigos
     _ensure_column(conn, "posts", "user_id", "INTEGER")
@@ -792,7 +766,6 @@ _PERF_INDEXES = [
     ("idx_comments_post_id", "comments", "(post_id)"),
     ("idx_reactions_post_id", "reactions", "(post_id)"),
     ("idx_reactions_lookup", "reactions", "(post_id, reaction_type, user_id)"),
-    ("idx_comment_karma_comment_id", "comment_karma", "(comment_id)"),
     ("idx_reports_post_id", "reports", "(post_id)"),
     ("idx_reports_comments_comment_id", "reports_comments", "(comment_id)"),
     ("idx_reports_comments_user_id", "reports_comments", "(user_id)"),
@@ -1116,7 +1089,6 @@ def delete_post(post_id):
     try:
         conn.execute("DELETE FROM reports WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM reactions WHERE post_id = ?", (post_id,))
-        conn.execute("DELETE FROM reaction_counts WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM echoes WHERE post_id = ?", (post_id,))
         conn.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
         cursor = conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
@@ -2082,128 +2054,7 @@ def get_report_count(post_id):
 # (sobrescritas pelas definições vivas mais abaixo). Removidas na limpeza Wave 3.
 
 
-def add_comment_karma(comment_id, profile_id, karma_type):
-    """Adiciona ou atualiza o karma de um comentário (compatível com Postgres).
-
-    Antes dependia de capturar sqlite3.IntegrityError e fazer UPDATE depois — no
-    Postgres isso quebra (exceção diferente + transação abortada). Agora checamos
-    a existência antes, sem controle de fluxo por exceção.
-    """
-    conn = get_db_connection()
-    try:
-        existing = conn.execute(
-            "SELECT id FROM comment_karma WHERE comment_id = ? AND profile_id = ?",
-            (comment_id, profile_id),
-        ).fetchone()
-        if existing:
-            conn.execute(
-                "UPDATE comment_karma SET karma_type = ?, data = datetime('now') WHERE comment_id = ? AND profile_id = ?",
-                (karma_type, comment_id, profile_id),
-            )
-            message = "Karma atualizado com sucesso."
-        else:
-            conn.execute(
-                "INSERT INTO comment_karma (comment_id, profile_id, karma_type, data) VALUES (?, ?, ?, datetime('now'))",
-                (comment_id, profile_id, karma_type),
-            )
-            message = "Karma adicionado com sucesso."
-        conn.commit()
-        return True, message
-    except Exception as e:
-        conn.rollback()
-        log_exception(logger, "database.add_comment_karma", "comment_karma.upsert", e, comment_id=comment_id)
-        return False, "Não conseguimos registrar isso agora."
-    finally:
-        conn.close()
-
-def remove_comment_karma(comment_id, profile_id):
-    """Remove o karma de um comentário."""
-    conn = get_db_connection()
-    
-    conn.execute('''
-        DELETE FROM comment_karma 
-        WHERE comment_id = ? AND profile_id = ?
-    ''', (comment_id, profile_id))
-    
-    conn.commit()
-    conn.close()
-    return True, "Karma removido com sucesso."
-
-def get_comment_karma_score(comment_id):
-    """Retorna o score de karma de um comentário."""
-    conn = get_db_connection()
-    
-    # Contar votos positivos
-    up_votes = conn.execute('''
-        SELECT COUNT(*) FROM comment_karma 
-        WHERE comment_id = ? AND karma_type = 'up'
-    ''', (comment_id,)).fetchone()[0]
-    
-    # Contar votos negativos
-    down_votes = conn.execute('''
-        SELECT COUNT(*) FROM comment_karma 
-        WHERE comment_id = ? AND karma_type = 'down'
-    ''', (comment_id,)).fetchone()[0]
-    
-    conn.close()
-    
-    # Calcular score (positivos - negativos)
-    score = up_votes - down_votes
-    return score, up_votes, down_votes
-
-def get_user_comment_karma(comment_id, profile_id):
-    """Retorna o karma que um usuário deu para um comentário."""
-    conn = get_db_connection()
-        
-    karma = conn.execute('''
-        SELECT karma_type FROM comment_karma 
-        WHERE comment_id = ? AND profile_id = ?
-    ''', (comment_id, profile_id)).fetchone()
-    
-    conn.close()
-    
-    if karma:
-        return karma['karma_type']
-    return None
-
-def get_comments_with_karma(post_id):
-    """Retorna os comentários de um post com informações de karma."""
-    conn = get_db_connection()
-    
-    comments = conn.execute('''
-        SELECT c.id, c.mensagem, c.data_comentario,
-               COALESCE(SUM(CASE WHEN ck.karma_type = 'up' THEN 1 ELSE 0 END), 0) as up_votes,
-               COALESCE(SUM(CASE WHEN ck.karma_type = 'down' THEN 1 ELSE 0 END), 0) as down_votes,
-               (COALESCE(SUM(CASE WHEN ck.karma_type = 'up' THEN 1 ELSE 0 END), 0) - 
-                COALESCE(SUM(CASE WHEN ck.karma_type = 'down' THEN 1 ELSE 0 END), 0)) as karma_score
-        FROM comments c
-        LEFT JOIN comment_karma ck ON c.id = ck.comment_id
-        WHERE c.post_id = ?
-        GROUP BY c.id, c.mensagem, c.data_comentario
-        ORDER BY karma_score DESC, c.data_comentario ASC
-    ''', (post_id,)).fetchall()
-    
-    conn.close()
-    return comments
-
-def get_high_karma_comments(min_karma=10, limit=50):
-    """Retorna comentários com karma alto (apoio confiável)."""
-    conn = get_db_connection()
-    
-    comments = conn.execute('''
-        SELECT c.id, c.mensagem, c.data_comentario, c.post_id,
-               (COALESCE(SUM(CASE WHEN ck.karma_type = 'up' THEN 1 ELSE 0 END), 0) - 
-                COALESCE(SUM(CASE WHEN ck.karma_type = 'down' THEN 1 ELSE 0 END), 0)) as karma_score
-        FROM comments c
-        LEFT JOIN comment_karma ck ON c.id = ck.comment_id
-        GROUP BY c.id, c.mensagem, c.data_comentario, c.post_id
-        HAVING karma_score >= ?
-        ORDER BY karma_score DESC, c.data_comentario DESC
-        LIMIT ?
-    ''', (min_karma, limit)).fetchall()
-    
-    conn.close()
-    return comments
+# (camada de karma de comentários removida — feature descontinuada na Wave 3)
 
 
 # Funções para usuários permanentes
@@ -3010,18 +2861,6 @@ def get_user_stats(user_id):
         SELECT COUNT(*) FROM comments WHERE user_id = ?
     ''', (user_id,)).fetchone()[0]
     
-    # Contar karma total dos comentários
-    total_karma = conn.execute('''
-        SELECT COALESCE(SUM(
-            CASE WHEN ck.karma_type = 'up' THEN 1 
-                 WHEN ck.karma_type = 'down' THEN -1 
-                 ELSE 0 END
-        ), 0) as total_karma
-        FROM comments c
-        LEFT JOIN comment_karma ck ON c.id = ck.comment_id
-        WHERE c.user_id = ?
-    ''', (user_id,)).fetchone()[0]
-    
     echoes_given = conn.execute(
         "SELECT COUNT(*) FROM echoes WHERE user_id = ?",
         (user_id,),
@@ -3042,7 +2881,6 @@ def get_user_stats(user_id):
     return {
         'post_count': post_count,
         'comment_count': comment_count,
-        'total_karma': total_karma,
         'echoes_given': echoes_given,
         'echoes_received': echoes_received
     }
