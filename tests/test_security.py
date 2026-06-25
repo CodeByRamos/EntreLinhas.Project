@@ -88,6 +88,16 @@ def test_csrf_blocks_tokenless_form_post(app):
 
 # --- Rate limiting (ligado explicitamente) ---
 
+def test_security_headers_present(client):
+    h = client.get("/").headers
+    assert h.get("X-Content-Type-Options") == "nosniff"
+    assert h.get("X-Frame-Options") == "DENY"
+    assert "Referrer-Policy" in h
+    assert "Permissions-Policy" in h
+    assert "Content-Security-Policy" in h
+    assert "frame-ancestors 'none'" in h["Content-Security-Policy"]
+
+
 def test_rate_limit_triggers_on_login_flood(app):
     import app as appmod
     appmod.limiter.enabled = True

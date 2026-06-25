@@ -126,6 +126,37 @@ def create_app():
         # request (com erro ou não): garante zero vazamento de conexão.
         db.close_request_connection(exc)
 
+    # CSP: scripts/styles ficam permissivos (o Tailwind Play CDN exige
+    # unsafe-eval/unsafe-inline — sem isso a UI quebra), mas travamos
+    # enquadramento, base, formulários e objetos. Origens externas restritas ao
+    # que o app realmente usa (Tailwind CDN + Google Fonts; imagens https p/
+    # fotos do Cloudinary). Desligável via DISABLE_CSP=1 como escape hatch.
+    _CSP = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    )
+    _csp_enabled = os.environ.get("DISABLE_CSP", "").lower() not in ("1", "true", "yes")
+
+    @app.after_request
+    def _security_headers(resp):
+        # Privacidade (plataforma anônima): não vaza a URL do desabafo para fora.
+        resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+        resp.headers.setdefault("X-Frame-Options", "DENY")
+        resp.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+        if app.config.get("SESSION_COOKIE_SECURE"):
+            resp.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        if _csp_enabled:
+            resp.headers.setdefault("Content-Security-Policy", _CSP)
+        return resp
+
     @app.errorhandler(404)
     def not_found(error):
         return render_template('errors/404.html'), 404
