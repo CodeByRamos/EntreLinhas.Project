@@ -15,7 +15,12 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT
+    # 1 worker (rate limiting memory:// correto + conexões do pool limitadas p/ o
+    # Neon free) + 4 threads (concorrência: request lenta não bloqueia outras) +
+    # timeout p/ cold start. Request-scoped conn e pool são thread-safe.
+    # `db upgrade` é não-fatal: o schema do runtime vem de create_all + ensure_*
+    # (idempotentes), então um hiccup do Alembic não derruba o deploy.
+    startCommand: (python -m flask db upgrade || echo "db upgrade pulado/falhou — create_all/ensure cuidam do schema") ; gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 60
     healthCheckPath: /feed
     envVars:
       - key: FLASK_ENV
