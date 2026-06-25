@@ -1,7 +1,51 @@
-from flask import Blueprint, render_template, redirect, url_for, session
+from flask import Blueprint, render_template, redirect, url_for, session, current_app, Response
+
 import database as db
 
 main = Blueprint('main', __name__)
+
+# Páginas públicas que devem ser indexadas (entram no sitemap).
+_SITEMAP_PAGES = ['/', '/sobre', '/feed', '/apoio', '/como-funciona', '/pulso',
+                  '/privacidade', '/termos']
+
+
+@main.route('/robots.txt')
+def robots():
+    base = (current_app.config.get('APP_BASE_URL', '') or '').rstrip('/')
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        # Áreas privadas/dinâmicas não devem ser indexadas:
+        "Disallow: /admin",
+        "Disallow: /api",
+        "Disallow: /notificacoes",
+        "Disallow: /perfil",
+        "Disallow: /meus-posts",
+        "Disallow: /cartas/desconhecidos/ler",
+        f"Sitemap: {base}/sitemap.xml",
+        "",
+    ]
+    return Response("\n".join(lines), mimetype="text/plain")
+
+
+@main.route('/sitemap.xml')
+def sitemap():
+    base = (current_app.config.get('APP_BASE_URL', '') or '').rstrip('/')
+    items = []
+    for path in _SITEMAP_PAGES:
+        freq = "daily" if path in ("/feed", "/pulso", "/") else "weekly"
+        prio = "1.0" if path == "/" else "0.7"
+        items.append(
+            f"<url><loc>{base}{path}</loc><changefreq>{freq}</changefreq>"
+            f"<priority>{prio}</priority></url>"
+        )
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + "".join(items)
+        + "</urlset>"
+    )
+    return Response(xml, mimetype="application/xml")
 
 
 def _landing_stats():

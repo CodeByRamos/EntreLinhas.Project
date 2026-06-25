@@ -215,6 +215,11 @@ def create_app():
 
     @app.context_processor
     def inject_now():
+        base_url = (app.config.get('APP_BASE_URL', '') or '').rstrip('/')
+        try:
+            canonical = base_url + request.path
+        except Exception:
+            canonical = base_url + '/'
         return {
             'now': datetime.now(),
             'current_user': get_current_user(session),
@@ -223,6 +228,8 @@ def create_app():
             'role_badge': get_role_badge,
             'reflexao_semana': _weekly_reflection(),
             'unread_notifications': _unread_notifications(),
+            'site_url': base_url,
+            'canonical_url': canonical,
         }
 
     @app.cli.command("create-admin")
