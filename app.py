@@ -120,6 +120,12 @@ def create_app():
     app.register_blueprint(apoio)
     app.register_blueprint(cartas)
 
+    @app.teardown_appcontext
+    def _teardown_db(exc):
+        # Devolve a conexão de escopo de requisição ao pool ao fim de cada
+        # request (com erro ou não): garante zero vazamento de conexão.
+        db.close_request_connection(exc)
+
     @app.errorhandler(404)
     def not_found(error):
         return render_template('errors/404.html'), 404

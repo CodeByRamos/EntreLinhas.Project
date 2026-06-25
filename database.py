@@ -311,13 +311,41 @@ def _get_pg_pool():
     return _PG_POOL
 
 
-def get_db_connection():
-    """Estabelece e retorna uma conexão com o banco de dados.
-
-    No Postgres usa um pool (conexões reutilizadas = muito mais rápido). Se o
-    pool não estiver disponível, cai para conexão direta com retry — o Neon pode
-    falhar a primeira conexão enquanto "acorda".
+class _RequestConn:
+    """Conexão com escopo de REQUISIÇÃO. Reaproveitada em toda a request e
+    devolvida ao pool no teardown. `close()` vira no-op para que as ~130 funções
+    que chamam `conn.close()` não devolvam a conexão cedo demais — assim uma
+    request usa UMA conexão e nunca vaza, mesmo se alguma função levantar exceção.
     """
+    __slots__ = ("_real",)
+
+    def __init__(self, real):
+        self._real = real
+
+    def execute(self, *args, **kwargs):
+        return self._real.execute(*args, **kwargs)
+
+    def cursor(self, *args, **kwargs):
+        return self._real.cursor(*args, **kwargs)
+
+    def commit(self):
+        return self._real.commit()
+
+    def rollback(self):
+        return self._real.rollback()
+
+    def close(self):
+        return None  # devolução real acontece no teardown (close_request_connection)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _open_raw_connection():
+    """Abre uma conexão NOVA (pool no Postgres, arquivo no SQLite)."""
     if USE_POSTGRES:
         pool = _get_pg_pool()
         if pool is not None:
@@ -343,6 +371,56 @@ def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # Para acessar colunas pelo nome
     return conn
+
+
+def get_db_connection():
+    """Conexão com o banco.
+
+    DENTRO de uma request Flask: devolve uma conexão de escopo de requisição
+    (uma por request, reaproveitada, devolvida ao pool no teardown — sem vazar e
+    com menos overhead). FORA de request (boot, migrações, scripts): conexão
+    avulsa que o próprio caller fecha.
+    """
+    try:
+        from flask import g, has_app_context
+        in_ctx = has_app_context()
+    except Exception:
+        in_ctx = False
+
+    if in_ctx:
+        handle = getattr(g, "_db_handle", None)
+        if handle is None:
+            handle = _RequestConn(_open_raw_connection())
+            g._db_handle = handle
+        return handle
+
+    return _open_raw_connection()
+
+
+def close_request_connection(exc=None):
+    """Devolve a conexão de escopo de requisição ao pool (ou fecha, no SQLite).
+    Registrado em app.teardown_appcontext — roda SEMPRE, com erro ou não."""
+    try:
+        from flask import g
+    except Exception:
+        return
+    handle = getattr(g, "_db_handle", None)
+    if handle is None:
+        return
+    try:
+        del g._db_handle
+    except Exception:
+        pass
+    real = handle._real
+    try:
+        if exc is not None:
+            real.rollback()
+    except Exception:
+        pass
+    try:
+        real.close()
+    except Exception:
+        pass
 
 def init_db():
     """Inicializa o banco de dados com as tabelas necessárias."""
