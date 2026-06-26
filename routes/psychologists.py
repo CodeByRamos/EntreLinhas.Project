@@ -69,7 +69,7 @@ def voluntario():
     if modalidade not in ('online', 'presencial', 'ambos'):
         modalidade = 'ambos'
     if contains_hate_speech(name) or contains_hate_speech(bio):
-        errors.append('O texto contém expressões que não podemos aceitar.')
+        errors.append('O nome ou a bio viola as diretrizes da comunidade (discurso de ódio ou discriminação). Ajuste para continuar.')
 
     if errors:
         for err in errors:

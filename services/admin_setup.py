@@ -68,3 +68,58 @@ def create_or_reset_admin_from_env():
         "username": user["username"] if user else admin_username,
         "database": "PostgreSQL" if db.USE_POSTGRES else "SQLite local",
     }
+
+
+def _is_truthy(value):
+    return (value or "").strip().lower() in ("1", "true", "yes", "on", "sim")
+
+
+def bootstrap_admin_on_boot(logger=None):
+    """Cria o admin no boot a partir de ADMIN_EMAIL/ADMIN_PASSWORD.
+
+    Pensado para hospedagens sem shell (ex.: Render): basta definir as variáveis
+    de ambiente e fazer o deploy — o admin passa a existir sem rodar nenhum
+    comando. É idempotente e seguro:
+
+    * Sem ADMIN_EMAIL ou ADMIN_PASSWORD → não faz nada.
+    * Se o admin já existe → NÃO mexe na senha (preserva troca feita pela UI),
+      a menos que ADMIN_FORCE_RESET esteja ligado.
+    * ADMIN_FORCE_RESET=1 → recria/reseta a senha para o valor do ambiente
+      (resgate de acesso quando o usuário esquece a senha).
+
+    Nunca derruba o boot: qualquer erro é apenas registrado.
+    """
+    _load_project_env()
+
+    admin_email = trim_text(os.environ.get("ADMIN_EMAIL"))
+    admin_password = os.environ.get("ADMIN_PASSWORD") or ""
+    if not admin_email or not admin_password:
+        return None  # nada configurado — segue o boot normalmente.
+
+    force_reset = _is_truthy(os.environ.get("ADMIN_FORCE_RESET"))
+
+    try:
+        existing = db.get_user_by_email(admin_email)
+    except Exception as exc:  # pragma: no cover - falha de banco no boot
+        if logger:
+            logger.warning("bootstrap_admin: não consegui consultar admin: %s", exc)
+        existing = None
+
+    already_admin = bool(existing) and bool(existing["is_admin"])
+    if already_admin and not force_reset:
+        if logger:
+            logger.info("bootstrap_admin: admin '%s' já existe — preservado.", admin_email)
+        return {"created": False, "email": admin_email}
+
+    try:
+        result = create_or_reset_admin_from_env()
+        if logger:
+            logger.info("bootstrap_admin: %s", result["message"])
+        return {"created": True, "email": admin_email, "message": result["message"]}
+    except AdminSetupError as exc:
+        if logger:
+            logger.warning("bootstrap_admin: configuração inválida — %s", exc)
+    except Exception as exc:  # pragma: no cover - nunca derruba o boot
+        if logger:
+            logger.warning("bootstrap_admin: falha inesperada — %s", exc)
+    return None

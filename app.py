@@ -103,7 +103,16 @@ def create_app():
         db.ensure_performance_indexes()
     except Exception as exc:
         app.logger.warning("ensure indexes/columns: %s", exc)
-    
+
+    # Admin sem shell: se ADMIN_EMAIL/ADMIN_PASSWORD estiverem no ambiente, cria
+    # o administrador no próprio boot (ideal para Render, que pode não liberar o
+    # shell). Idempotente e nunca derruba a aplicação.
+    try:
+        from services.admin_setup import bootstrap_admin_on_boot
+        bootstrap_admin_on_boot(app.logger)
+    except Exception as exc:
+        app.logger.warning("bootstrap_admin: %s", exc)
+
     # Registra os blueprints
     app.register_blueprint(main)
     app.register_blueprint(posts)

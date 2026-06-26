@@ -63,11 +63,17 @@ services:
         sync: false                     # "EntreLinhas <seu_email@gmail.com>"
       - key: MAIL_ALLOW_CONSOLE_FALLBACK
         value: "false"
-      # Admin inicial (rode `flask create-admin` depois, ou use estes)
+      # Admin inicial SEM shell: defina ADMIN_EMAIL + ADMIN_PASSWORD aqui e o
+      # admin é criado/promovido no próprio boot (ver bootstrap_admin_on_boot).
+      # Depois entre em /admin/login. É idempotente: se o admin já existe, a
+      # senha NÃO é mexida nos deploys seguintes — a menos que você ligue
+      # ADMIN_FORCE_RESET=1 (resgate, quando esquecer a senha). Desligue depois.
       - key: ADMIN_EMAIL
-        sync: false
+        sync: false                     # seu e-mail de admin
       - key: ADMIN_PASSWORD
-        sync: false
+        sync: false                     # senha forte (8+ caracteres)
+      - key: ADMIN_FORCE_RESET
+        sync: false                     # opcional: "1" só para resetar a senha
 
 databases:
   - name: entrelinhas-db

@@ -113,9 +113,9 @@ def registro():
         if default_visibility_mode not in ('anonymous', 'profile'):
             default_visibility_mode = 'anonymous'
 
-        # Nome, apelido e bio não podem carregar discurso de ódio.
-        if any(contains_hate_speech(v) for v in (nickname, username, bio) if v):
-            message = "Esse nome ou bio carrega uma expressão que fere outras pessoas. Escolha algo que respeite todo mundo para continuar."
+        # Nome público, @usuário, apelido e bio não podem carregar discurso de ódio.
+        if any(contains_hate_speech(v) for v in (display_name, nickname, username, bio) if v):
+            message = "Esse nome, @usuário ou bio viola as diretrizes da comunidade (discurso de ódio ou discriminação). Escolha algo que respeite todo mundo para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')
@@ -355,7 +355,7 @@ def editar_perfil():
 
         # Nome público, @usuário, apelido e bio não podem carregar discurso de ódio.
         if any(contains_hate_speech(v) for v in (display_name, username, nickname, bio) if v):
-            message = "Esse nome ou bio carrega uma expressão que fere outras pessoas. Escolha algo que respeite todo mundo para continuar."
+            message = "Esse nome, @usuário ou bio viola as diretrizes da comunidade (discurso de ódio ou discriminação). Escolha algo que respeite todo mundo para continuar."
             if request.is_json:
                 return jsonify({'success': False, 'message': message}), 400
             flash(message, 'error')

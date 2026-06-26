@@ -44,11 +44,13 @@ def build_hate_response(analysis):
     if analysis.get("block_publication"):
         return {
             "level": "HATE_BLOCK",
-            "title": "Esse desabafo não pode ir assim",
+            "title": "Isso viola as diretrizes da comunidade",
             "message": (
-                "Encontramos uma ofensa que fere outras pessoas" + kinds + ". "
-                "O EntreLinhas é um lugar pra colocar a sua dor em palavras, "
-                "não pra atacar ninguém."
+                "Encontramos discurso de ódio / discriminação" + kinds + ". "
+                "O EntreLinhas não permite racismo, homofobia, transfobia, "
+                "capacitismo, misoginia, xenofobia, intolerância religiosa nem "
+                "nenhum outro ataque a grupos de pessoas. Aqui é pra colocar a sua "
+                "dor em palavras, não pra ferir ninguém."
             ),
             "support_message": "",
             "show_help_contacts": False,

@@ -129,9 +129,11 @@ def enviar():
             # Discurso de ódio com ataque direto: barrado no servidor, sempre.
             if sensitivity.get('block_publication'):
                 flash(
-                    'Esse desabafo traz uma ofensa que fere outras pessoas e não pode ser '
-                    'publicado assim. O EntreLinhas é pra desabafar a sua dor, não pra atacar '
-                    'ninguém. Edite o texto e tente de novo.',
+                    'Esse conteúdo viola as diretrizes da comunidade do EntreLinhas: '
+                    'não é permitido racismo, homofobia, transfobia, capacitismo, '
+                    'misoginia, xenofobia, intolerância religiosa nem qualquer outro '
+                    'discurso de ódio ou discriminação. O EntreLinhas é pra desabafar a '
+                    'sua dor, não pra atacar ninguém. Edite o texto e tente de novo.',
                     'error',
                 )
                 return redirect(url_for('posts.feed'))
@@ -361,9 +363,10 @@ def editar_post(post_id):
     sensitivity = evaluate_post_content(f"{titulo} {conteudo}" if titulo else conteudo)
     if status == 'published' and sensitivity.get('block_publication'):
         flash(
-            'Esse desabafo traz uma ofensa que fere outras pessoas e não pode ser publicado '
-            'assim. O EntreLinhas é pra desabafar a sua dor, não pra atacar ninguém. '
-            'Edite o texto e tente de novo.',
+            'Esse conteúdo viola as diretrizes da comunidade do EntreLinhas: '
+            'não é permitido racismo, homofobia, transfobia, capacitismo, misoginia, '
+            'xenofobia, intolerância religiosa nem qualquer outro discurso de ódio ou '
+            'discriminação. Edite o texto removendo a ofensa para poder publicar.',
             'error',
         )
         return redirect(url_for('posts.editar_post', post_id=post_id))

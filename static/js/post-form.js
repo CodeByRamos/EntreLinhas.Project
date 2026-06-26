@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Elementos do formulário
     const postForm = document.getElementById('post-form');
     const conteudoTextarea = document.getElementById('conteudo');
+    const tituloInput = document.getElementById('titulo');
     const categoriaSelect = document.getElementById('categoria');
     const charCount = document.getElementById('char-count');
     const maxLength = 2000; // Limite maximo de caracteres
@@ -187,13 +188,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (sensitiveRisk) sensitiveRisk.value = '';
 
             try {
+                // Inclui o título na análise: o filtro de ódio precisa enxergar
+                // todos os campos, não só o corpo do desabafo.
+                const tituloVal = tituloInput ? tituloInput.value.trim() : '';
+                const corpoVal = conteudoTextarea ? conteudoTextarea.value : '';
                 const analysisResponse = await fetch('/analyze-content', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        text: conteudoTextarea ? conteudoTextarea.value : ''
+                        text: tituloVal ? (tituloVal + ' ' + corpoVal) : corpoVal
                     })
                 });
 
