@@ -2048,8 +2048,37 @@ body.composer-open { overflow: hidden; }
 .composer-plus { font-weight: 700; }
 .composer-trigger, .nav-cta { display: inline-flex; align-items: center; gap: 0.4rem; }
 
-@media (max-width: 560px) {
-  .composer-panel { width: 100vw; border-left: none; }
+/* No celular o composer vira BOTTOM SHEET: sobe de baixo (alcance do polegar),
+   topo arredondado e uma alça de arraste. No desktop segue como gaveta lateral. */
+@media (max-width: 640px) {
+  .composer-panel {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 92vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-top-left-radius: 22px;
+    border-top-right-radius: 22px;
+    box-shadow: 0 -34px 90px -34px rgba(0, 0, 0, 0.85);
+    padding-top: 1.5rem;
+    transform: translateY(100%);
+  }
+  .composer-drawer.is-open .composer-panel {
+    transform: translateY(0);
+  }
+  /* Alça de arraste (afordância de "puxe para baixo"). */
+  .composer-panel::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: -0.4rem auto 1rem;
+    border-radius: 99px;
+    background: rgba(159, 180, 212, 0.4);
+  }
 }
 
 /* ============================================================================
@@ -2523,16 +2552,6 @@ body.composer-open { overflow: hidden; }
   .lp-support-link {
     min-height: 44px;
     align-items: center;
-  }
-
-  /* O botão de fechar do composer não fica sob o notch. */
-  .composer-close {
-    top: calc(0.85rem + env(safe-area-inset-top));
-  }
-
-  /* Respiro confortável para o polegar acima do indicador de home. */
-  .composer-panel {
-    padding-top: calc(1.6rem + env(safe-area-inset-top));
   }
 }
 
