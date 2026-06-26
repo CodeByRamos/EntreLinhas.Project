@@ -67,7 +67,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}" />
   {% block extra_head %}{% endblock %}
 </head>
-<body class="min-h-screen font-sans flex flex-col">
+<body class="min-h-screen font-sans flex flex-col {{ 'has-tabbar' if current_user else '' }}">
   <a href="#conteudo-principal" class="skip-link">Pular para o conteúdo</a>
   {% set path = request.path %}
   {% set logged_user = current_user if current_user else none %}
@@ -189,6 +189,26 @@
     {% endwith %}
     {% block content %}{% endblock %}
   </main>
+
+  {% if logged_user %}
+  <nav class="mobile-tabbar" aria-label="Navegação rápida">
+    <a href="{{ url_for('posts.feed') }}" class="tabbar-item {{ 'active' if path == '/' or path.startswith('/feed') else '' }}">
+      <span class="tabbar-ico">{{ icon('home') }}</span><span class="tabbar-label">Início</span>
+    </a>
+    <a href="{{ url_for('posts.acolher') }}" class="tabbar-item {{ 'active' if path.startswith('/acolher') else '' }}">
+      <span class="tabbar-ico">{{ icon('ear') }}</span><span class="tabbar-label">Acolher</span>
+    </a>
+    <button type="button" class="tabbar-item tabbar-fab composer-trigger" aria-label="Escrever um desabafo">
+      <span class="tabbar-ico">{{ icon('feather') }}</span><span class="tabbar-label">Desabafe</span>
+    </button>
+    <a href="{{ url_for('cartas.minhas_cartas') }}" class="tabbar-item {{ 'active' if path.startswith('/cartas') else '' }}">
+      <span class="tabbar-ico">{{ icon('mail-open') }}</span><span class="tabbar-label">Cartas</span>
+    </a>
+    <a href="{{ url_for('auth.perfil') }}" class="tabbar-item {{ 'active' if path.startswith('/perfil') or path.startswith('/meus-posts') or path.startswith('/ecos') else '' }}">
+      <span class="tabbar-ico">{{ icon('user') }}</span><span class="tabbar-label">Perfil</span>
+    </a>
+  </nav>
+  {% endif %}
 
   <footer class="site-footer mt-12">
     <div class="container mx-auto px-6">
