@@ -36,3 +36,31 @@ def test_admin_not_indexable_via_robots(client):
     body = client.get("/robots.txt").get_data(as_text=True)
     for path in ["/admin", "/api", "/notificacoes", "/perfil"]:
         assert f"Disallow: {path}" in body
+
+
+def test_manifest(client):
+    import json
+    r = client.get("/manifest.webmanifest")
+    assert r.status_code == 200
+    assert "manifest" in r.mimetype  # application/manifest+json
+    data = json.loads(r.get_data(as_text=True))
+    assert data["name"] == "EntreLinhas"
+    assert data["display"] == "standalone"
+    sizes = {i["sizes"] for i in data["icons"]}
+    assert "192x192" in sizes and "512x512" in sizes  # exigidos p/ instalar
+    assert any(i.get("purpose") == "maskable" for i in data["icons"])
+
+
+def test_service_worker(client):
+    r = client.get("/sw.js")
+    assert r.status_code == 200
+    assert "javascript" in r.mimetype
+    assert "addEventListener('fetch'" in r.get_data(as_text=True)
+
+
+def test_pwa_tags_in_head(client):
+    body = client.get("/").get_data(as_text=True)
+    assert 'rel="manifest"' in body
+    assert 'apple-touch-icon' in body
+    # social preview usa a imagem otimizada (não a logo de 1.6MB)
+    assert 'og-image.jpg' in body

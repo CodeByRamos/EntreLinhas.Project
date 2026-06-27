@@ -51,3 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 6000);
     }
 });
+
+// PWA: registra o service worker (habilita instalar na tela inicial). É
+// pass-through, sem cache — então nunca serve conteúdo obsoleto.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+}
