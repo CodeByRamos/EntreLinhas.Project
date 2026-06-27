@@ -135,14 +135,14 @@ def create_app():
         # request (com erro ou não): garante zero vazamento de conexão.
         db.close_request_connection(exc)
 
-    # CSP: scripts/styles ficam permissivos (o Tailwind Play CDN exige
-    # unsafe-eval/unsafe-inline — sem isso a UI quebra), mas travamos
-    # enquadramento, base, formulários e objetos. Origens externas restritas ao
-    # que o app realmente usa (Tailwind CDN + Google Fonts; imagens https p/
-    # fotos do Cloudinary). Desligável via DISABLE_CSP=1 como escape hatch.
+    # CSP: com o Tailwind agora ESTÁTICO (sem o Play CDN), caiu o 'unsafe-eval'
+    # e a origem do CDN — fechando o vetor mais perigoso. Mantemos 'unsafe-inline'
+    # por causa de scripts/estilos inline nos templates. Origens externas
+    # restritas a Google Fonts; imagens https p/ fotos do Cloudinary. Travamos
+    # enquadramento, base, formulários e objetos. Desligável via DISABLE_CSP=1.
     _CSP = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; "
+        "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https:; "

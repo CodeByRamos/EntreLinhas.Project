@@ -39,31 +39,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Hanken Grotesk"', 'system-ui', 'sans-serif'],
-            display: ['Newsreader', 'Georgia', 'serif'],
-            mono: ['"JetBrains Mono"', 'monospace'],
-          },
-          colors: {
-            primary: {
-              100: '#c3d8f5',
-              300: '#9bc4ff',
-              500: '#6aa6ff',
-              700: '#3e6fb0',
-              900: '#11161f',
-            },
-            cream: '#efe4d6',
-          },
-        },
-      },
-    };
-  </script>
+  {# Tailwind pré-compilado (estático): só as classes usadas, ~14KB. Substitui o
+     Play CDN (que é só para dev — script pesado que compila no navegador e
+     atrasava o carregamento no mobile). Reconstruir: ver tailwind.config.js. #}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}" />
   {% block extra_head %}{% endblock %}
 </head>
