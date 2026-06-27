@@ -33,6 +33,9 @@ MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', str(5 * 1024 * 102
 UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
 STORAGE_PROVIDER = os.environ.get('STORAGE_PROVIDER', 'local').lower()
 APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://127.0.0.1:5000').rstrip('/')
+# Verificação do Google Search Console: cole aqui (ou na env var) o código da
+# meta tag "google-site-verification". Vazio = a tag não é renderizada.
+GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '').strip()
 
 MAIL_SERVER = os.environ.get('MAIL_SERVER')
 MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))

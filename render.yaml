@@ -35,6 +35,10 @@ services:
           property: connectionString   # injeta a URL do Postgres abaixo
       - key: APP_BASE_URL
         sync: false                     # ex.: https://entrelinhas.onrender.com
+      # SEO: cole aqui o código do Google Search Console (meta de verificação).
+      # Vazio = a tag não aparece. Depois de verificar, pode manter ou remover.
+      - key: GOOGLE_SITE_VERIFICATION
+        sync: false
       - key: SESSION_COOKIE_SECURE
         value: "true"
       # Armazenamento persistente das fotos de perfil (Cloudinary — plano grátis)

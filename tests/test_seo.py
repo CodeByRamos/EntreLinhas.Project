@@ -64,3 +64,33 @@ def test_pwa_tags_in_head(client):
     assert 'apple-touch-icon' in body
     # social preview usa a imagem otimizada (não a logo de 1.6MB)
     assert 'og-image.jpg' in body
+
+
+def test_organization_structured_data(client):
+    import json
+    import re
+    body = client.get("/sobre").get_data(as_text=True)
+    blocks = re.findall(
+        r'<script type="application/ld\+json">(.*?)</script>', body, re.S
+    )
+    parsed = [json.loads(b) for b in blocks]  # também valida que o JSON-LD é válido
+    types = {p.get("@type") for p in parsed}
+    assert "WebSite" in types and "Organization" in types
+
+
+def test_key_pages_have_unique_meta_descriptions(client):
+    sobre = client.get("/sobre").get_data(as_text=True)
+    assert "anonimato protege quem desabafa" in sobre
+    apoio = client.get("/apoio").get_data(as_text=True)
+    assert "psicólogos voluntários verificados" in apoio
+    como = client.get("/como-funciona").get_data(as_text=True)
+    assert "passo a passo" in como
+
+
+def test_google_verification_meta_when_configured(client):
+    client.application.config["GOOGLE_SITE_VERIFICATION"] = "verif-token-xyz"
+    try:
+        body = client.get("/sobre").get_data(as_text=True)
+        assert 'name="google-site-verification" content="verif-token-xyz"' in body
+    finally:
+        client.application.config["GOOGLE_SITE_VERIFICATION"] = ""
