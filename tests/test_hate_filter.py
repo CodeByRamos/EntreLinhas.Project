@@ -292,6 +292,33 @@ def test_round2_guards_no_false_positive(text):
 
 
 # ---------------------------------------------------------------------------
+# Ataques INDIRETOS (sem demonstrativo de 3ª pessoa) — red-team manual
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("text", [
+    "lugar de viado e no inferno",
+    "todo gay deveria sumir",
+    "gay nao deveria existir",
+    "queria que todo viado sumisse",
+    "lugar de preto e na senzala",
+    "mundo melhor sem viado",
+])
+def test_indirect_attacks_block(text):
+    assert _blocks(text), f"ataque indireto deveria bloquear: {text!r}"
+
+
+@pytest.mark.parametrize("value,expected", [
+    ("viadko", True),       # slur ofuscado por inserção → rejeita
+    ("pretolixo", True),    # identidade + insulto colados → rejeita
+    ("orgulho_gay", False),  # afirmativo → permite
+    ("preto_e_lindo", False),
+    ("trans_e_feliz", False),
+])
+def test_identity_field_obfuscation_and_affirmation(value, expected):
+    assert contains_hate_speech(value) is expected, f"{value!r} deveria ser {expected}"
+
+
+# ---------------------------------------------------------------------------
 # O eixo emocional continua intacto
 # ---------------------------------------------------------------------------
 
