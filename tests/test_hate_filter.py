@@ -260,6 +260,38 @@ def test_audit_false_positives_now_pass(text):
 
 
 # ---------------------------------------------------------------------------
+# Auditoria adversarial — 2ª rodada (inserção de 1 letra + slurs regionais)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("text", [
+    # inserção de 1 caractere intruso/dobrado (sobrevivia às normalizações)
+    "pretko fudido", "negxro nojento", "gxordo de merda", "transx nojento",
+    "gaxy nojento", "obxeso nojento", "preeto fudido", "viaado nojento",
+    "gorrdo de merda",
+    # slurs / estereótipos regionais antes ausentes
+    "esses bugre nao servem pra nada", "morte aos bugre", "curiboca burro",
+    "esses cabeca chata tudo vagabundo", "esses pau de arara fede",
+    "esses portuga ladrao", "japa come cachorro", "esses indio so querem terra",
+    "esses judeu agiota", "esses cigano trambiqueiro",
+    "venezuelano so vem roubar emprego",
+])
+def test_audit_round2_bypasses_now_blocked(text):
+    assert _blocks(text), f"bypass (2ª rodada) deveria bloquear: {text!r}"
+
+
+@pytest.mark.parametrize("text", [
+    # a defesa de inserção NÃO pode ferir palavras comuns próximas de palavrão
+    "minha vida e uma merda", "essa transa foi uma merda", "meu carro e uma merda",
+    "meu portugues ta uma merda", "que saco esse dia de hoje",
+    # termos CODED com sentido inocente comum
+    "comprei uma frutinha no mercado", "que florzinha mais linda",
+    "o caboclo das matas e uma entidade", "meu amigo gay ta doente hoje",
+])
+def test_round2_guards_no_false_positive(text):
+    assert not _blocks(text), f"NÃO deveria bloquear (guard 2ª rodada): {text!r}"
+
+
+# ---------------------------------------------------------------------------
 # O eixo emocional continua intacto
 # ---------------------------------------------------------------------------
 

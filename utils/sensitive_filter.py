@@ -335,11 +335,12 @@ SLURS = {
 # Funcionam como alvo: "sua baleia", "macaco nojento" bloqueiam; "vi uma baleia",
 # "imperio mongol" passam. Resolve falsos positivos sem abrir o ataque.
 CODED_TARGETS = {
-    "racismo": ["macaco", "macaca", "macacos"],
+    "racismo": ["macaco", "macaca", "macacos", "bugre", "caboclo", "curiboca", "calon"],
     "gordofobia": ["baleia", "baleote", "jamanta", "bucha"],
-    "lgbtfobia": ["bicha"],
+    "lgbtfobia": ["bicha", "frutinha", "florzinha", "fruta"],
     "capacitismo": ["mongol", "manco"],
     "misoginia": ["rapariga"],
+    "xenofobia": ["cabeca chata", "pau de arara", "portuga"],
 }
 
 # ── IDENTITY: referências a grupos protegidos. NEUTRAS sozinhas. ────────────
@@ -407,6 +408,9 @@ INSULTS = [
     "atrasada", "sovina", "ganancioso", "gananciosa", "interesseiro",
     "selvagem", "primitivo", "primitiva", "burro", "burra", "cancer",
     "um cancer", "um peso", "um fardo", "fardo pra", "peso pra",
+    "trambiqueiro", "trambiqueira", "agiota", "come cachorro", "nao trabalha",
+    "so quer terra", "so querem terra", "nao sabe trabalhar", "nao servem",
+    "nao servem pra nada",
     # servidão / controle / desumanização dirigida
     "so serve pra", "so servem pra", "so serve", "so servem", "so sabe",
     "so sabem", "nao serve pra nada", "nao presta", "nao prestam",
@@ -433,6 +437,7 @@ INSULTS = [
     # xenofobia (estereótipos)
     "vieram roubar", "veio roubar", "veio tomar", "tomar nosso", "tomar nossos",
     "trouxeram doenca", "tudo bandido", "e bandido", "tudo ladrao", "tudo igual",
+    "so vem roubar", "vem roubar", "so traz problema", "so trouxe problema",
     # religiosa
     "do diabo", "do demonio", "do capeta", "do capiroto", "coisa do diabo",
     "seita do demonio", "adora o demonio", "conversa com demonio",
@@ -674,6 +679,46 @@ def _scan(cat_regexes, text):
 # seguidos, então isso NÃO dispara em "gay merda" (palavras inteiras).
 _OBFUSCATION_RUN = re.compile(r"(?:[a-z0-9]\W+){3,}[a-z0-9]")
 
+# Inserção de 1 caractere "intruso" no meio do termo ("pretko", "negxro", "gaxy")
+# sobrevivia às normalizações (o colapso só junta 3+ letras iguais) e quebrava o
+# match de palavra inteira. Defesa: palavras que viram um ALVO conhecido ao
+# remover UMA letra de {x,k,w,q,y} (raras no PT nativo) ou uma letra DOBRADA.
+# Assim "minha"→"mina", "transa"→"trans", "carro"→"caro" NÃO viram alvo (a letra
+# removida não é intrusa nem dobrada), evitando falso positivo.
+_INTRUSIVE_CHARS = set("xkwqy")
+_TARGET_PLAIN_CAT = {}
+_SLUR_PLAIN = set()
+for _sp, _cd, _cat, _pt in _TARGET_INDEX:
+    # >=3 para alcançar alvos curtos como "gay" ("gaxy"→"gay"); a exigência de
+    # letra intrusa/dobrada evita falso positivo em palavras comuns de 4 letras.
+    if " " not in _sp and len(_sp) >= 3:
+        _TARGET_PLAIN_CAT.setdefault(_sp, _cat)
+for _sp, _cd, _cat, _pt in _SLUR_INDEX:
+    if " " not in _sp and len(_sp) >= 4:
+        _SLUR_PLAIN.add(_sp)
+
+
+def _insertion_signals(spaced_text):
+    """[(start,end,cat)] de alvos e de slurs recuperados removendo 1 letra intrusa
+    ou dobrada de cada palavra. Desfaz 'pretko'→'preto', 'preeto'→'preto'."""
+    targets, slurs = [], []
+    for m in re.finditer(r"[a-z]{4,}", spaced_text):
+        word = m.group()
+        n = len(word)
+        for i in range(n):
+            ch = word[i]
+            doubled = (i > 0 and word[i - 1] == ch) or (i + 1 < n and word[i + 1] == ch)
+            if ch not in _INTRUSIVE_CHARS and not doubled:
+                continue
+            cand = word[:i] + word[i + 1:]
+            cat = _TARGET_PLAIN_CAT.get(cand)
+            if cat:
+                targets.append((m.start(), m.end(), cat))
+                if cand in _SLUR_PLAIN:
+                    slurs.append((m.start(), m.end(), cat))
+                break
+    return targets, slurs
+
 
 # --- Detecção ---------------------------------------------------------------
 
@@ -722,6 +767,11 @@ def evaluate_hate_speech(text, spaced_text, condensed_text, clean_text=""):
     target_spans = _scan(_TARGET_CAT_RE, spaced_text)
     insult_spans = [(m.start(), m.end()) for m in _INSULT_RE.finditer(spaced_text)]
     slur_spans = _scan(_SLUR_CAT_RE, spaced_text)
+
+    # Defesa contra inserção de 1 letra intrusa/dobrada ("pretko", "negxro").
+    _ins_targets, _ins_slurs = _insertion_signals(spaced_text)
+    target_spans += _ins_targets
+    slur_spans += _ins_slurs
 
     # 1) Slur presente em grafia/leet → sinal de ódio localizável.
     for start, end, category in slur_spans:
