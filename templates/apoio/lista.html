@@ -58,19 +58,19 @@
 
     <form method="get" class="glass-panel p-5 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <select name="especialidade" class="input-modern">
+        <select name="especialidade" class="input-modern" aria-label="Filtrar por especialidade">
           <option value="">Todas as especialidades</option>
           {% for esp in especialidades %}
             <option value="{{ esp }}" {% if f_especialidade == esp %}selected{% endif %}>{{ esp }}</option>
           {% endfor %}
         </select>
-        <select name="estado" class="input-modern">
+        <select name="estado" class="input-modern" aria-label="Filtrar por estado">
           <option value="">Todos os estados</option>
           {% for uf in estados_ativos %}
             <option value="{{ uf }}" {% if f_estado == uf %}selected{% endif %}>{{ uf }}</option>
           {% endfor %}
         </select>
-        <select name="modalidade" class="input-modern">
+        <select name="modalidade" class="input-modern" aria-label="Filtrar por modalidade (online ou presencial)">
           <option value="">Online e presencial</option>
           <option value="online" {% if f_modalidade == 'online' %}selected{% endif %}>Online</option>
           <option value="presencial" {% if f_modalidade == 'presencial' %}selected{% endif %}>Presencial</option>
