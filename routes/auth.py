@@ -496,8 +496,21 @@ def esqueci_senha():
 
     user = db.get_user_by_email(email)
     if user:
-        token = db.create_password_reset_token(user['id'])
-        send_password_reset_email(email, token)
+        # O envio nunca pode vazar se a conta existe (mesma mensagem sempre),
+        # mas falhas de SMTP precisam ficar logadas para diagnóstico.
+        try:
+            token = db.create_password_reset_token(user['id'])
+            delivery = send_password_reset_email(email, token)
+            if not delivery.get('sent') and not delivery.get('debug_url'):
+                log_warning(
+                    current_app.logger, "auth.esqueci_senha", "reset_email",
+                    delivery.get('error', 'envio de e-mail falhou'), email=email,
+                )
+        except Exception as mail_exc:
+            log_exception(
+                current_app.logger, "auth.esqueci_senha", "reset_email", mail_exc,
+                email=email,
+            )
 
     message = "Se houver uma conta com este e-mail, enviamos instruções para redefinir sua senha."
     if request.is_json:
