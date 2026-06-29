@@ -11,6 +11,38 @@ def _all_reaction_counts(post_id):
     return {r['valor']: counts.get(r['valor'], 0) for r in current_app.config['REACOES']}
 
 
+@reactions.route('/api/feed-meta', methods=['GET'])
+def feed_meta():
+    """Reações + eco de VÁRIOS posts numa só resposta — mata o N+1 do feed.
+
+    Antes o front fazia 1 requisição de reações + 1 de eco POR card (2N idas ao
+    servidor por página). Agora o feed pede tudo de uma vez: ?ids=1,2,3.
+    """
+    raw = request.args.get('ids', '')
+    try:
+        ids = [int(x) for x in raw.split(',') if x.strip()]
+    except ValueError:
+        return jsonify({'error': 'Parâmetro ids inválido.'}), 400
+    ids = ids[:50]  # limite defensivo (a página normal tem ~5)
+    if not ids:
+        return jsonify({'meta': {}})
+    try:
+        reaction_map = db.get_reaction_counts_for_posts(ids)
+        echo_map = db.get_echo_states_for_posts(ids, session.get('user_id'))
+        valores = [r['valor'] for r in current_app.config['REACOES']]
+        meta = {}
+        for pid in ids:
+            rc = reaction_map.get(pid, {})
+            meta[pid] = {
+                'reactions': {v: rc.get(v, 0) for v in valores},
+                'echo': echo_map.get(pid, {'count': 0, 'active': False}),
+            }
+        return jsonify({'meta': meta})
+    except Exception as exc:
+        current_app.logger.exception("FEED_META_ERROR ids=%s", ids)
+        return jsonify(api_error("Não conseguimos carregar as reações agora.", exc)), 500
+
+
 @reactions.route('/api/reactions/<int:post_id>', methods=['GET'])
 def get_reactions(post_id):
     """Contagem de reações de um post."""

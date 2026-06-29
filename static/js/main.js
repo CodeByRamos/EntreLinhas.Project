@@ -24,6 +24,29 @@
     };
 })();
 
+// --- Meta do feed (reações + eco) em UMA requisição (mata o N+1) ---
+// reactions.js e echo.js consomem esta promise compartilhada e cacheada: a 1ª
+// chamada dispara um único GET /api/feed-meta?ids=... para todos os cards da
+// página; as demais reaproveitam o resultado. Cada consumidor tem fallback
+// por-post, então se isto falhar nada quebra.
+window.elFeedMeta = (function () {
+    var cache = null;
+    return function () {
+        if (cache) return cache;
+        var ids = [];
+        document.querySelectorAll('[data-post-id]').forEach(function (el) {
+            var id = el.getAttribute('data-post-id');
+            if (id && ids.indexOf(id) === -1) ids.push(id);
+        });
+        if (!ids.length) { cache = Promise.resolve({}); return cache; }
+        cache = fetch('/api/feed-meta?ids=' + ids.join(','))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) { return (d && d.meta) || {}; })
+            .catch(function () { return {}; });
+        return cache;
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
     document.documentElement.classList.add('dark');
 

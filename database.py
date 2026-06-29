@@ -1587,6 +1587,28 @@ def get_reaction_counts(post_id):
         counts[row['reaction_type']] = row['total']
     return counts
 
+def get_reaction_counts_for_posts(post_ids):
+    """Contagem de reações de VÁRIOS posts numa única query (evita N+1 no feed).
+
+    Retorna {post_id: {reaction_type: total}}. Sem os posts sem reação (o
+    chamador preenche zeros). Fonte ao vivo, igual a get_reaction_counts.
+    """
+    ids = [int(p) for p in post_ids]
+    if not ids:
+        return {}
+    placeholders = ",".join("?" * len(ids))
+    conn = get_db_connection()
+    rows = conn.execute(
+        f"SELECT post_id, reaction_type, COUNT(*) AS total FROM reactions "
+        f"WHERE post_id IN ({placeholders}) GROUP BY post_id, reaction_type",
+        tuple(ids),
+    ).fetchall()
+    conn.close()
+    out = {}
+    for row in rows:
+        out.setdefault(row["post_id"], {})[row["reaction_type"]] = row["total"]
+    return out
+
 def get_reaction_count():
     """Retorna o número total de reações."""
     conn = get_db_connection()
@@ -3139,6 +3161,33 @@ def get_echo_state(post_id, user_id=None):
         )
     conn.close()
     return {"count": count, "active": active}
+
+
+def get_echo_states_for_posts(post_ids, user_id=None):
+    """Estado de eco de VÁRIOS posts em poucas queries (evita N+1 no feed).
+
+    Retorna {post_id: {"count": int, "active": bool}} para cada id pedido.
+    """
+    ids = [int(p) for p in post_ids]
+    if not ids:
+        return {}
+    placeholders = ",".join("?" * len(ids))
+    conn = get_db_connection()
+    count_rows = conn.execute(
+        f"SELECT post_id, COUNT(*) AS total FROM echoes "
+        f"WHERE post_id IN ({placeholders}) GROUP BY post_id",
+        tuple(ids),
+    ).fetchall()
+    counts = {row["post_id"]: row["total"] for row in count_rows}
+    active_ids = set()
+    if user_id:
+        active_rows = conn.execute(
+            f"SELECT post_id FROM echoes WHERE user_id = ? AND post_id IN ({placeholders})",
+            (user_id, *ids),
+        ).fetchall()
+        active_ids = {row["post_id"] for row in active_rows}
+    conn.close()
+    return {pid: {"count": counts.get(pid, 0), "active": pid in active_ids} for pid in ids}
 
 
 def get_moderation_stats():

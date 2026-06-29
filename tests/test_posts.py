@@ -53,3 +53,21 @@ def test_listing_queries_have_new_columns(logged_client):
         for r in rows:
             keys = r.keys()
             assert "overcome_at" in keys and "overcome_message" in keys and "listen_only" in keys
+
+
+def test_feed_meta_batches_reactions_and_echo(logged_client):
+    # Um único endpoint devolve reações + eco de vários posts (mata o N+1 do feed).
+    uid = logged_client._test_user_id
+    p1, p2 = make_post(uid), make_post(uid)
+    r = logged_client.get(f"/api/feed-meta?ids={p1},{p2}")
+    assert r.status_code == 200
+    meta = r.get_json()["meta"]
+    for pid in (p1, p2):
+        assert str(pid) in meta
+        assert "reactions" in meta[str(pid)]
+        assert "echo" in meta[str(pid)] and "count" in meta[str(pid)]["echo"]
+
+
+def test_feed_meta_handles_bad_and_empty_ids(logged_client):
+    assert logged_client.get("/api/feed-meta").get_json()["meta"] == {}
+    assert logged_client.get("/api/feed-meta?ids=abc").status_code == 400

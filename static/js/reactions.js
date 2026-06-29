@@ -24,31 +24,44 @@ const REACOES_CONFIG = (window.EL_REACOES && window.EL_REACOES.length)
     ];
 
 document.addEventListener('DOMContentLoaded', function () {
-  const reactionContainers = document.querySelectorAll('[data-post-id]');
-  reactionContainers.forEach(container => {
-    if (container.classList.contains('reaction-buttons-container') ||
-        container.querySelector('.reaction-buttons-container')) {
-      loadReactions(container.dataset.postId);
-    }
+  const containers = Array.from(document.querySelectorAll('.reaction-buttons-container'));
+  if (!containers.length) return;
+  // Uma requisição para o feed inteiro (mata o N+1); cai pro modo por-post se falhar.
+  const fetcher = window.elFeedMeta ? window.elFeedMeta() : Promise.resolve({});
+  fetcher.then(function (meta) {
+    containers.forEach(function (container) {
+      const wrap = container.closest('[data-post-id]');
+      const postId = wrap && wrap.dataset.postId;
+      if (!postId) return;
+      const entry = meta && meta[postId];
+      if (entry && entry.reactions) {
+        renderReactions(postId, entry.reactions);
+      } else {
+        loadReactions(postId);
+      }
+    });
   });
 });
 
-/** Carrega as reações de um post. */
+/** Monta os botões de reação de um post a partir das contagens. */
+function renderReactions(postId, reactions) {
+  const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
+  if (!container) return;
+  container.innerHTML = '';
+  REACOES_CONFIG.forEach(reacao => {
+    const count = (reactions && reactions[reacao.valor]) || 0;
+    container.appendChild(createReactionButton(reacao, count, postId));
+  });
+}
+
+/** Fallback: carrega as reações de UM post (quando o batch falha). */
 function loadReactions(postId) {
   fetch(`/api/reactions/${postId}`)
     .then(response => {
       if (!response.ok) throw new Error('Não conseguimos carregar as reações agora.');
       return response.json();
     })
-    .then(data => {
-      const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);
-      if (!container) return;
-      container.innerHTML = '';
-      REACOES_CONFIG.forEach(reacao => {
-        const count = (data.reactions && data.reactions[reacao.valor]) || 0;
-        container.appendChild(createReactionButton(reacao, count, postId));
-      });
-    })
+    .then(data => renderReactions(postId, data.reactions))
     .catch(error => {
       console.error('Erro ao carregar reações:', error);
       const container = document.querySelector(`[data-post-id="${postId}"] .reaction-buttons-container`);

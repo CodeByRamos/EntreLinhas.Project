@@ -1,8 +1,21 @@
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.echo-button').forEach((button) => {
-        const postId = button.dataset.postId;
-        loadEcho(button, postId);
-        button.addEventListener('click', () => toggleEcho(button, postId));
+    const buttons = Array.from(document.querySelectorAll('.echo-button'));
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => toggleEcho(button, button.dataset.postId));
+    });
+    if (!buttons.length) return;
+    // Reaproveita a meta do feed (mesma requisição das reações). Fallback por-post.
+    const fetcher = window.elFeedMeta ? window.elFeedMeta() : Promise.resolve({});
+    fetcher.then(function (meta) {
+        buttons.forEach(function (button) {
+            const postId = button.dataset.postId;
+            const entry = postId && meta && meta[postId];
+            if (entry && entry.echo) {
+                updateEchoButton(button, entry.echo);
+            } else if (postId) {
+                loadEcho(button, postId);
+            }
+        });
     });
 });
 
