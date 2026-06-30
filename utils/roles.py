@@ -9,10 +9,13 @@ atribuir cargos (ver ``routes/admin.py``).
 """
 
 # Ordem de hierarquia, do mais comum ao mais alto. Usada na tela de gestão.
-ROLE_ORDER = ['user', 'collaborator', 'ceo', 'admin']
+# 'apoiador' é um selo de gratidão (apoio financeiro), NÃO um cargo de equipe:
+# não concede poder algum — é puramente cosmético, como os demais selos.
+ROLE_ORDER = ['user', 'apoiador', 'collaborator', 'ceo', 'admin']
 
 # Selos visíveis. 'user' não tem selo de propósito (mantém o anonimato comum).
 ROLE_BADGES = {
+    'apoiador': {'label': 'Apoiador', 'slug': 'apoiador', 'title': 'Apoia o EntreLinhas e ajuda a manter este espaço de pé'},
     'collaborator': {'label': 'Colaborador', 'slug': 'collaborator', 'title': 'Pessoa colaboradora do EntreLinhas'},
     'ceo': {'label': 'CEO', 'slug': 'ceo', 'title': 'Fundador e CEO do EntreLinhas'},
     'admin': {'label': 'Equipe', 'slug': 'admin', 'title': 'Equipe de moderação do EntreLinhas'},
@@ -21,6 +24,7 @@ ROLE_BADGES = {
 # Rótulos legíveis para todos os cargos (inclui o comum), usados na gestão.
 ROLE_LABELS = {
     'user': 'Usuário',
+    'apoiador': 'Apoiador',
     'collaborator': 'Colaborador',
     'ceo': 'CEO',
     'admin': 'Equipe',

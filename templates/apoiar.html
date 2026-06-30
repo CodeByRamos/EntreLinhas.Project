@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% from 'components/icons.html' import icon with context %}
+{% from 'components/role_badge.html' import role_tag with context %}
+
+{% block title %}Apoie o EntreLinhas{% endblock %}
+{% block meta_description %}O EntreLinhas é independente, gratuito e sem anúncios. Se este espaço te faz bem, você pode ajudar a mantê-lo de pé com um Pix — e ganha o selo de Apoiador.{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container mx-auto px-6 text-center" style="position:relative;z-index:1;">
+    <p class="hero-kicker">apoie o projeto</p>
+    <h1 class="hero-title">Ajude a manter<br>este espaço de pé.</h1>
+    <p class="hero-description">O EntreLinhas é independente, gratuito e sem anúncios — e vai continuar assim. Se ele já te acolheu em algum momento, você pode retribuir do jeito que puder. Cada apoio ajuda a pagar o servidor e a manter o lugar vivo.</p>
+  </div>
+</section>
+
+<div class="container mx-auto px-6 py-12 max-w-3xl space-y-8">
+
+  {# Por que apoiar #}
+  <section class="glass-panel content-band section-reading">
+    <p class="section-kicker">por que apoiar</p>
+    <h2 class="font-display text-2xl mt-2 mb-4" style="color:var(--text-main)">Sem anúncios. Sem vender o que você sente.</h2>
+    <p>Um espaço para desabafar não combina com propaganda nem com a sua dor virando produto. Por isso o EntreLinhas não tem anúncios e nunca vai vender seus dados. O que mantém tudo no ar são os custos invisíveis — servidor, e-mail, domínio — e o apoio de quem acredita no projeto.</p>
+    <p>Apoiar é <strong>totalmente opcional</strong>. Todas as funções continuam gratuitas para todo mundo, sempre.</p>
+  </section>
+
+  {% if pix_key %}
+  {# Pix #}
+  <section class="glass-panel content-band">
+    <p class="section-kicker">apoio por pix</p>
+    <h2 class="font-display text-2xl mt-2 mb-4" style="color:var(--text-main)">Contribua com um Pix</h2>
+    <p style="color:var(--text-muted)">Você escolhe o valor — desde um café até o quanto fizer sentido pra você.</p>
+
+    <div class="support-field mt-5">
+      <span class="support-field-label">Chave Pix</span>
+      <div class="support-copy-row">
+        <code id="pix-key" class="support-code">{{ pix_key }}</code>
+        <button type="button" class="btn-modern btn-ghost support-copy-btn" data-copy-target="pix-key" data-copy-label="Chave copiada!">
+          {{ icon('check') }} Copiar chave
+        </button>
+      </div>
+    </div>
+
+    {% if pix_brcode %}
+    <div class="support-field mt-4">
+      <span class="support-field-label">Pix copia e cola</span>
+      <div class="support-copy-row">
+        <code id="pix-brcode" class="support-code support-code--small">{{ pix_brcode }}</code>
+        <button type="button" class="btn-modern btn-ghost support-copy-btn" data-copy-target="pix-brcode" data-copy-label="Código copiado!">
+          {{ icon('check') }} Copiar código
+        </button>
+      </div>
+      <p class="text-sm mt-2" style="color:var(--text-muted)">Cole no app do seu banco, em "Pix Copia e Cola".</p>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if recurring_url %}
+  {# Apoio recorrente #}
+  <section class="glass-panel content-band text-center">
+    <span class="lp-support-icon" aria-hidden="true">{{ icon('hand-heart') }}</span>
+    <h2 class="font-display text-2xl mt-2 mb-3" style="color:var(--text-main)">Apoio mensal</h2>
+    <p style="color:var(--text-muted)">Prefere apoiar continuamente? Dá pra virar mantenedor recorrente.</p>
+    <a href="{{ recurring_url }}" target="_blank" rel="noopener nofollow" class="cta-desabafe mt-4 inline-flex">
+      <span>{{ recurring_label }}</span> {{ icon('arrow-right') }}
+    </a>
+  </section>
+  {% endif %}
+
+  {# Selo de apoiador #}
+  <section class="glass-panel content-band section-reading">
+    <p class="section-kicker">o que você ganha</p>
+    <h2 class="font-display text-2xl mt-2 mb-4" style="color:var(--text-main)">O selo de Apoiador {{ role_tag('apoiador') }}</h2>
+    <p>Quem apoia o projeto recebe o selo de <strong>Apoiador</strong> ao lado do nome — um obrigado visível, sem nenhum privilégio sobre as outras pessoas (aqui ninguém vale mais que ninguém). É só um carinho de volta por segurar este lugar junto com a gente.</p>
+    <p class="text-sm" style="color:var(--text-muted)">Depois de apoiar, fale com a equipe pelo perfil/contato informando seu @usuário para receber o selo.</p>
+  </section>
+
+  {% if not pix_key and not recurring_url %}
+  <section class="glass-panel content-band text-center">
+    <span class="lp-support-icon" aria-hidden="true">{{ icon('sprout') }}</span>
+    <h2 class="font-display text-2xl mt-2 mb-3" style="color:var(--text-main)">Em breve</h2>
+    <p style="color:var(--text-muted)">Os caminhos de apoio ainda estão sendo preparados. Obrigado por querer ajudar — volte logo.</p>
+  </section>
+  {% endif %}
+
+  <p class="text-center text-sm" style="color:var(--text-muted)">
+    {{ icon('shield') }} Apoiar é um gesto de carinho, não uma cobrança. O EntreLinhas é e continuará gratuito.
+  </p>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll('.support-copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = document.getElementById(btn.getAttribute('data-copy-target'));
+      if (!el) return;
+      var text = el.textContent.trim();
+      var done = function () {
+        var original = btn.innerHTML;
+        btn.textContent = btn.getAttribute('data-copy-label') || 'Copiado!';
+        btn.classList.add('is-copied');
+        setTimeout(function () { btn.innerHTML = original; btn.classList.remove('is-copied'); }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {});
+      } else {
+        var r = document.createRange(); r.selectNode(el);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        sel.removeAllRanges();
+      }
+    });
+  });
+</script>
+{% endblock %}

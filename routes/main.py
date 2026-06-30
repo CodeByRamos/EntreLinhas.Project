@@ -7,8 +7,8 @@ import database as db
 main = Blueprint('main', __name__)
 
 # Páginas públicas que devem ser indexadas (entram no sitemap).
-_SITEMAP_PAGES = ['/', '/sobre', '/feed', '/apoio', '/como-funciona', '/pulso',
-                  '/privacidade', '/termos']
+_SITEMAP_PAGES = ['/', '/sobre', '/feed', '/apoio', '/apoiar', '/como-funciona',
+                  '/pulso', '/privacidade', '/termos']
 
 
 @main.route('/robots.txt')
@@ -140,6 +140,28 @@ def home():
 @main.route('/sobre')
 def about():
     return render_template('about.html')
+
+
+@main.route('/apoiar')
+def apoiar():
+    """Página de apoio ao projeto (Pix + apoio recorrente). Monetização sutil:
+    é um convite, nunca um paywall. Mostra só o que estiver configurado."""
+    from utils.pix import build_pix_brcode
+    cfg = current_app.config
+    pix_key = cfg.get('PIX_KEY', '')
+    brcode = build_pix_brcode(
+        pix_key,
+        cfg.get('PIX_RECEIVER_NAME', ''),
+        cfg.get('PIX_CITY', ''),
+        description='Apoio EntreLinhas',
+    ) if pix_key else ''
+    return render_template(
+        'apoiar.html',
+        pix_key=pix_key,
+        pix_brcode=brcode,
+        recurring_url=cfg.get('SUPPORT_RECURRING_URL', ''),
+        recurring_label=cfg.get('SUPPORT_RECURRING_LABEL', 'Apoio mensal'),
+    )
 
 
 @main.route('/como-funciona')

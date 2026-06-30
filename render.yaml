@@ -39,6 +39,17 @@ services:
       # Vazio = a tag não aparece. Depois de verificar, pode manter ou remover.
       - key: GOOGLE_SITE_VERIFICATION
         sync: false
+      # Apoio ao projeto (página /apoiar). Tudo opcional — só aparece o que for
+      # preenchido. PIX_KEY: e-mail/CPF/telefone/chave aleatória. NAME+CITY geram
+      # o "Pix copia e cola" (QR/colável); sem eles, mostra só a chave.
+      - key: PIX_KEY
+        sync: false
+      - key: PIX_RECEIVER_NAME
+        sync: false                     # nome do recebedor (como no banco)
+      - key: PIX_CITY
+        sync: false                     # cidade do recebedor
+      - key: SUPPORT_RECURRING_URL
+        sync: false                     # opcional: link de apoio mensal (Apoia.se etc.)
       - key: SESSION_COOKIE_SECURE
         value: "true"
       # Armazenamento persistente das fotos de perfil (Cloudinary — plano grátis)

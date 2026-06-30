@@ -37,6 +37,16 @@ APP_BASE_URL = os.environ.get('APP_BASE_URL', 'http://127.0.0.1:5000').rstrip('/
 # meta tag "google-site-verification". Vazio = a tag não é renderizada.
 GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '').strip()
 
+# Apoio ao projeto (monetização sutil). Tudo opcional: a página /apoiar só
+# mostra o que estiver preenchido. PIX_KEY pode ser e-mail, CPF, telefone ou
+# chave aleatória. NAME/CITY alimentam o "copia e cola"; sem eles, mostramos só
+# a chave (Pix manual). RECURRING_URL é um link de apoio mensal (Apoia.se etc.).
+PIX_KEY = os.environ.get('PIX_KEY', '').strip()
+PIX_RECEIVER_NAME = os.environ.get('PIX_RECEIVER_NAME', '').strip()
+PIX_CITY = os.environ.get('PIX_CITY', '').strip()
+SUPPORT_RECURRING_URL = os.environ.get('SUPPORT_RECURRING_URL', '').strip()
+SUPPORT_RECURRING_LABEL = os.environ.get('SUPPORT_RECURRING_LABEL', 'Apoio mensal').strip()
+
 MAIL_SERVER = os.environ.get('MAIL_SERVER')
 MAIL_PORT = int(os.environ.get('MAIL_PORT', '587'))
 MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
