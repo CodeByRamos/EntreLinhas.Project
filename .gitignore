@@ -1,19 +1,60 @@
-# Python cache
+# ===== Segredos e ambiente =====
+# NUNCA versione credenciais. .env.example (sem valores) é o único que vai pro git.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ===== Python =====
 __pycache__/
 *.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
 
-# Virtual environments
+# ===== Ambientes virtuais =====
 .venv/
 venv/
 env/
+ENV/
 
-# Local tooling cache
+# ===== Cache de ferramentas =====
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.cache/
 
-# SQLite temp files
+# ===== Banco de dados local (SQLite só é usado em dev/testes) =====
+# Produção usa PostgreSQL no Supabase — nenhum .db deve ir pro repositório.
+*.db
+*.sqlite
+*.sqlite3
 *.db-journal
+instance/
 
-# Logs locais
-server.log
+# ===== Conteúdo de usuário (uploads) =====
+# Fotos de perfil e afins são dados de usuário — nunca versionar.
+static/uploads/**
+!static/uploads/**/.gitkeep
+
+# ===== Logs =====
 *.log
+
+# ===== Node / Tailwind build (se usado) =====
+node_modules/
+
+# ===== IDEs / editores =====
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===== Sistema operacional =====
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -11,7 +11,7 @@ from services.email_service import send_password_reset_email, send_email_verific
 from utils.validation import LIMITS, is_valid_username
 from utils.sensitive_content import contains_hate_speech
 from utils.mood_styles import DEFAULT_AVATARS, normalize_default_avatar
-from utils.uploads import save_profile_photo
+from utils.storage import save_profile_photo
 from utils.safe_logging import log_exception, log_warning
 from extensions import limiter
 
@@ -405,7 +405,7 @@ def editar_perfil():
             flash(message, 'error')
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
             
-    except Exception as e:
+    except Exception:
         message = "Não conseguimos atualizar seu perfil agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
@@ -471,7 +471,7 @@ def alterar_senha():
             flash(message, 'error')
             return render_template('auth/alterar_senha.html')
             
-    except Exception as e:
+    except Exception:
         message = "Não conseguimos alterar sua senha agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500

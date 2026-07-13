@@ -181,7 +181,7 @@ def comment_reports():
         reports = db.get_comment_reports(resolved=0)
         
         return render_template('admin/comment_reports.html', reports=reports)
-    except Exception as e:
+    except Exception:
         flash('Não conseguimos carregar os avisos de respostas agora.', 'error')
         return redirect(url_for('admin.dashboard'))
 
@@ -200,7 +200,7 @@ def resolve_comment_report(report_id):
         else:
             return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
             
-    except Exception as e:
+    except Exception:
         return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
 
 @admin.route('/comment-reports/<int:report_id>/remove', methods=['DELETE'])
@@ -218,7 +218,7 @@ def remove_comment_report(report_id):
         else:
             return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
 
-    except Exception as e:
+    except Exception:
         return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
 
 

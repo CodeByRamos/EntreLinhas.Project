@@ -2401,7 +2401,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         conn.close()
         return True, "Seu perfil foi atualizado."
         
-    except Exception as e:
+    except Exception:
         conn.close()
         return False, "Não conseguimos salvar isso agora. Tente de novo em instantes."
 

@@ -1,5 +1,4 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
-from datetime import datetime
 import database as db
 from utils.validation import LIMITS
 from utils.sensitive_content import evaluate_post_content, RISK_MEDIUM, RISK_HIGH

@@ -1,5 +1,9 @@
 # Deploy do EntreLinhas na Render
 
+> **A rota recomendada agora é Supabase (banco) + Render (web):** siga o
+> [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md). Este arquivo descreve a variante antiga
+> com o Postgres gerenciado pela própria Render (que expira em ~90 dias no grátis).
+
 Guia passo a passo. O código já está pronto: `render.yaml` (Blueprint), `Procfile`
 (roda migrations + gunicorn), Postgres via `DATABASE_URL`, e a camada de banco já
 tem o caminho PostgreSQL testado estaticamente.
@@ -71,7 +75,7 @@ Com o site no ar, confirme cada fluxo principal — é o que valida o Postgres d
 - [ ] Postar conteúdo com discurso de ódio ofuscado → deve ser barrado
 
 ## Notas
-- `runtime.txt` fixa Python 3.11 (a Render respeita).
+- `runtime.txt` fixa Python 3.12 (a Render respeita).
 - Plano grátis da Render **dorme** após inatividade (primeiro acesso demora ~30s).
 - O Postgres grátis da Render expira em ~90 dias — para algo duradouro, migre para um pago
   ou um Neon/Supabase grátis depois (basta trocar `DATABASE_URL`).

@@ -1,10 +1,11 @@
 # Render Blueprint para o EntreLinhas (web service + PostgreSQL gerenciado).
 # Como usar: no painel da Render → "New +" → "Blueprint" → conecte este repositório.
-# A Render cria o banco e o serviço; preencha os segredos marcados (sync:false)
-# em Environment. O start roda as migrations e sobe o gunicorn.
+# A Render cria só o web service (o banco fica no Supabase — cole a URL em
+# DATABASE_URL). Preencha os segredos marcados (sync:false) em Environment.
+# O start roda as migrations e sobe o gunicorn.
 #
 # IMPORTANTE: em produção o app exige (ver app.py):
-#   - DATABASE_URL com PostgreSQL  (preenchido automaticamente abaixo)
+#   - DATABASE_URL com PostgreSQL  (cole a URL do Supabase — sync:false abaixo)
 #   - STORAGE_PROVIDER != local    (use cloudinary — fotos de perfil persistem)
 #   - SMTP configurado             (Gmail com senha de app)
 # Sem isso o serviço NÃO sobe (falha proposital de segurança).
@@ -30,9 +31,8 @@ services:
       - key: SECRET_KEY
         generateValue: true            # a Render gera um segredo forte
       - key: DATABASE_URL
-        fromDatabase:
-          name: entrelinhas-db
-          property: connectionString   # injeta a URL do Postgres abaixo
+        sync: false                     # cole a URL do Supabase (Session pooler,
+                                        # porta 5432). Ver MIGRATION_GUIDE.md.
       - key: APP_BASE_URL
         sync: false                     # ex.: https://entrelinhas.onrender.com
       # SEO: cole aqui o código do Google Search Console (meta de verificação).
@@ -90,8 +90,5 @@ services:
       - key: ADMIN_FORCE_RESET
         sync: false                     # opcional: "1" só para resetar a senha
 
-databases:
-  - name: entrelinhas-db
-    plan: free
-    databaseName: entrelinhas
-    user: entrelinhas
+# O banco NÃO é provisionado pela Render: use PostgreSQL no Supabase e cole a
+# connection string em DATABASE_URL (acima). Passo a passo em MIGRATION_GUIDE.md.

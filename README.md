@@ -2,9 +2,12 @@
 
 EntreLinhas é uma plataforma Flask para desabafos anônimos, com estética escura, misteriosa e acolhedora. O projeto preserva anonimato público, tags emocionais, ECHO, reports, perfil, página de ajuda, moderação e fluxos reais de autenticação por e-mail.
 
+> **Deploy para produção:** siga o [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) — passo a
+> passo para PostgreSQL no Supabase + hospedagem no Render.
+
 ## Stack
 
-- Python 3
+- Python 3.12+
 - Flask
 - Flask-SQLAlchemy
 - Flask-Migrate/Alembic
