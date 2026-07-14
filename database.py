@@ -2402,6 +2402,7 @@ def update_user(user_id, username=None, nickname=None, bio=None, email=None, dis
         return True, "Seu perfil foi atualizado."
         
     except Exception:
+        logger.exception("Falha ao atualizar perfil do usuário")
         conn.close()
         return False, "Não conseguimos salvar isso agora. Tente de novo em instantes."
 

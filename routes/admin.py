@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 import database as db
 import functools
 from utils.roles import ROLE_ORDER, ROLE_LABELS, normalize_role
@@ -182,6 +182,7 @@ def comment_reports():
         
         return render_template('admin/comment_reports.html', reports=reports)
     except Exception:
+        current_app.logger.exception("Falha ao carregar avisos de respostas")
         flash('Não conseguimos carregar os avisos de respostas agora.', 'error')
         return redirect(url_for('admin.dashboard'))
 
@@ -201,6 +202,7 @@ def resolve_comment_report(report_id):
             return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
             
     except Exception:
+        current_app.logger.exception("Falha ao resolver aviso de resposta")
         return jsonify({'success': False, 'message': 'Não conseguimos resolver esse aviso agora.'}), 500
 
 @admin.route('/comment-reports/<int:report_id>/remove', methods=['DELETE'])
@@ -219,6 +221,7 @@ def remove_comment_report(report_id):
             return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
 
     except Exception:
+        current_app.logger.exception("Falha ao remover aviso de resposta")
         return jsonify({'success': False, 'message': 'Não conseguimos remover esse aviso agora.'}), 500
 
 

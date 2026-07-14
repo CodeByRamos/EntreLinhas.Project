@@ -406,6 +406,7 @@ def editar_perfil():
             return render_template('auth/editar_perfil.html', user=user, default_avatars=DEFAULT_AVATARS)
             
     except Exception:
+        current_app.logger.exception("Falha ao atualizar perfil")
         message = "Não conseguimos atualizar seu perfil agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500
@@ -472,6 +473,7 @@ def alterar_senha():
             return render_template('auth/alterar_senha.html')
             
     except Exception:
+        current_app.logger.exception("Falha ao alterar senha")
         message = "Não conseguimos alterar sua senha agora. Tente novamente em instantes."
         if request.is_json:
             return jsonify({'success': False, 'message': message}), 500

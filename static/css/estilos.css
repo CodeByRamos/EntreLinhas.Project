@@ -351,9 +351,16 @@ main {
   backdrop-filter: blur(12px);
   opacity: 0; transform: translateY(-6px) scale(0.98); transform-origin: top center;
   pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  /* visibility:hidden tira o painel fechado da árvore de acessibilidade e do
+     tab order; o delay mantém a animação de fechar visível antes de sumir. */
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0s linear 0.22s;
 }
-.el-select.is-open .el-select-panel { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.el-select.is-open .el-select-panel {
+  opacity: 1; transform: translateY(0) scale(1); pointer-events: auto;
+  visibility: visible; transition-delay: 0s;
+}
 
 .el-select-option {
   display: flex; align-items: center; gap: 0.5rem;
@@ -1726,6 +1733,13 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+/* background-attachment:fixed força repaint a cada frame de scroll no mobile
+   (iOS Safari mal suporta) — em touch/telas pequenas usamos scroll e matamos o
+   jank. O gradiente cobre a página inteira do mesmo jeito. Vem depois da regra
+   de fundo acima para vencer por ordem de origem. */
+@media (max-width: 768px), (pointer: coarse) {
+  body { background-attachment: scroll; }
 }
 
 /* — Tipografia editorial: medida confortável e display com presença — */

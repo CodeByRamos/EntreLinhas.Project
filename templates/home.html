@@ -6,6 +6,9 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />
+{# Sem JS, os [data-reveal] ficariam invisíveis (opacity:0) para sempre. Este
+   fallback garante que todo o conteúdo da landing apareça mesmo sem JavaScript. #}
+<noscript><style>[data-reveal]{opacity:1!important;transform:none!important}</style></noscript>
 {% endblock %}
 
 {% block content %}

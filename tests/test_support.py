@@ -1,6 +1,6 @@
 """Apoio ao projeto: página /apoiar, código Pix e selo de Apoiador."""
 from utils.pix import build_pix_brcode, _crc16
-from utils.roles import ROLE_BADGES, ROLE_ORDER, ROLE_LABELS, get_role_badge
+from utils.roles import ROLE_ORDER, ROLE_LABELS, get_role_badge
 
 
 def test_apoiar_page_renders(client):

@@ -17,6 +17,14 @@
     select.setAttribute('tabindex', '-1');
     select.setAttribute('aria-hidden', 'true');
 
+    // Nome acessível: aria-label do <select>, ou o texto do <label for=...>
+    // associado. Usado no botão E no listbox (senão o axe acusa listbox sem nome).
+    let accName = select.getAttribute('aria-label') || '';
+    if (!accName && select.id) {
+      const lbl = document.querySelector('label[for="' + select.id + '"]');
+      if (lbl) accName = lbl.textContent.trim();
+    }
+
     // Botão acessível
     const button = document.createElement('button');
     button.type = 'button';
@@ -24,7 +32,7 @@
     button.id = uid + '-btn';
     button.setAttribute('aria-haspopup', 'listbox');
     button.setAttribute('aria-expanded', 'false');
-    if (select.getAttribute('aria-label')) button.setAttribute('aria-label', select.getAttribute('aria-label'));
+    if (accName) button.setAttribute('aria-label', accName);
     const label = document.createElement('span');
     label.className = 'el-select-label';
     button.appendChild(label);
@@ -40,6 +48,10 @@
     panel.className = 'el-select-panel';
     panel.setAttribute('role', 'listbox');
     panel.id = uid + '-list';
+    // Nome acessível do listbox (senão o axe acusa "listbox sem nome"). Quando
+    // fechado, o painel some da árvore de acessibilidade via visibility:hidden
+    // (CSS), então não fica como região rolável órfã nem tab stop invisível.
+    if (accName) panel.setAttribute('aria-label', accName);
     wrap.appendChild(panel);
 
     let optionEls = [];

@@ -1,5 +1,4 @@
 """Controle de acesso, CSRF, rate limiting e privilégio."""
-import database as db
 from conftest import make_post
 
 

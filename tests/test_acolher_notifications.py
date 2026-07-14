@@ -19,7 +19,6 @@ def test_unanswered_excludes_own_listen_and_answered(make_user):
 
 
 def test_acolher_responder_creates_comment_and_notifies(logged_client, make_user):
-    me = logged_client._test_user_id
     author = make_user()
     pid = make_post(author)
     r = logged_client.post(f"/acolher/{pid}/responder",

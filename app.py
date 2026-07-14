@@ -27,8 +27,40 @@ from datetime import datetime
 from datetime import timedelta
 import os
 
+def _init_observability():
+    """Logging estruturado + Sentry opcional.
+
+    Sentry só liga se SENTRY_DSN estiver no ambiente (sem DSN = no-op). Por ser
+    plataforma anônima, `send_default_pii=False` é OBRIGATÓRIO: nunca mandamos
+    dados de usuário para o Sentry. Import defensivo: sem a lib, o app sobe igual.
+    """
+    import logging
+    level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    logging.basicConfig(
+        level=getattr(logging, level, logging.INFO),
+        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
+    )
+    dsn = os.environ.get('SENTRY_DSN', '').strip()
+    if not dsn:
+        return
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=dsn,
+            integrations=[FlaskIntegration()],
+            environment=os.environ.get('ENVIRONMENT', 'development'),
+            traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', '0') or '0'),
+            send_default_pii=False,  # anonimato: NUNCA enviar dados de usuário
+        )
+        logging.getLogger('entrelinhas').info('Sentry ativo.')
+    except Exception as exc:  # pragma: no cover - defensivo
+        logging.getLogger('entrelinhas').warning('Sentry não inicializou: %s', exc)
+
+
 def create_app():
     """Função de fábrica para criar a aplicação Flask."""
+    _init_observability()
     app = Flask(__name__)
     
     # Carrega configurações

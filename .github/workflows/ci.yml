@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Lint + testes
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-test-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+      - name: Flake8 (imports/variáveis mortos)
+        run: >
+          python -m flake8 --select=F401,F811,F841,F821
+          --exclude=.venv,migrations
+          app.py config.py database.py db_features.py extensions.py
+          routes services utils models scripts
+      - name: Pytest
+        run: python -m pytest -q --ignore=tests/test_a11y.py
+
+  a11y:
+    name: Acessibilidade (axe-core)
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-test-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+      - name: Instalar Chromium (Playwright)
+        run: python -m playwright install --with-deps chromium
+      - name: Testes de acessibilidade
+        run: python -m pytest -q tests/test_a11y.py
